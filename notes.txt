@@ -1,0 +1,73 @@
+Final Tech Stack
+
+Backend: Express.js + Node.js
+Database: PostgreSQL Neon
+ORM: Prisma JS
+Auth: JWT + Argon2
+Signup Verification: Email OTP via Resend
+Payment: Razorpay UPI
+Support: WhatsApp Redirect + Complaint Logs
+Maps: GPS stored in DB, distance filtering from DB data
+
+Customer Backend Modules
+1. Auth
+   - signup
+   - send OTP
+   - resend OTP
+   - verify OTP
+   - login with email/phone + password
+   - JWT token
+
+2. Customer Profile
+   - view profile
+   - update profile
+   - update phone/email/address
+   - delete account
+
+3. Vehicles
+   - add vehicle
+   - update vehicle
+   - delete vehicle
+   - get my vehicles
+
+4. Location
+   - save GPS location
+   - update location later
+   - use location for nearby garages
+
+5. Garages
+   - get all garages
+   - nearby garages
+   - filter by distance, rating, verified, service type, open now
+   - garage details
+
+6. Services
+   - get service categories
+   - get services by garage
+   - get service pricing/details
+
+7. Booking
+   - select service category
+   - select service
+   - select garage
+   - select vehicle
+   - select date/time slot
+   - create confirmed booking after ₹99 payment
+
+8. Payment
+   - create Razorpay order
+   - verify Razorpay payment
+   - store handling fee payment
+
+9. Orders / History
+   - current bookings
+   - past bookings
+   - booking details
+
+10. Complaints
+   - create complaint
+   - complaint history
+   - complaint linked to booking
+
+11. Support
+   - WhatsApp redirect endpoint/details
