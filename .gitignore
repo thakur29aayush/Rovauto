@@ -1,41 +1,70 @@
+# ==========================
 # Dependencies
+# ==========================
 node_modules/
 
-# Environment variables
+# ==========================
+# Environment Variables
+# ==========================
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
+# ==========================
 # Prisma
+# ==========================
+src/generated/
+
+# SQLite (if ever used)
 prisma/dev.db
 prisma/dev.db-journal
 
+# ==========================
 # Logs
+# ==========================
 logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 
-# Build
+# ==========================
+# Build Output
+# ==========================
 dist/
 build/
 
-# Coverage
+# ==========================
+# Test Coverage
+# ==========================
 coverage/
 
-# OS files
-.DS_Store
-Thumbs.db
+# ==========================
+# Runtime Files
+# ==========================
+*.pid
+*.pid.lock
+*.seed
 
-# IDEs
-.vscode/
-.idea/
-
-# Temporary
+# ==========================
+# Temporary Files
+# ==========================
 .tmp/
 temp/
 
-# Runtime
-*.pid
-*.seed
+# ==========================
+# OS Files
+# ==========================
+.DS_Store
+Thumbs.db
+
+# ==========================
+# IDEs
+# ==========================
+.vscode/
+.idea/
+
+# ==========================
+# Misc
+# ==========================
+*.tsbuildinfo
