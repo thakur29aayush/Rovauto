@@ -1,40 +1,65 @@
-import { z } from "zod";
+const { body, param } = require("express-validator");
 
-export const serviceMediaTypeEnum = z.enum(["IMAGE", "VIDEO"]);
+const serviceIdParamSchema = [
+  param("serviceId").isUUID().withMessage("Invalid service ID"),
+];
 
-export const serviceIdParamSchema = z.object({
-  params: z.object({
-    serviceId: z.string().uuid("Invalid service ID"),
-  }),
-});
+const serviceMediaIdParamSchema = [
+  param("mediaId").isUUID().withMessage("Invalid media ID"),
+];
 
-export const serviceMediaIdParamSchema = z.object({
-  params: z.object({
-    mediaId: z.string().uuid("Invalid media ID"),
-  }),
-});
+const addServiceMediaSchema = [
+  param("serviceId").isUUID().withMessage("Invalid service ID"),
 
-export const addServiceMediaSchema = z.object({
-  params: z.object({
-    serviceId: z.string().uuid("Invalid service ID"),
-  }),
-  body: z.object({
-    mediaType: serviceMediaTypeEnum,
-    url: z.string().url("Invalid media URL"),
-    publicId: z.string().min(1, "Public ID is required"),
-    order: z.coerce.number().int().min(0).optional(),
-    isThumbnail: z.coerce.boolean().optional(),
-    durationSeconds: z.coerce.number().int().positive().optional(),
-    sizeBytes: z.coerce.number().int().positive().optional(),
-  }),
-});
+  body("mediaType")
+    .isIn(["IMAGE", "VIDEO"])
+    .withMessage("Media type must be IMAGE or VIDEO"),
 
-export const updateServiceMediaSchema = z.object({
-  params: z.object({
-    mediaId: z.string().uuid("Invalid media ID"),
-  }),
-  body: z.object({
-    order: z.coerce.number().int().min(0).optional(),
-    isThumbnail: z.coerce.boolean().optional(),
-  }),
-});
+  body("url").isURL().withMessage("Invalid media URL"),
+
+  body("publicId")
+    .trim()
+    .notEmpty()
+    .withMessage("Public ID is required"),
+
+  body("order")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 0 })
+    .withMessage("Order must be a non-negative integer"),
+
+  body("isThumbnail")
+    .optional()
+    .isBoolean()
+    .withMessage("isThumbnail must be boolean"),
+
+  body("durationSeconds")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage("Duration must be a positive integer"),
+
+  body("sizeBytes")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage("Size must be a positive integer"),
+];
+
+const updateServiceMediaSchema = [
+  param("mediaId").isUUID().withMessage("Invalid media ID"),
+
+  body("order")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 0 })
+    .withMessage("Order must be a non-negative integer"),
+
+  body("isThumbnail")
+    .optional()
+    .isBoolean()
+    .withMessage("isThumbnail must be boolean"),
+];
+
+module.exports = {
+  serviceIdParamSchema,
+  serviceMediaIdParamSchema,
+  addServiceMediaSchema,
+  updateServiceMediaSchema,
+};

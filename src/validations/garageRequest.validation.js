@@ -1,25 +1,31 @@
-import { z } from "zod";
+const { body, param } = require("express-validator");
 
-export const garageRequestIdParamSchema = z.object({
-  params: z.object({
-    requestId: z.string().uuid("Invalid request ID"),
-  }),
-});
+const garageRequestIdParamSchema = [
+  param("requestId").isUUID().withMessage("Invalid request ID"),
+];
 
-export const rejectGarageRequestSchema = z.object({
-  params: z.object({
-    requestId: z.string().uuid("Invalid request ID"),
-  }),
-  body: z.object({
-    note: z.string().max(500, "Note cannot exceed 500 characters").optional(),
-  }),
-});
+const rejectGarageRequestSchema = [
+  param("requestId").isUUID().withMessage("Invalid request ID"),
 
-export const acceptGarageRequestSchema = z.object({
-  params: z.object({
-    requestId: z.string().uuid("Invalid request ID"),
-  }),
-  body: z.object({
-    note: z.string().max(500, "Note cannot exceed 500 characters").optional(),
-  }),
-});
+  body("note")
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Note cannot exceed 500 characters"),
+];
+
+const acceptGarageRequestSchema = [
+  param("requestId").isUUID().withMessage("Invalid request ID"),
+
+  body("note")
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Note cannot exceed 500 characters"),
+];
+
+module.exports = {
+  garageRequestIdParamSchema,
+  rejectGarageRequestSchema,
+  acceptGarageRequestSchema,
+};

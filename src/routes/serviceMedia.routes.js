@@ -2,7 +2,7 @@ const express = require("express");
 
 const serviceMediaController = require("../controllers/serviceMedia.controller");
 const { protect } = require("../middlewares/auth.middleware");
-const authorizeRoles = require("../middlewares/role.middleware");
+const { authorizeRoles } = require("../middlewares/role.middleware");
 const validate = require("../middlewares/validate.middleware");
 
 const {

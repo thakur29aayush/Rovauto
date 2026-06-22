@@ -1,44 +1,116 @@
-import { z } from "zod";
+const { body, param } = require("express-validator");
 
-export const serviceIdParamSchema = z.object({
-  params: z.object({
-    id: z.string().uuid("Invalid service ID"),
-  }),
-});
+const serviceIdParamSchema = [
+  param("id").isUUID().withMessage("Invalid service ID"),
+];
 
-export const createServiceSchema = z.object({
-  body: z.object({
-    categoryId: z.string().uuid("Invalid category ID"),
-    name: z.string().min(2, "Service name is required"),
-    description: z.string().max(2000).optional(),
-    basePrice: z.number().int().positive().optional(),
-    minPrice: z.number().int().positive().optional(),
-    maxPrice: z.number().int().positive().optional(),
-    durationMin: z.number().int().positive().optional(),
-    isActive: z.boolean().optional(),
-  }),
-});
+const createServiceSchema = [
+  body("categoryId").isUUID().withMessage("Invalid category ID"),
 
-export const updateServiceSchema = z.object({
-  params: z.object({
-    id: z.string().uuid("Invalid service ID"),
-  }),
-  body: z.object({
-    categoryId: z.string().uuid("Invalid category ID").optional(),
-    name: z.string().min(2, "Service name is required").optional(),
-    description: z.string().max(2000).optional(),
-    basePrice: z.number().int().positive().optional(),
-    minPrice: z.number().int().positive().optional(),
-    maxPrice: z.number().int().positive().optional(),
-    durationMin: z.number().int().positive().optional(),
-    isActive: z.boolean().optional(),
-  }),
-});
+  body("name")
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage("Service name is required"),
 
-export const createServiceCategorySchema = z.object({
-  body: z.object({
-    name: z.string().min(2, "Category name is required"),
-    description: z.string().max(1000).optional(),
-    isActive: z.boolean().optional(),
-  }),
-});
+  body("description")
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isLength({ max: 2000 })
+    .withMessage("Description cannot exceed 2000 characters"),
+
+  body("basePrice")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage("Base price must be a positive integer"),
+
+  body("minPrice")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage("Minimum price must be a positive integer"),
+
+  body("maxPrice")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage("Maximum price must be a positive integer"),
+
+  body("durationMin")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage("Duration must be a positive integer"),
+
+  body("isActive")
+    .optional()
+    .isBoolean()
+    .withMessage("isActive must be boolean"),
+];
+
+const updateServiceSchema = [
+  param("id").isUUID().withMessage("Invalid service ID"),
+
+  body("categoryId")
+    .optional({ nullable: true, checkFalsy: true })
+    .isUUID()
+    .withMessage("Invalid category ID"),
+
+  body("name")
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage("Service name is required"),
+
+  body("description")
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isLength({ max: 2000 })
+    .withMessage("Description cannot exceed 2000 characters"),
+
+  body("basePrice")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage("Base price must be a positive integer"),
+
+  body("minPrice")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage("Minimum price must be a positive integer"),
+
+  body("maxPrice")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage("Maximum price must be a positive integer"),
+
+  body("durationMin")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage("Duration must be a positive integer"),
+
+  body("isActive")
+    .optional()
+    .isBoolean()
+    .withMessage("isActive must be boolean"),
+];
+
+const createServiceCategorySchema = [
+  body("name")
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage("Category name is required"),
+
+  body("description")
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage("Description cannot exceed 1000 characters"),
+
+  body("isActive")
+    .optional()
+    .isBoolean()
+    .withMessage("isActive must be boolean"),
+];
+
+module.exports = {
+  serviceIdParamSchema,
+  createServiceSchema,
+  updateServiceSchema,
+  createServiceCategorySchema,
+};

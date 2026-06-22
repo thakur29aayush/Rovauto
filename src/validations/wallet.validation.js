@@ -1,45 +1,51 @@
-import { z } from "zod";
+const { body, query } = require("express-validator");
 
-export const walletRechargeSchema = z.object({
-  body: z.object({
-    amount: z
-      .number({
-        required_error: "Recharge amount is required",
-      })
-      .int()
-      .min(1, "Recharge amount must be at least ₹1"),
+const walletRechargeSchema = [
+  body("amount")
+    .isInt({ min: 1 })
+    .withMessage("Recharge amount must be at least ₹1"),
 
-    paymentMethod: z.enum(["RAZORPAY", "UPI"]).optional(),
-  }),
-});
+  body("paymentMethod")
+    .optional({ nullable: true, checkFalsy: true })
+    .isIn(["RAZORPAY", "UPI"])
+    .withMessage("Payment method must be RAZORPAY or UPI"),
+];
 
-export const useWalletSchema = z.object({
-  body: z.object({
-    amount: z
-      .number({
-        required_error: "Wallet amount is required",
-      })
-      .int()
-      .min(1, "Wallet amount must be at least 1 coin"),
-  }),
-});
+const useWalletSchema = [
+  body("amount")
+    .isInt({ min: 1 })
+    .withMessage("Wallet amount must be at least 1 coin"),
+];
 
-export const walletTransactionQuerySchema = z.object({
-  query: z.object({
-    page: z.coerce.number().int().min(1).optional(),
-    limit: z.coerce.number().int().min(1).max(100).optional(),
-    type: z
-      .enum([
-        "CREDIT",
-        "DEBIT",
-        "RECHARGE",
-        "REFUND",
-        "CASHBACK",
-        "BOOKING_PAYMENT",
-        "BOOKING_REFUND",
-        "GARAGE_ACCEPT_FEE",
-        "SOS_DEDUCTION",
-      ])
-      .optional(),
-  }),
-});
+const walletTransactionQuerySchema = [
+  query("page")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage("Page must be at least 1"),
+
+  query("limit")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Limit must be between 1 and 100"),
+
+  query("type")
+    .optional({ nullable: true, checkFalsy: true })
+    .isIn([
+      "CREDIT",
+      "DEBIT",
+      "RECHARGE",
+      "REFUND",
+      "CASHBACK",
+      "BOOKING_PAYMENT",
+      "BOOKING_REFUND",
+      "GARAGE_ACCEPT_FEE",
+      "SOS_DEDUCTION",
+    ])
+    .withMessage("Invalid wallet transaction type"),
+];
+
+module.exports = {
+  walletRechargeSchema,
+  useWalletSchema,
+  walletTransactionQuerySchema,
+};

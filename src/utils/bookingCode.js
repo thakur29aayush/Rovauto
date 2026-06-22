@@ -1,6 +1,6 @@
-import { prisma } from "../config/prisma.js";
+const prisma = require("../config/prisma");
 
-export const generateBookingCode = async () => {
+const generateBookingCode = async () => {
   let bookingCode;
   let exists = true;
 
@@ -20,3 +20,5 @@ export const generateBookingCode = async () => {
 
   return bookingCode;
 };
+
+module.exports = generateBookingCode;

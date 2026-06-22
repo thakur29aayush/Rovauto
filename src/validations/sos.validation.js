@@ -1,34 +1,32 @@
-const { z } = require("zod");
+const { body, param } = require("express-validator");
 
-const createSosSchema = z.object({
-  body: z.object({
-    vehicleId: z.string().uuid("Invalid vehicle ID"),
+const createSosSchema = [
+  body("vehicleId").isUUID().withMessage("Invalid vehicle ID"),
 
-    latitude: z.coerce
-      .number({
-        required_error: "Latitude is required",
-      })
-      .min(-90, "Latitude must be between -90 and 90")
-      .max(90, "Latitude must be between -90 and 90"),
+  body("latitude")
+    .isFloat({ min: -90, max: 90 })
+    .withMessage("Latitude must be between -90 and 90"),
 
-    longitude: z.coerce
-      .number({
-        required_error: "Longitude is required",
-      })
-      .min(-180, "Longitude must be between -180 and 180")
-      .max(180, "Longitude must be between -180 and 180"),
+  body("longitude")
+    .isFloat({ min: -180, max: 180 })
+    .withMessage("Longitude must be between -180 and 180"),
 
-    address: z.string().max(500).optional(),
+  body("address")
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Address cannot exceed 500 characters"),
 
-    note: z.string().max(1000).optional(),
-  }),
-});
+  body("note")
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage("Note cannot exceed 1000 characters"),
+];
 
-const sosIdParamSchema = z.object({
-  params: z.object({
-    id: z.string().uuid("Invalid SOS request ID"),
-  }),
-});
+const sosIdParamSchema = [
+  param("id").isUUID().withMessage("Invalid SOS request ID"),
+];
 
 module.exports = {
   createSosSchema,

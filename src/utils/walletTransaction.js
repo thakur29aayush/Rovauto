@@ -1,4 +1,4 @@
-export const WALLET_TRANSACTION_TYPES = {
+const WALLET_TRANSACTION_TYPES = {
   CREDIT: "CREDIT",
   DEBIT: "DEBIT",
   RECHARGE: "RECHARGE",
@@ -10,17 +10,17 @@ export const WALLET_TRANSACTION_TYPES = {
   SOS_DEDUCTION: "SOS_DEDUCTION",
 };
 
-export const WALLET_TRANSACTION_STATUS = {
+const WALLET_TRANSACTION_STATUS = {
   PENDING: "PENDING",
   SUCCESS: "SUCCESS",
   FAILED: "FAILED",
 };
 
-export const getBalanceAfterCredit = (currentBalance, amount) => {
+const getBalanceAfterCredit = (currentBalance, amount) => {
   return currentBalance + amount;
 };
 
-export const getBalanceAfterDebit = (currentBalance, amount) => {
+const getBalanceAfterDebit = (currentBalance, amount) => {
   if (currentBalance < amount) {
     throw new Error("Insufficient wallet balance");
   }
@@ -28,7 +28,7 @@ export const getBalanceAfterDebit = (currentBalance, amount) => {
   return currentBalance - amount;
 };
 
-export const isCreditTransaction = (type) => {
+const isCreditTransaction = (type) => {
   return [
     WALLET_TRANSACTION_TYPES.CREDIT,
     WALLET_TRANSACTION_TYPES.RECHARGE,
@@ -38,7 +38,7 @@ export const isCreditTransaction = (type) => {
   ].includes(type);
 };
 
-export const isDebitTransaction = (type) => {
+const isDebitTransaction = (type) => {
   return [
     WALLET_TRANSACTION_TYPES.DEBIT,
     WALLET_TRANSACTION_TYPES.BOOKING_PAYMENT,
@@ -47,11 +47,7 @@ export const isDebitTransaction = (type) => {
   ].includes(type);
 };
 
-export const calculateWalletBalance = ({
-  currentBalance,
-  amount,
-  type,
-}) => {
+const calculateWalletBalance = ({ currentBalance, amount, type }) => {
   if (!Number.isInteger(amount) || amount <= 0) {
     throw new Error("Invalid wallet transaction amount");
   }
@@ -65,4 +61,14 @@ export const calculateWalletBalance = ({
   }
 
   throw new Error("Invalid wallet transaction type");
+};
+
+module.exports = {
+  WALLET_TRANSACTION_TYPES,
+  WALLET_TRANSACTION_STATUS,
+  getBalanceAfterCredit,
+  getBalanceAfterDebit,
+  isCreditTransaction,
+  isDebitTransaction,
+  calculateWalletBalance,
 };

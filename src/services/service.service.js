@@ -1,13 +1,6 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
 
-const serviceInclude = {
-  category: true,
-  media: {
-    orderBy: [{ isThumbnail: "desc" }, { order: "asc" }],
-  },
-};
-
 const getServiceCategories = async () => {
   return prisma.serviceCategory.findMany({
     where: { isActive: true },
@@ -32,33 +25,19 @@ const getServices = async (query = {}) => {
   return prisma.service.findMany({
     where: {
       isActive: true,
-
       ...(categoryId && { categoryId }),
-
       ...(search && {
         OR: [
-          {
-            name: {
-              contains: search,
-              mode: "insensitive",
-            },
-          },
-          {
-            description: {
-              contains: search,
-              mode: "insensitive",
-            },
-          },
+          { name: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
         ],
       }),
-
       ...(minPrice && {
         OR: [
           { basePrice: { gte: Number(minPrice) } },
           { minPrice: { gte: Number(minPrice) } },
         ],
       }),
-
       ...(maxPrice && {
         OR: [
           { basePrice: { lte: Number(maxPrice) } },
@@ -66,7 +45,12 @@ const getServices = async (query = {}) => {
         ],
       }),
     },
-    include: serviceInclude,
+    include: {
+      category: true,
+      media: {
+        orderBy: [{ isThumbnail: "desc" }, { order: "asc" }],
+      },
+    },
     orderBy: { name: "asc" },
   });
 };
@@ -78,7 +62,10 @@ const getServiceById = async (serviceId) => {
       isActive: true,
     },
     include: {
-      ...serviceInclude,
+      category: true,
+      media: {
+        orderBy: [{ isThumbnail: "desc" }, { order: "asc" }],
+      },
       garageServices: {
         where: {
           isActive: true,

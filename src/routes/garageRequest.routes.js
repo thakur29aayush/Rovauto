@@ -2,7 +2,7 @@ const express = require("express");
 
 const garageRequestController = require("../controllers/garageRequest.controller");
 const { protect } = require("../middlewares/auth.middleware");
-const authorizeRoles = require("../middlewares/role.middleware");
+const { authorizeRoles } = require("../middlewares/role.middleware");
 const validate = require("../middlewares/validate.middleware");
 
 const {
@@ -15,16 +15,8 @@ const router = express.Router();
 router.use(protect);
 router.use(authorizeRoles("GARAGE_OWNER", "ADMIN"));
 
-/**
- * GET /api/garage/requests
- * Get requests sent to the logged-in garage owner.
- */
 router.get("/", garageRequestController.getGarageRequests);
 
-/**
- * POST /api/garage/requests/:requestId/accept
- * Accept customer booking request.
- */
 router.post(
   "/:requestId/accept",
   acceptGarageRequestSchema,
@@ -32,10 +24,6 @@ router.post(
   garageRequestController.acceptGarageRequest
 );
 
-/**
- * POST /api/garage/requests/:requestId/reject
- * Reject customer booking request.
- */
 router.post(
   "/:requestId/reject",
   rejectGarageRequestSchema,

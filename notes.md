@@ -2,18 +2,18 @@
 
 ## Final Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| Backend | Express.js + Node.js |
-| Database | PostgreSQL (Neon) |
-| ORM | Prisma ORM |
-| Authentication | JWT + Argon2 |
-| Email Verification | Resend OTP |
-| Payments | Razorpay |
-| Media Storage | Cloudinary |
-| Maps | GPS Coordinates + Distance Filtering |
-| Password Security | Argon2 Hashing |
-| API Validation | Express Validator |
+| Component          | Technology                           |
+| ------------------ | ------------------------------------ |
+| Backend            | Express.js + Node.js                 |
+| Database           | PostgreSQL (Neon)                    |
+| ORM                | Prisma ORM                           |
+| Authentication     | JWT + Argon2                         |
+| Email Verification | Resend OTP                           |
+| Payments           | Razorpay                             |
+| Media Storage      | Cloudinary                           |
+| Maps               | GPS Coordinates + Distance Filtering |
+| Password Security  | Argon2 Hashing                       |
+| API Validation     | Express Validator                    |
 
 ---
 
@@ -21,122 +21,212 @@
 
 ## 1. Authentication
 
-- Signup
-- Email OTP Verification
-- Resend OTP
-- Login (Email / Phone)
-- Forgot Password
-- Reset Password
-- JWT Authentication
+* Signup
+* Email OTP Verification
+* Resend OTP
+* Login (Email / Phone)
+* Forgot Password
+* Reset Password
+* JWT Authentication
 
 ---
 
 ## 2. Customer Onboarding
 
-- Add First Vehicle
-- Save Default GPS Location
-- Save Address
-- Mark User as Onboarded
+* Add First Vehicle
+* Save Default GPS Location
+* Save Address
+* Mark User as Onboarded
 
 ---
 
 ## 3. Customer Profile
 
-- View Profile
-- Update Profile
-- Change Password
-- Delete Account
+* View Profile
+* Update Profile
+* Change Password
+* Delete Account
 
 ---
 
 ## 4. Vehicles
 
-- Add Vehicle
-- Update Vehicle
-- Delete Vehicle
-- View Vehicles
-- Set Default Vehicle
+* Add Vehicle
+* Update Vehicle
+* Delete Vehicle
+* View Vehicles
+* Set Default Vehicle
 
 ---
 
 ## 5. Saved Locations
 
-- Add Location
-- Update Location
-- Delete Location
-- View Saved Locations
-- Set Default Location
+* Add Location
+* Update Location
+* Delete Location
+* View Saved Locations
+* Set Default Location
 
 ---
 
-## 6. Garage Discovery
+## 6. Service Discovery
 
-- Get Nearby Garages
-- Get All Garages
-- Search Garages
-- Filter by
-  - Distance
-  - Rating
-  - Verified
-  - Service
-  - Open Now
-- Garage Details
+Customers browse services instead of garages.
+
+* View All Service Categories
+* View Services
+* Service Images
+* Service Videos
+* Search Services
 
 ---
 
-## 7. Garage Media
+## 7. Service Media
 
-- Thumbnail
-- Gallery Images (5–10)
-- Videos (1–2)
+Each service contains
+
+* Thumbnail
+* Gallery Images
+* Videos
 
 ---
 
 ## 8. Booking
 
-- Select Garage
-- Select Service
-- Select Vehicle
-- Select Slot
-- Add Customer Note
-- Create Booking
-- Cancel Booking
+Customer selects
+
+* Vehicle
+* Multiple Services
+* Current Location
+* Customer Note
+
+System automatically
+
+* Calculates Platform Fee
+* Creates Booking
+* Waits for Payment
+* Broadcasts Request to Nearby Garages
+* Assigns First Accepting Garage
 
 ---
 
-## 9. Payment
+## 9. Garage Broadcasting
 
-- Create Razorpay Order
-- Verify Razorpay Signature
-- Store ₹99 Convenience Fee
+After payment
 
----
-
-## 10. Booking History
-
-- Pending Payment
-- Confirmed
-- In Progress
-- Completed
-- Cancelled
+* Find Nearby Garages
+* Filter Eligible Garages
+* Broadcast Request
+* First Garage Accept Wins
+* Remaining Requests Expire Automatically
 
 ---
 
-## 11. Reviews
+## 10. SOS
 
-- Create Review
-- Edit Review
-- Delete Review
-- View My Reviews
+Emergency roadside assistance.
+
+Customer
+
+* Select Vehicle
+* Current GPS
+* Send SOS
+
+Backend
+
+* Broadcasts to Nearby Garages
+* First Accepting Garage Gets Assigned
+* ₹50 deducted from RovAuto Wallet only after garage accepts
+
+Estimated service value
+
+₹500 – ₹2000
 
 ---
 
-## 12. Complaints
+## 11. RovAuto Wallet
 
-- Create Complaint
-- Upload 1–10 Images
-- Complaint History
-- Complaint Status Tracking
+Customer wallet
+
+Supports
+
+* Recharge
+* Refunds
+* Cashback
+* Wallet Payment
+* Wallet History
+* Balance
+
+Wallet is primarily used for
+
+* Refunds
+* Future Service Payments
+* SOS Charges
+
+---
+
+## 12. Garage Wallet
+
+Garage wallet supports
+
+* Recharge
+* Wallet Balance
+* Transaction History
+
+Platform automatically deducts acceptance fee when a booking is accepted.
+
+---
+
+## 13. Payments
+
+Platform fee only.
+
+Razorpay
+
+* Create Order
+* Verify Signature
+
+Platform Fee
+
+| Estimated Bill   | Platform Fee |
+| ---------------- | -----------: |
+| ₹300 – ₹999      |          ₹30 |
+| ₹1,000 – ₹4,999  |          ₹99 |
+| ₹5,000 – ₹19,999 |         ₹249 |
+| ₹20,000+         |         ₹500 |
+| SOS              |          ₹50 |
+
+Final garage payment happens offline.
+
+---
+
+## 14. Booking History
+
+* Pending Payment
+* Searching Garage
+* Confirmed
+* In Progress
+* Completed
+* Cancelled
+* Expired
+
+---
+
+## 15. Reviews
+
+* Create Review
+* Edit Review
+* Delete Review
+* View Reviews
+
+---
+
+## 16. Complaints
+
+* Create Complaint
+* Upload Images
+* Complaint History
+* Complaint Tracking
 
 ---
 
@@ -144,36 +234,24 @@
 
 ## Complaint Images
 
-- Minimum: 1
-- Maximum: 10
-- Max Size: 10 MB each
-- Stored in Cloudinary
+* 1–10 Images
+* Max 10 MB
+* Cloudinary
 
 ---
 
-## Garage Images
+## Service Images
 
-- Minimum: 5
-- Maximum: 10
-- Exactly 1 Thumbnail
-- Max Size: 10 MB each
-
----
-
-## Garage Videos
-
-- Minimum: 1
-- Maximum: 2
-- Max Size: 100 MB each
-- Stored in Cloudinary
+* 1 Thumbnail
+* Multiple Gallery Images
+* Cloudinary
 
 ---
 
-# Database Backup
+## Service Videos
 
-```bash
-pg_dump "DATABASE_URL" > backup.sql
-```
+* Multiple Videos
+* Cloudinary
 
 ---
 
@@ -190,18 +268,19 @@ Landing
 │
 └── Dashboard
      │
-     ├── Nearby Garages
-     ├── Garage Details
+     ├── Services
      │      │
-     │      ├── Book Service
-     │      └── Payment
-     │             │
-     │             └── Booking Success
+     │      ├── Service Details
+     │      └── Add to Booking
+     │
+     ├── SOS
+     │
+     ├── Wallet
      │
      ├── Booking History
      │      └── Booking Details
      │
-     ├── My Vehicles
+     ├── Vehicles
      ├── Saved Locations
      ├── Profile
      ├── Reviews
@@ -216,7 +295,7 @@ Landing
 ```text
 Landing
     │
-Signup/Login
+Signup / Login
     │
 OTP Verification
     │
@@ -224,115 +303,99 @@ JWT Login
     │
 First-Time Onboarding
     │
-├── Add Vehicle
-├── Save GPS
-└── Save Address
+├── Vehicle
+├── Location
+└── Address
     │
 Dashboard
     │
-Nearby Garages
-    │
-Garage Details
+Browse Services
     │
 Select
 ├── Vehicle
-├── Service
-├── Slot
+├── Multiple Services
+├── Location
 └── Note
     │
 Booking Created
 (PENDING_PAYMENT)
     │
-₹99 Razorpay Payment
+Platform Fee Payment
+(Razorpay)
     │
 Payment Verified
     │
+Broadcast To Nearby Garages
+    │
+Garage Accepts
+    │
 Booking Confirmed
     │
-Booking Success
+Garage Arrives
     │
-Vehicle Service
+Service Completed
     │
-Booking History
-    │
-Completed Booking
-    │
-├── Review
-└── Complaint
+Review / Complaint
 ```
 
 ---
 
 # Customer Features Completed
 
-- Authentication
-- Email OTP Verification
-- Forgot Password
-- Reset Password
-- JWT Authentication
-- Customer Onboarding
-- Profile Management
-- Vehicle Management
-- Saved Locations
-- Nearby Garage Discovery
-- Garage Details
-- Garage Images & Videos
-- Booking
-- Booking Cancellation
-- Razorpay Payment
-- Booking History
-- Reviews
-- Complaints
-- Cloudinary Integration
+* Authentication
+* Email OTP Verification
+* Forgot Password
+* Reset Password
+* JWT Authentication
+* Customer Onboarding
+* Profile Management
+* Vehicle Management
+* Saved Locations
+* Service Discovery
+* Service Media
+* Multi-Service Booking
+* Dynamic Platform Fee
+* Razorpay Integration
+* Garage Broadcasting
+* Automatic Garage Assignment
+* SOS
+* RovAuto Wallet
+* Booking History
+* Reviews
+* Complaints
+* Cloudinary Integration
 
 ---
 
 # Future Improvements
 
-## Security
-
-- Refresh Tokens
-- OTP Attempt Limit
-- OTP Cooldown
-- Login Rate Limiting
-- Account Lockout
-
----
-
 ## Customer Experience
 
-- Favorite Garages
-- Push Notifications
-- Booking Search
-- Pagination
-- Advanced Filters
+* Favorite Services
+* Push Notifications
+* Live Garage Tracking
+* Real-Time Garage ETA
+* Booking Search
+* Pagination
+* Advanced Filters
 
 ---
 
 ## Payments
 
-- Razorpay Webhooks
-- Refund Management
-- Final Garage Bill Payment
-- COD Support
-- Garage Wallet Settlement
+* Razorpay Webhooks
+* Automatic Refunds
+* Final Garage Bill Payment
+* Partial Wallet Payment
+* Coupon System
 
 ---
 
 ## Performance
 
-- Redis Cache
-- Swagger Documentation
-- Winston / Pino Logging
-- Background Jobs
-
-# user home
-services only no garage
-rovaulto coins(wallet)
-similar fo garages as well(recharge)
-SOS
--300-1000(30)-basic
--1000-5000(99)-standard
--5000-20000(249)-medium
--SOS(500-2000)(50)
--20000+(500)-advanced
+* Redis Cache
+* Swagger Documentation
+* Winston / Pino Logging
+* Background Jobs
+* Socket.IO for Real-Time Broadcast
+* Firebase Push Notifications
