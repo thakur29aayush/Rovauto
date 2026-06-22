@@ -71,3 +71,6 @@ Customer Backend Modules
 
 11. Support
    - WhatsApp redirect endpoint/details
+
+BACKUP 
+   pg_dump "YOUR_DATABASE_URL" > backup.sql
