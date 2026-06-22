@@ -31,5 +31,11 @@ router.get(
   validate,
   bookingController.getBookingById
 );
+router.patch(
+  "/:id/cancel",
+  bookingIdValidation,
+  validate,
+  bookingController.cancelBooking
+);
 
 module.exports = router;

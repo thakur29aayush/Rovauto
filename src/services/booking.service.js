@@ -163,10 +163,57 @@ const getBookingSuccess = async (userId, bookingId) => {
     directionsLink: `https://www.google.com/maps?q=${booking.garage.latitude},${booking.garage.longitude}`,
   };
 };
+const cancelBooking = async (userId, bookingId) => {
+  const booking = await prisma.booking.findFirst({
+    where: {
+      id: bookingId,
+      userId,
+    },
+    include: {
+      slot: true,
+      payment: true,
+    },
+  });
+
+  if (!booking) {
+    throw new ApiError(404, "Booking not found");
+  }
+
+  if (!["PENDING_PAYMENT", "CONFIRMED"].includes(booking.status)) {
+    throw new ApiError(
+      400,
+      "Only pending or confirmed bookings can be cancelled"
+    );
+  }
+
+  const cancelledBooking = await prisma.$transaction(async (tx) => {
+    if (booking.slotId && booking.slot) {
+      await tx.garageSlot.update({
+        where: { id: booking.slotId },
+        data: {
+          bookedCount: {
+            decrement: booking.slot.bookedCount > 0 ? 1 : 0,
+          },
+        },
+      });
+    }
+
+    return tx.booking.update({
+      where: { id: bookingId },
+      data: {
+        status: "CANCELLED",
+      },
+      include: bookingInclude,
+    });
+  });
+
+  return cancelledBooking;
+};
 
 module.exports = {
   createBooking,
   getMyBookings,
   getBookingById,
   getBookingSuccess,
+  cancelBooking,
 };

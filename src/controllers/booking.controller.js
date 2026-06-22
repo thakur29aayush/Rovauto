@@ -37,9 +37,18 @@ const getBookingSuccess = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Booking success fetched successfully", booking));
 });
 
+const cancelBooking = asyncHandler(async (req, res) => {
+  const booking = await bookingService.cancelBooking(req.user.id, req.params.id);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Booking cancelled successfully", booking));
+});
+
 module.exports = {
   createBooking,
   getMyBookings,
   getBookingById,
   getBookingSuccess,
+  cancelBooking,
 };

@@ -97,12 +97,36 @@ Landing
      │                      │
      │                      └── Booking Success
      │
-     ├── Booking History
+     ├── Booking History()
      │      └── Booking Details
      │
      ├── My Vehicles()
      ├── Profile()
      ├── Saved Locations ()
-     ├── Reviews
-     ├── Complaints
+     ├── Reviews()
+     ├── Complaints()
      └── Settings()
+
+
+Remaining 
+Security
+⬜ Refresh Token rotation
+⬜ Logout blacklist (if using long-lived JWTs)
+⬜ Account lockout after repeated failed logins
+⬜ OTP resend cooldown
+⬜ OTP attempt limit
+Customer Experience
+⬜ Pagination on bookings/reviews/complaints
+⬜ Search bookings
+⬜ Sort/filter garages more extensively
+⬜ Favorite garages
+⬜ Notification system (booking updates)
+Payment
+⬜ Razorpay webhook verification
+⬜ Refund handling
+⬜ Payment timeout cleanup
+Performance
+⬜ Redis caching (later)
+⬜ Rate limiting per endpoint
+⬜ Logging (e.g. Winston/Pino)
+⬜ API documentation (Swagger/OpenAPI)
