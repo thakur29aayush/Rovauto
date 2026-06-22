@@ -44,7 +44,30 @@ const onboardingValidation = [
     .optional({ nullable: true, checkFalsy: true })
     .trim(),
 ];
+const updateProfileValidation = [
+  body("name")
+    .optional()
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage("Name must be at least 2 characters"),
 
+  body("phone")
+    .optional()
+    .trim()
+    .isLength({ min: 10, max: 15 })
+    .withMessage("Phone number must be 10 to 15 digits"),
+
+  body("address")
+    .optional({ nullable: true, checkFalsy: true })
+    .trim(),
+
+  body("avatarUrl")
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage("Avatar URL must be valid"),
+];
 module.exports = {
   onboardingValidation,
+  updateProfileValidation,
 };
