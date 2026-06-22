@@ -67,7 +67,26 @@ const updateProfileValidation = [
     .isURL()
     .withMessage("Avatar URL must be valid"),
 ];
+const changePasswordValidation = [
+  body("currentPassword")
+    .notEmpty()
+    .withMessage("Current password is required"),
+
+  body("newPassword")
+    .notEmpty()
+    .withMessage("New password is required")
+    .isLength({ min: 8 })
+    .withMessage("New password must be at least 8 characters"),
+];
+
+const deleteAccountValidation = [
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required"),
+];
 module.exports = {
   onboardingValidation,
   updateProfileValidation,
+  changePasswordValidation,
+  deleteAccountValidation,
 };

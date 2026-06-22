@@ -86,7 +86,7 @@ Landing
 ├── Forgot Password()
 ├── Reset Password()
 │
-└── Dashboard
+└── Dashboard()
      │
      ├── Nearby Garages
      ├── Garage Details
@@ -101,8 +101,8 @@ Landing
      │      └── Booking Details
      │
      ├── My Vehicles()
-     ├── Profile
+     ├── Profile()
      ├── Saved Locations ()
      ├── Reviews
      ├── Complaints
-     └── Settings
+     └── Settings()

@@ -1,5 +1,6 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
+const argon2 = require("argon2");
 
 const completeOnboarding = async (userId, { vehicle, location }) => {
   const user = await prisma.user.findUnique({
@@ -172,8 +173,71 @@ const updateProfile = async (userId, data) => {
 
   return result;
 };
+const changePassword = async (userId, { currentPassword, newPassword }) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const isPasswordValid = await argon2.verify(user.password, currentPassword);
+
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Current password is incorrect");
+  }
+
+  const isSamePassword = await argon2.verify(user.password, newPassword);
+
+  if (isSamePassword) {
+    throw new ApiError(400, "New password cannot be same as current password");
+  }
+
+  const hashedPassword = await argon2.hash(newPassword);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      password: hashedPassword,
+    },
+  });
+
+  return {
+    changed: true,
+  };
+};
+
+const deleteAccount = async (userId, { password }) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const isPasswordValid = await argon2.verify(user.password, password);
+
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Password is incorrect");
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      isActive: false,
+    },
+  });
+
+  return {
+    deleted: true,
+  };
+};
 module.exports = {
   completeOnboarding,
   getProfile,
   updateProfile,
+  changePassword,
+  deleteAccount,
 };
