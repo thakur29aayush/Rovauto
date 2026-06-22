@@ -3,8 +3,13 @@ const ApiError = require("../utils/apiError");
 const generateBookingCode = require("../utils/bookingCode");
 const garageRequestService = require("./garageRequest.service");
 
+const BOOKING_STATUS = require("../constants/bookingStatus");
+const REQUEST_TYPE = require("../constants/requestType");
+const PAYMENT_STATUS = require("../constants/paymentStatus");
+
 const SOS_CHARGE = 50;
 const SOS_ESTIMATED_AMOUNT = 500;
+const SOS_SERVICE_NAME = "SOS Emergency Assistance";
 
 const createSosRequest = async (userId, data) => {
   const { vehicleId, latitude, longitude, address, note } = data;
@@ -28,44 +33,19 @@ const createSosRequest = async (userId, data) => {
     throw new ApiError(400, "Insufficient RovAuto coins for SOS");
   }
 
-  const sosCategory = await prisma.serviceCategory.upsert({
+  const sosService = await prisma.service.findFirst({
     where: {
-      name: "SOS",
-    },
-    update: {},
-    create: {
-      name: "SOS",
-      description: "Emergency roadside assistance",
+      name: SOS_SERVICE_NAME,
       isActive: true,
     },
   });
 
-  const sosService = await prisma.service.upsert({
-    where: {
-      id: "sos-service-fixed-id",
-    },
-    update: {
-      categoryId: sosCategory.id,
-      name: "SOS Emergency Assistance",
-      description: "Emergency garage assistance request",
-      basePrice: SOS_ESTIMATED_AMOUNT,
-      minPrice: 500,
-      maxPrice: 2000,
-      durationMin: 30,
-      isActive: true,
-    },
-    create: {
-      id: "sos-service-fixed-id",
-      categoryId: sosCategory.id,
-      name: "SOS Emergency Assistance",
-      description: "Emergency garage assistance request",
-      basePrice: SOS_ESTIMATED_AMOUNT,
-      minPrice: 500,
-      maxPrice: 2000,
-      durationMin: 30,
-      isActive: true,
-    },
-  });
+  if (!sosService) {
+    throw new ApiError(
+      500,
+      "SOS service is not configured. Run seedServices first."
+    );
+  }
 
   const bookingCode = await generateBookingCode();
 
@@ -77,11 +57,11 @@ const createSosRequest = async (userId, data) => {
 
       bookingCode,
 
-      requestType: "SOS",
-      status: "SEARCHING_GARAGE",
+      requestType: REQUEST_TYPE.SOS,
+      status: BOOKING_STATUS.SEARCHING_GARAGE,
 
-      customerLatitude: latitude,
-      customerLongitude: longitude,
+      customerLatitude: Number(latitude),
+      customerLongitude: Number(longitude),
       customerAddress: address || null,
 
       customerNote: note || "SOS emergency request",
@@ -103,7 +83,7 @@ const createSosRequest = async (userId, data) => {
         create: {
           amount: 0,
           currency: "INR",
-          status: "PAID",
+          status: PAYMENT_STATUS.PAID,
           walletAmountUsed: 0,
           upiAmountPaid: 0,
         },
@@ -113,25 +93,42 @@ const createSosRequest = async (userId, data) => {
       vehicle: true,
       services: {
         include: {
-          service: true,
+          service: {
+            include: {
+              category: true,
+              media: true,
+            },
+          },
         },
       },
       payment: true,
     },
   });
 
-  const requests = await garageRequestService.broadcastBookingToNearbyGarages(
-    booking.id,
-    {
-      maxDistance: 15,
-    }
-  );
+  try {
+    const requests = await garageRequestService.broadcastBookingToNearbyGarages(
+      booking.id,
+      {
+        maxDistance: 15,
+      }
+    );
 
-  return {
-    booking,
-    requests,
-    message: "SOS signal sent to nearby garages",
-  };
+    return {
+      booking,
+      requests,
+      message: "SOS signal sent to nearby garages",
+    };
+  } catch (error) {
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        status: BOOKING_STATUS.EXPIRED,
+        expiredAt: new Date(),
+      },
+    });
+
+    throw error;
+  }
 };
 
 const getSosRequestById = async (userId, bookingId) => {
@@ -139,7 +136,7 @@ const getSosRequestById = async (userId, bookingId) => {
     where: {
       id: bookingId,
       userId,
-      requestType: "SOS",
+      requestType: REQUEST_TYPE.SOS,
     },
     include: {
       vehicle: true,

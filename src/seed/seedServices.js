@@ -204,6 +204,19 @@ async function main() {
         },
       ],
     },
+    {
+      name: "Emergency",
+      services: [
+        {
+          name: "SOS Emergency Assistance",
+          description: "Emergency roadside assistance request sent to nearby garages.",
+          basePrice: 500,
+          minPrice: 500,
+          maxPrice: 2000,
+          durationMin: 30,
+        },
+      ],
+    },
   ];
 
   for (const category of categories) {
@@ -265,7 +278,9 @@ async function main() {
             serviceId: service.id,
             mediaType: "IMAGE",
             url,
-            publicId: `seed/${service.name.toLowerCase().replaceAll(" ", "-")}-${index}`,
+            publicId: `seed/${service.name
+              .toLowerCase()
+              .replaceAll(" ", "-")}-${index}`,
             order: index,
             isThumbnail: index === 0,
           })),
