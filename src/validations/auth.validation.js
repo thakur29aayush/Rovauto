@@ -68,9 +68,44 @@ const loginValidation = [
     .withMessage("Password is required"),
 ];
 
+const forgotPasswordValidation = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Please enter a valid email")
+    .normalizeEmail(),
+];
+
+const resetPasswordValidation = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Please enter a valid email")
+    .normalizeEmail(),
+
+  body("otp")
+    .trim()
+    .notEmpty()
+    .withMessage("OTP is required")
+    .isLength({ min: 6, max: 6 })
+    .withMessage("OTP must be 6 digits"),
+
+  body("newPassword")
+    .notEmpty()
+    .withMessage("New password is required")
+    .isLength({ min: 8 })
+    .withMessage("New password must be at least 8 characters"),
+];
+
 module.exports = {
   signupValidation,
   verifyOtpValidation,
   resendOtpValidation,
   loginValidation,
+  forgotPasswordValidation,
+  resetPasswordValidation,
 };

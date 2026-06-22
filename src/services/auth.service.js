@@ -2,7 +2,10 @@ const argon2 = require("argon2");
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
 const hashOtp = require("../utils/hashOtp");
-const { createSignupOtp } = require("./otp.service");
+const {
+  createSignupOtp,
+  createResetPasswordOtp,
+} = require("./otp.service");
 const { createAuthToken } = require("./token.service");
 
 const signup = async ({ name, email, phone, password }) => {
@@ -195,10 +198,84 @@ const getMe = async (userId) => {
   return user;
 };
 
+
+const forgotPassword = async ({ email }) => {
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  if (!user.isActive) {
+    throw new ApiError(403, "Account is disabled");
+  }
+
+  await createResetPasswordOtp(user.id, user.email);
+
+  return {
+    message: "Password reset OTP sent successfully",
+  };
+};
+
+const resetPassword = async ({ email, otp, newPassword }) => {
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const otpHash = hashOtp(otp);
+
+  const validOtp = await prisma.otp.findFirst({
+    where: {
+      userId: user.id,
+      otpHash,
+      purpose: "RESET_PASSWORD",
+      usedAt: null,
+      expiresAt: {
+        gt: new Date(),
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  if (!validOtp) {
+    throw new ApiError(400, "Invalid or expired OTP");
+  }
+
+  const hashedPassword = await argon2.hash(newPassword);
+
+  await prisma.$transaction([
+    prisma.otp.update({
+      where: { id: validOtp.id },
+      data: { usedAt: new Date() },
+    }),
+
+    prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+      },
+    }),
+  ]);
+
+  return {
+    message: "Password reset successful",
+  };
+};
+
 module.exports = {
   signup,
   verifyOtp,
   resendOtp,
   login,
   getMe,
+  forgotPassword,
+  resetPassword,
 };

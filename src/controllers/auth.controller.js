@@ -42,10 +42,28 @@ const me = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "User fetched successfully", user));
 });
 
+const forgotPassword = asyncHandler(async (req, res) => {
+  const result = await authService.forgotPassword(req.body);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Password reset OTP sent successfully", result));
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const result = await authService.resetPassword(req.body);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Password reset successful", result));
+});
+
 module.exports = {
   signup,
   verifyOtp,
   resendOtp,
   login,
   me,
+  forgotPassword,
+  resetPassword,
 };
