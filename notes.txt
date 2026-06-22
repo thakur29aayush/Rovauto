@@ -80,11 +80,11 @@ Complete Customer Navigation
 
 Landing
 │
-├── Login
-├── Signup
-├── Verify OTP
-├── Forgot Password
-├── Reset Password
+├── Login()
+├── Signup()
+├── Verify OTP()
+├── Forgot Password()
+├── Reset Password()
 │
 └── Dashboard
      │
@@ -100,9 +100,9 @@ Landing
      ├── Booking History
      │      └── Booking Details
      │
-     ├── My Vehicles
+     ├── My Vehicles()
      ├── Profile
-     ├── Saved Locations
+     ├── Saved Locations ()
      ├── Reviews
      ├── Complaints
      └── Settings

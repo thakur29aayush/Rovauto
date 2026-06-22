@@ -3,7 +3,10 @@ const express = require("express");
 const customerController = require("../controllers/customer.controller");
 const { protect } = require("../middlewares/auth.middleware");
 const validate = require("../middlewares/validate.middleware");
-const { onboardingValidation } = require("../validations/customer.validation");
+const {
+  onboardingValidation,
+  updateProfileValidation,
+} = require("../validations/customer.validation");
 
 const router = express.Router();
 
@@ -13,6 +16,16 @@ router.post(
   onboardingValidation,
   validate,
   customerController.completeOnboarding
+);
+
+router.get("/profile", protect, customerController.getProfile);
+
+router.patch(
+  "/profile",
+  protect,
+  updateProfileValidation,
+  validate,
+  customerController.updateProfile
 );
 
 module.exports = router;

@@ -73,7 +73,107 @@ const completeOnboarding = async (userId, { vehicle, location }) => {
 
   return result;
 };
+const getProfile = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      isEmailVerified: true,
+      isPhoneVerified: true,
+      isOnboarded: true,
+      isActive: true,
+      customerProfile: true,
+      vehicles: {
+        orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+      },
+      locations: {
+        orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+      },
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
 
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return user;
+};
+
+const updateProfile = async (userId, data) => {
+  const existingUser = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      customerProfile: true,
+    },
+  });
+
+  if (!existingUser) {
+    throw new ApiError(404, "User not found");
+  }
+
+  if (data.phone && data.phone !== existingUser.phone) {
+    const phoneExists = await prisma.user.findUnique({
+      where: { phone: data.phone },
+    });
+
+    if (phoneExists) {
+      throw new ApiError(409, "Phone number already in use");
+    }
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedUser = await tx.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.phone !== undefined && { phone: data.phone }),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        isEmailVerified: true,
+        isPhoneVerified: true,
+        isOnboarded: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    const updatedProfile = await tx.customerProfile.upsert({
+      where: { userId },
+      update: {
+        ...(data.address !== undefined && { address: data.address || null }),
+        ...(data.avatarUrl !== undefined && {
+          avatarUrl: data.avatarUrl || null,
+        }),
+      },
+      create: {
+        userId,
+        address: data.address || null,
+        avatarUrl: data.avatarUrl || null,
+      },
+    });
+
+    return {
+      ...updatedUser,
+      customerProfile: updatedProfile,
+    };
+  });
+
+  return result;
+};
 module.exports = {
   completeOnboarding,
+  getProfile,
+  updateProfile,
 };
