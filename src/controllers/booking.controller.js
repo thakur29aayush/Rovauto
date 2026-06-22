@@ -11,7 +11,7 @@ const createBooking = asyncHandler(async (req, res) => {
 });
 
 const getMyBookings = asyncHandler(async (req, res) => {
-  const bookings = await bookingService.getMyBookings(req.user.id);
+  const bookings = await bookingService.getMyBookings(req.user.id, req.query);
 
   return res
     .status(200)

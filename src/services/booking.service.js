@@ -117,11 +117,18 @@ const createBooking = async (userId, data) => {
   return booking;
 };
 
-const getMyBookings = async (userId) => {
+const getMyBookings = async (userId, query = {}) => {
+  const { status } = query;
+
   return prisma.booking.findMany({
-    where: { userId },
+    where: {
+      userId,
+      ...(status && { status }),
+    },
     include: bookingInclude,
-    orderBy: { createdAt: "desc" },
+    orderBy: {
+      createdAt: "desc",
+    },
   });
 };
 
