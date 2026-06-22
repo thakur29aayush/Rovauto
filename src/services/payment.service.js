@@ -2,6 +2,34 @@ const prisma = require("../config/prisma");
 const razorpay = require("../config/razorpay");
 const ApiError = require("../utils/apiError");
 const verifyRazorpaySignature = require("../utils/razorpaySignature");
+const garageRequestService = require("./garageRequest.service");
+
+const bookingInclude = {
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+    },
+  },
+  vehicle: true,
+  garage: true,
+  services: {
+    include: {
+      service: {
+        include: {
+          category: true,
+          media: {
+            orderBy: [{ isThumbnail: "desc" }, { order: "asc" }],
+          },
+        },
+      },
+    },
+  },
+  payment: true,
+  broadcasts: true,
+};
 
 const createPaymentOrder = async (userId, { bookingId }) => {
   const booking = await prisma.booking.findFirst({
@@ -26,7 +54,11 @@ const createPaymentOrder = async (userId, { bookingId }) => {
     throw new ApiError(400, "Payment already completed");
   }
 
-  const amount = booking.handlingFee || 99;
+  const amount = booking.payableAmount || booking.handlingFee || 99;
+
+  if (amount <= 0) {
+    throw new ApiError(400, "No online payment required for this booking");
+  }
 
   const razorpayOrder = await razorpay.orders.create({
     amount: amount * 100,
@@ -47,6 +79,7 @@ const createPaymentOrder = async (userId, { bookingId }) => {
       currency: "INR",
       status: "CREATED",
       razorpayOrderId: razorpayOrder.id,
+      upiAmountPaid: amount,
     },
     create: {
       bookingId: booking.id,
@@ -54,6 +87,8 @@ const createPaymentOrder = async (userId, { bookingId }) => {
       currency: "INR",
       status: "CREATED",
       razorpayOrderId: razorpayOrder.id,
+      walletAmountUsed: booking.walletAmountUsed || 0,
+      upiAmountPaid: amount,
     },
   });
 
@@ -80,6 +115,7 @@ const verifyPayment = async (
     },
     include: {
       payment: true,
+      services: true,
     },
   });
 
@@ -89,6 +125,10 @@ const verifyPayment = async (
 
   if (!booking.payment) {
     throw new ApiError(404, "Payment order not found");
+  }
+
+  if (booking.payment.status === "PAID") {
+    throw new ApiError(400, "Payment already verified");
   }
 
   if (booking.payment.razorpayOrderId !== razorpayOrderId) {
@@ -104,7 +144,9 @@ const verifyPayment = async (
   if (!isValidSignature) {
     await prisma.payment.update({
       where: { bookingId },
-      data: { status: "FAILED" },
+      data: {
+        status: "FAILED",
+      },
     });
 
     throw new ApiError(400, "Invalid payment signature");
@@ -112,7 +154,9 @@ const verifyPayment = async (
 
   const result = await prisma.$transaction(async (tx) => {
     const payment = await tx.payment.update({
-      where: { bookingId },
+      where: {
+        bookingId,
+      },
       data: {
         status: "PAID",
         razorpayPaymentId,
@@ -120,39 +164,46 @@ const verifyPayment = async (
       },
     });
 
-    const confirmedBooking = await tx.booking.update({
-      where: { id: bookingId },
+    const updatedBooking = await tx.booking.update({
+      where: {
+        id: bookingId,
+      },
       data: {
-        status: "CONFIRMED",
+        status: "SEARCHING_GARAGE",
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-          },
-        },
-        vehicle: true,
-        garage: true,
-        service: {
-          include: {
-            category: true,
-          },
-        },
-        slot: true,
-        payment: true,
-      },
+      include: bookingInclude,
     });
 
     return {
       payment,
-      booking: confirmedBooking,
+      booking: updatedBooking,
     };
   });
 
-  return result;
+  let broadcastRequests = [];
+
+  try {
+    broadcastRequests =
+      await garageRequestService.broadcastBookingToNearbyGarages(bookingId);
+  } catch (error) {
+    await prisma.booking.update({
+      where: {
+        id: bookingId,
+      },
+      data: {
+        status: "EXPIRED",
+        expiredAt: new Date(),
+      },
+    });
+
+    throw error;
+  }
+
+  return {
+    ...result,
+    broadcastRequests,
+    message: "Payment verified. Request sent to nearby garages.",
+  };
 };
 
 module.exports = {

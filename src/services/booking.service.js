@@ -1,9 +1,6 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
-
-const generateBookingCode = () => {
-  return `PX-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
-};
+const generateBookingCode = require("../utils/bookingCode");
 
 const bookingInclude = {
   user: {
@@ -16,19 +13,69 @@ const bookingInclude = {
   },
   vehicle: true,
   garage: true,
-  service: {
+  services: {
     include: {
-      category: true,
+      service: {
+        include: {
+          category: true,
+          media: {
+            orderBy: [{ isThumbnail: "desc" }, { order: "asc" }],
+          },
+        },
+      },
     },
   },
-  slot: true,
   payment: true,
+  broadcasts: {
+    include: {
+      garage: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  },
+  review: true,
+  complaints: true,
+};
+
+const calculateHandlingFee = (totalServiceAmount) => {
+  if (totalServiceAmount >= 300 && totalServiceAmount < 1000) return 30;
+  if (totalServiceAmount >= 1000 && totalServiceAmount < 5000) return 99;
+  if (totalServiceAmount >= 5000 && totalServiceAmount < 20000) return 249;
+  if (totalServiceAmount >= 20000) return 500;
+
+  return 99;
+};
+
+const getServiceEstimatedPrice = (service) => {
+  return service.basePrice || service.minPrice || 0;
 };
 
 const createBooking = async (userId, data) => {
+  const {
+    vehicleId,
+    serviceIds,
+    scheduledDate,
+    startTime,
+    endTime,
+    customerNote,
+    location,
+    useWalletCoins = 0,
+  } = data;
+
+  if (!Array.isArray(serviceIds) || serviceIds.length === 0) {
+    throw new ApiError(400, "At least one service is required");
+  }
+
+  if (!location?.latitude || !location?.longitude) {
+    throw new ApiError(400, "Customer location is required");
+  }
+
+  const uniqueServiceIds = [...new Set(serviceIds)];
+
   const vehicle = await prisma.vehicle.findFirst({
     where: {
-      id: data.vehicleId,
+      id: vehicleId,
       userId,
     },
   });
@@ -37,60 +84,80 @@ const createBooking = async (userId, data) => {
     throw new ApiError(404, "Vehicle not found");
   }
 
-  const garage = await prisma.garage.findFirst({
+  const services = await prisma.service.findMany({
     where: {
-      id: data.garageId,
+      id: {
+        in: uniqueServiceIds,
+      },
       isActive: true,
     },
   });
 
-  if (!garage) {
-    throw new ApiError(404, "Garage not found");
+  if (services.length !== uniqueServiceIds.length) {
+    throw new ApiError(404, "One or more services are invalid");
   }
 
-  const garageService = await prisma.garageService.findFirst({
-    where: {
-      garageId: data.garageId,
-      serviceId: data.serviceId,
-      isActive: true,
-    },
-    include: {
-      service: true,
-    },
-  });
+  const totalServiceAmount = services.reduce((sum, service) => {
+    return sum + getServiceEstimatedPrice(service);
+  }, 0);
 
-  if (!garageService) {
-    throw new ApiError(404, "Service not available at this garage");
-  }
+  const handlingFee = calculateHandlingFee(totalServiceAmount);
 
-  let slot = null;
+  let walletAmountUsed = 0;
 
-  if (data.slotId) {
-    slot = await prisma.garageSlot.findFirst({
+  if (Number(useWalletCoins) > 0) {
+    const wallet = await prisma.wallet.findUnique({
       where: {
-        id: data.slotId,
-        garageId: data.garageId,
-        isActive: true,
+        userId,
       },
     });
 
-    if (!slot) {
-      throw new ApiError(404, "Slot not found");
+    if (!wallet) {
+      throw new ApiError(404, "Wallet not found");
     }
 
-    if (slot.bookedCount >= slot.capacity) {
-      throw new ApiError(400, "Slot is already full");
+    if (wallet.balance < Number(useWalletCoins)) {
+      throw new ApiError(400, "Insufficient wallet balance");
     }
+
+    walletAmountUsed = Math.min(Number(useWalletCoins), handlingFee);
   }
 
+  const payableAmount = handlingFee - walletAmountUsed;
+  const bookingCode = await generateBookingCode();
+
   const booking = await prisma.$transaction(async (tx) => {
-    if (slot) {
-      await tx.garageSlot.update({
-        where: { id: slot.id },
+    if (walletAmountUsed > 0) {
+      const wallet = await tx.wallet.findUnique({
+        where: {
+          userId,
+        },
+      });
+
+      if (!wallet || wallet.balance < walletAmountUsed) {
+        throw new ApiError(400, "Insufficient wallet balance");
+      }
+
+      const balanceAfter = wallet.balance - walletAmountUsed;
+
+      await tx.wallet.update({
+        where: {
+          id: wallet.id,
+        },
         data: {
-          bookedCount: {
-            increment: 1,
-          },
+          balance: balanceAfter,
+        },
+      });
+
+      await tx.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          userId,
+          type: "BOOKING_PAYMENT",
+          status: "SUCCESS",
+          amount: walletAmountUsed,
+          balanceAfter,
+          description: "Wallet coins used for booking handling fee",
         },
       });
     }
@@ -98,17 +165,46 @@ const createBooking = async (userId, data) => {
     return tx.booking.create({
       data: {
         userId,
-        vehicleId: data.vehicleId,
-        garageId: data.garageId,
-        serviceId: data.serviceId,
-        slotId: data.slotId || null,
-        bookingCode: generateBookingCode(),
-        scheduledDate: new Date(data.scheduledDate),
-        startTime: data.startTime,
-        endTime: data.endTime || null,
-        customerNote: data.customerNote || null,
-        status: "PENDING_PAYMENT",
-        handlingFee: 99,
+        vehicleId,
+        garageId: null,
+
+        bookingCode,
+
+        scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
+        startTime: startTime || null,
+        endTime: endTime || null,
+
+        requestType: "NORMAL",
+        status: payableAmount > 0 ? "PENDING_PAYMENT" : "SEARCHING_GARAGE",
+
+        customerLatitude: Number(location.latitude),
+        customerLongitude: Number(location.longitude),
+        customerAddress: location.address || null,
+
+        customerNote: customerNote || null,
+
+        handlingFee,
+        totalServiceAmount,
+        walletAmountUsed,
+        payableAmount,
+
+        services: {
+          create: services.map((service) => ({
+            serviceId: service.id,
+            quantity: 1,
+            estimatedPrice: getServiceEstimatedPrice(service),
+          })),
+        },
+
+        payment: {
+          create: {
+            amount: payableAmount,
+            currency: "INR",
+            status: payableAmount > 0 ? "CREATED" : "PAID",
+            walletAmountUsed,
+            upiAmountPaid: payableAmount,
+          },
+        },
       },
       include: bookingInclude,
     });
@@ -151,8 +247,16 @@ const getBookingById = async (userId, bookingId) => {
 const getBookingSuccess = async (userId, bookingId) => {
   const booking = await getBookingById(userId, bookingId);
 
-  if (booking.status !== "CONFIRMED") {
-    throw new ApiError(400, "Booking is not confirmed yet");
+  if (
+    !["GARAGE_ASSIGNED", "CONFIRMED", "IN_PROGRESS", "COMPLETED"].includes(
+      booking.status
+    )
+  ) {
+    throw new ApiError(400, "Garage has not accepted this booking yet");
+  }
+
+  if (!booking.garage) {
+    throw new ApiError(400, "Garage not assigned yet");
   }
 
   return {
@@ -163,6 +267,7 @@ const getBookingSuccess = async (userId, bookingId) => {
     directionsLink: `https://www.google.com/maps?q=${booking.garage.latitude},${booking.garage.longitude}`,
   };
 };
+
 const cancelBooking = async (userId, bookingId) => {
   const booking = await prisma.booking.findFirst({
     where: {
@@ -170,7 +275,6 @@ const cancelBooking = async (userId, bookingId) => {
       userId,
     },
     include: {
-      slot: true,
       payment: true,
     },
   });
@@ -179,35 +283,39 @@ const cancelBooking = async (userId, bookingId) => {
     throw new ApiError(404, "Booking not found");
   }
 
-  if (!["PENDING_PAYMENT", "CONFIRMED"].includes(booking.status)) {
-    throw new ApiError(
-      400,
-      "Only pending or confirmed bookings can be cancelled"
-    );
+  if (
+    ![
+      "PENDING_PAYMENT",
+      "SEARCHING_GARAGE",
+      "GARAGE_ASSIGNED",
+      "CONFIRMED",
+    ].includes(booking.status)
+  ) {
+    throw new ApiError(400, "This booking cannot be cancelled");
   }
 
-  const cancelledBooking = await prisma.$transaction(async (tx) => {
-    if (booking.slotId && booking.slot) {
-      await tx.garageSlot.update({
-        where: { id: booking.slotId },
-        data: {
-          bookedCount: {
-            decrement: booking.slot.bookedCount > 0 ? 1 : 0,
-          },
-        },
-      });
-    }
+  return prisma.$transaction(async (tx) => {
+    await tx.garageBroadcastRequest.updateMany({
+      where: {
+        bookingId,
+        status: "SENT",
+      },
+      data: {
+        status: "EXPIRED",
+        expiredAt: new Date(),
+      },
+    });
 
     return tx.booking.update({
-      where: { id: bookingId },
+      where: {
+        id: bookingId,
+      },
       data: {
         status: "CANCELLED",
       },
       include: bookingInclude,
     });
   });
-
-  return cancelledBooking;
 };
 
 module.exports = {

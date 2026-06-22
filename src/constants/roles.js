@@ -1,0 +1,5 @@
+module.exports = {
+  CUSTOMER: "CUSTOMER",
+  GARAGE_OWNER: "GARAGE_OWNER",
+  ADMIN: "ADMIN",
+};

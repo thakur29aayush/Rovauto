@@ -13,11 +13,29 @@ const router = express.Router();
 
 router.use(protect);
 
-router
-  .route("/")
-  .post(createBookingValidation, validate, bookingController.createBooking)
-  .get(bookingController.getMyBookings);
+/**
+ * Customer booking routes
+ *
+ * POST /api/bookings/checkout
+ * Customer selects multiple services and creates booking.
+ */
+router.post(
+  "/checkout",
+  createBookingValidation,
+  validate,
+  bookingController.createBooking
+);
 
+/**
+ * GET /api/bookings
+ * Get logged-in customer's bookings.
+ */
+router.get("/", bookingController.getMyBookings);
+
+/**
+ * GET /api/bookings/:id/success
+ * Show success only after garage is assigned/confirmed.
+ */
 router.get(
   "/:id/success",
   bookingIdValidation,
@@ -25,12 +43,21 @@ router.get(
   bookingController.getBookingSuccess
 );
 
+/**
+ * GET /api/bookings/:id
+ * Booking details.
+ */
 router.get(
   "/:id",
   bookingIdValidation,
   validate,
   bookingController.getBookingById
 );
+
+/**
+ * PATCH /api/bookings/:id/cancel
+ * Cancel booking.
+ */
 router.patch(
   "/:id/cancel",
   bookingIdValidation,

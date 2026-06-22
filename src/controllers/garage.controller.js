@@ -34,18 +34,9 @@ const getGarageServices = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Garage services fetched successfully", services));
 });
 
-const getGarageSlots = asyncHandler(async (req, res) => {
-  const slots = await garageService.getGarageSlots(req.params.id);
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, "Garage slots fetched successfully", slots));
-});
-
 module.exports = {
   getGarages,
   getNearbyGarages,
   getGarageById,
   getGarageServices,
-  getGarageSlots,
 };

@@ -7,7 +7,7 @@ const createBooking = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(new ApiResponse(201, "Booking created successfully", booking));
+    .json(new ApiResponse(201, "Checkout booking created successfully", booking));
 });
 
 const getMyBookings = asyncHandler(async (req, res) => {

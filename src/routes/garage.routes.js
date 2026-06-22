@@ -10,6 +10,5 @@ router.get("/nearby", protect, garageController.getNearbyGarages);
 
 router.get("/:id", garageController.getGarageById);
 router.get("/:id/services", garageController.getGarageServices);
-router.get("/:id/slots", garageController.getGarageSlots);
 
 module.exports = router;

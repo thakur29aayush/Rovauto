@@ -12,18 +12,33 @@ const reviewRoutes = require("./review.routes");
 const complaintRoutes = require("./complaint.routes");
 const garageMediaRoutes = require("./garageMedia.routes");
 
+const walletRoutes = require("./wallet.routes");
+const garageWalletRoutes = require("./garageWallet.routes");
+const garageRequestRoutes = require("./garageRequest.routes");
+const serviceMediaRoutes = require("./serviceMedia.routes");
+const sosRoutes = require("./sos.routes");
+
 const router = express.Router();
 
 router.use("/auth", authRoutes);
 router.use("/customer", customerRoutes);
 router.use("/vehicles", vehicleRoutes);
 router.use("/locations", locationRoutes);
+
 router.use("/services", serviceRoutes);
+router.use("/services", serviceMediaRoutes);
+
 router.use("/garages", garageRoutes);
+router.use("/garages", garageMediaRoutes);
+
 router.use("/bookings", bookingRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/reviews", reviewRoutes);
 router.use("/complaints", complaintRoutes);
-router.use("/garages", garageMediaRoutes);
+
+router.use("/wallet", walletRoutes);
+router.use("/garage/wallet", garageWalletRoutes);
+router.use("/garage/requests", garageRequestRoutes);
+router.use("/sos", sosRoutes);
 
 module.exports = router;

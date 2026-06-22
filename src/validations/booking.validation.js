@@ -6,24 +6,21 @@ const bookingIdValidation = [
 
 const createBookingValidation = [
   body("vehicleId").isUUID().withMessage("Valid vehicle ID is required"),
-  body("garageId").isUUID().withMessage("Valid garage ID is required"),
-  body("serviceId").isUUID().withMessage("Valid service ID is required"),
 
-  body("slotId")
-    .optional({ nullable: true, checkFalsy: true })
-    .isUUID()
-    .withMessage("Invalid slot ID"),
+  body("serviceIds")
+    .isArray({ min: 1 })
+    .withMessage("At least one service is required"),
+
+  body("serviceIds.*").isUUID().withMessage("Each service ID must be valid"),
 
   body("scheduledDate")
-    .notEmpty()
-    .withMessage("Scheduled date is required")
+    .optional({ nullable: true, checkFalsy: true })
     .isISO8601()
     .withMessage("Scheduled date must be valid"),
 
   body("startTime")
-    .trim()
-    .notEmpty()
-    .withMessage("Start time is required"),
+    .optional({ nullable: true, checkFalsy: true })
+    .trim(),
 
   body("endTime")
     .optional({ nullable: true, checkFalsy: true })
@@ -32,6 +29,29 @@ const createBookingValidation = [
   body("customerNote")
     .optional({ nullable: true, checkFalsy: true })
     .trim(),
+
+  body("location")
+    .notEmpty()
+    .withMessage("Customer location is required")
+    .isObject()
+    .withMessage("Location must be an object"),
+
+  body("location.latitude")
+    .isFloat({ min: -90, max: 90 })
+    .withMessage("Valid latitude is required"),
+
+  body("location.longitude")
+    .isFloat({ min: -180, max: 180 })
+    .withMessage("Valid longitude is required"),
+
+  body("location.address")
+    .optional({ nullable: true, checkFalsy: true })
+    .trim(),
+
+  body("useWalletCoins")
+    .optional({ nullable: true })
+    .isInt({ min: 0 })
+    .withMessage("Wallet coins must be a positive number"),
 ];
 
 module.exports = {

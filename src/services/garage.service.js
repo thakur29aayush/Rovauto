@@ -15,6 +15,9 @@ const garageIncludeForList = {
       service: {
         include: {
           category: true,
+          media: {
+            orderBy: [{ isThumbnail: "desc" }, { order: "asc" }],
+          },
         },
       },
     },
@@ -34,18 +37,12 @@ const garageIncludeForDetails = {
       service: {
         include: {
           category: true,
+          media: {
+            orderBy: [{ isThumbnail: "desc" }, { order: "asc" }],
+          },
         },
       },
     },
-  },
-  slots: {
-    where: {
-      isActive: true,
-      date: {
-        gte: new Date(),
-      },
-    },
-    orderBy: [{ date: "asc" }, { startTime: "asc" }],
   },
   reviews: {
     take: 10,
@@ -61,13 +58,52 @@ const garageIncludeForDetails = {
       },
     },
   },
+  wallet: true,
+};
+
+const isGarageOpenNow = (garage) => {
+  if (!garage.openingTime || !garage.closingTime) return true;
+
+  const currentTime = new Date().toTimeString().slice(0, 5);
+
+  return garage.openingTime <= currentTime && garage.closingTime >= currentTime;
+};
+
+const buildGarageServiceFilter = (serviceIds = []) => {
+  if (!Array.isArray(serviceIds) || serviceIds.length === 0) return {};
+
+  const uniqueServiceIds = [...new Set(serviceIds)];
+
+  return {
+    AND: uniqueServiceIds.map((serviceId) => ({
+      services: {
+        some: {
+          serviceId,
+          isActive: true,
+        },
+      },
+    })),
+  };
 };
 
 const getGarages = async (query = {}) => {
-  const { search, city, area, verified, serviceId, minRating, openNow } = query;
+  const {
+    search,
+    city,
+    area,
+    verified,
+    serviceId,
+    serviceIds,
+    minRating,
+    openNow,
+  } = query;
+
+  const finalServiceIds = serviceIds || (serviceId ? [serviceId] : []);
 
   const where = {
     isActive: true,
+
+    ...buildGarageServiceFilter(finalServiceIds),
 
     ...(city && {
       city: {
@@ -121,15 +157,6 @@ const getGarages = async (query = {}) => {
         },
       ],
     }),
-
-    ...(serviceId && {
-      services: {
-        some: {
-          serviceId,
-          isActive: true,
-        },
-      },
-    }),
   };
 
   let garages = await prisma.garage.findMany({
@@ -139,24 +166,24 @@ const getGarages = async (query = {}) => {
   });
 
   if (openNow === "true") {
-    const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 5);
-
-    garages = garages.filter((garage) => {
-      if (!garage.openingTime || !garage.closingTime) return true;
-
-      return (
-        garage.openingTime <= currentTime &&
-        garage.closingTime >= currentTime
-      );
-    });
+    garages = garages.filter(isGarageOpenNow);
   }
 
-  return garages;
+  return garages.map((garage) => ({
+    ...garage,
+    thumbnail: garage.images.find((image) => image.isThumbnail === true) || null,
+  }));
 };
 
 const getNearbyGarages = async (userId, query = {}) => {
-  const { maxDistance = 10, serviceId, verified, minRating, openNow } = query;
+  const {
+    maxDistance = 10,
+    serviceId,
+    serviceIds,
+    verified,
+    minRating,
+    openNow,
+  } = query;
 
   const defaultLocation = await prisma.customerLocation.findFirst({
     where: {
@@ -169,18 +196,18 @@ const getNearbyGarages = async (userId, query = {}) => {
     throw new ApiError(404, "Default location not found");
   }
 
+  const finalServiceIds = serviceIds || (serviceId ? [serviceId] : []);
+
   let garages = await getGarages({
-    serviceId,
+    serviceIds: finalServiceIds,
     verified,
     minRating,
     openNow,
   });
 
-  garages = garages
+  return garages
     .map((garage) => ({
       ...garage,
-      thumbnail:
-        garage.images.find((image) => image.isThumbnail === true) || null,
       distanceKm: calculateDistanceKm(
         defaultLocation.latitude,
         defaultLocation.longitude,
@@ -190,8 +217,69 @@ const getNearbyGarages = async (userId, query = {}) => {
     }))
     .filter((garage) => garage.distanceKm <= Number(maxDistance))
     .sort((a, b) => a.distanceKm - b.distanceKm);
+};
 
-  return garages;
+const findNearbyEligibleGarages = async ({
+  latitude,
+  longitude,
+  serviceIds = [],
+  maxDistance = 10,
+  onlyVerified = true,
+  requireOpenNow = true,
+  requireWalletBalance = false,
+  minGarageWalletBalance = 0,
+}) => {
+  if (!latitude || !longitude) {
+    throw new ApiError(400, "Customer location is required");
+  }
+
+  if (!Array.isArray(serviceIds) || serviceIds.length === 0) {
+    throw new ApiError(400, "At least one service is required");
+  }
+
+  let garages = await prisma.garage.findMany({
+    where: {
+      isActive: true,
+
+      ...(onlyVerified && {
+        isVerified: true,
+      }),
+
+      ...buildGarageServiceFilter(serviceIds),
+
+      ...(requireWalletBalance && {
+        wallet: {
+          balance: {
+            gte: minGarageWalletBalance,
+          },
+        },
+      }),
+    },
+    include: {
+      ...garageIncludeForList,
+      wallet: true,
+    },
+    orderBy: [{ isVerified: "desc" }, { ratingAvg: "desc" }],
+  });
+
+  if (requireOpenNow) {
+    garages = garages.filter(isGarageOpenNow);
+  }
+
+  return garages
+    .map((garage) => ({
+      ...garage,
+      thumbnail:
+        garage.images.find((image) => image.isThumbnail === true) || null,
+      distanceKm: calculateDistanceKm(
+        latitude,
+        longitude,
+        garage.latitude,
+        garage.longitude
+      ),
+    }))
+    .filter((garage) => garage.distanceKm <= Number(maxDistance))
+    .sort((a, b) => a.distanceKm - b.distanceKm);
 };
 
 const getGarageById = async (garageId) => {
@@ -210,9 +298,6 @@ const getGarageById = async (garageId) => {
   return {
     ...garage,
     thumbnail: garage.images.find((image) => image.isThumbnail === true) || null,
-    availableSlots: garage.slots.filter(
-      (slot) => slot.bookedCount < slot.capacity
-    ),
   };
 };
 
@@ -237,6 +322,9 @@ const getGarageServices = async (garageId) => {
       service: {
         include: {
           category: true,
+          media: {
+            orderBy: [{ isThumbnail: "desc" }, { order: "asc" }],
+          },
         },
       },
     },
@@ -246,36 +334,10 @@ const getGarageServices = async (garageId) => {
   });
 };
 
-const getGarageSlots = async (garageId) => {
-  const garage = await prisma.garage.findFirst({
-    where: {
-      id: garageId,
-      isActive: true,
-    },
-  });
-
-  if (!garage) {
-    throw new ApiError(404, "Garage not found");
-  }
-
-  const slots = await prisma.garageSlot.findMany({
-    where: {
-      garageId,
-      isActive: true,
-      date: {
-        gte: new Date(),
-      },
-    },
-    orderBy: [{ date: "asc" }, { startTime: "asc" }],
-  });
-
-  return slots.filter((slot) => slot.bookedCount < slot.capacity);
-};
-
 module.exports = {
   getGarages,
   getNearbyGarages,
+  findNearbyEligibleGarages,
   getGarageById,
   getGarageServices,
-  getGarageSlots,
 };
