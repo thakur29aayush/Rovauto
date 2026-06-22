@@ -2,31 +2,126 @@ const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
 const calculateDistanceKm = require("../utils/distance");
 
-const getGarages = async (query) => {
-  const {
-    search,
-    city,
-    area,
-    verified,
-    serviceId,
-    minRating,
-    openNow,
-  } = query;
+const garageIncludeForList = {
+  images: {
+    orderBy: [{ isThumbnail: "desc" }, { order: "asc" }],
+  },
+  videos: {
+    orderBy: { order: "asc" },
+  },
+  services: {
+    where: { isActive: true },
+    include: {
+      service: {
+        include: {
+          category: true,
+        },
+      },
+    },
+  },
+};
+
+const garageIncludeForDetails = {
+  images: {
+    orderBy: [{ isThumbnail: "desc" }, { order: "asc" }],
+  },
+  videos: {
+    orderBy: { order: "asc" },
+  },
+  services: {
+    where: { isActive: true },
+    include: {
+      service: {
+        include: {
+          category: true,
+        },
+      },
+    },
+  },
+  slots: {
+    where: {
+      isActive: true,
+      date: {
+        gte: new Date(),
+      },
+    },
+    orderBy: [{ date: "asc" }, { startTime: "asc" }],
+  },
+  reviews: {
+    take: 10,
+    orderBy: {
+      createdAt: "desc",
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  },
+};
+
+const getGarages = async (query = {}) => {
+  const { search, city, area, verified, serviceId, minRating, openNow } = query;
 
   const where = {
     isActive: true,
-    ...(city && { city: { contains: city, mode: "insensitive" } }),
-    ...(area && { area: { contains: area, mode: "insensitive" } }),
-    ...(verified === "true" && { isVerified: true }),
-    ...(minRating && { ratingAvg: { gte: Number(minRating) } }),
+
+    ...(city && {
+      city: {
+        contains: city,
+        mode: "insensitive",
+      },
+    }),
+
+    ...(area && {
+      area: {
+        contains: area,
+        mode: "insensitive",
+      },
+    }),
+
+    ...(verified === "true" && {
+      isVerified: true,
+    }),
+
+    ...(minRating && {
+      ratingAvg: {
+        gte: Number(minRating),
+      },
+    }),
+
     ...(search && {
       OR: [
-        { name: { contains: search, mode: "insensitive" } },
-        { area: { contains: search, mode: "insensitive" } },
-        { city: { contains: search, mode: "insensitive" } },
-        { address: { contains: search, mode: "insensitive" } },
+        {
+          name: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          area: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          city: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          address: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
       ],
     }),
+
     ...(serviceId && {
       services: {
         some: {
@@ -39,18 +134,7 @@ const getGarages = async (query) => {
 
   let garages = await prisma.garage.findMany({
     where,
-    include: {
-      services: {
-        where: { isActive: true },
-        include: {
-          service: {
-            include: {
-              category: true,
-            },
-          },
-        },
-      },
-    },
+    include: garageIncludeForList,
     orderBy: [{ isVerified: "desc" }, { ratingAvg: "desc" }],
   });
 
@@ -60,14 +144,18 @@ const getGarages = async (query) => {
 
     garages = garages.filter((garage) => {
       if (!garage.openingTime || !garage.closingTime) return true;
-      return garage.openingTime <= currentTime && garage.closingTime >= currentTime;
+
+      return (
+        garage.openingTime <= currentTime &&
+        garage.closingTime >= currentTime
+      );
     });
   }
 
   return garages;
 };
 
-const getNearbyGarages = async (userId, query) => {
+const getNearbyGarages = async (userId, query = {}) => {
   const { maxDistance = 10, serviceId, verified, minRating, openNow } = query;
 
   const defaultLocation = await prisma.customerLocation.findFirst({
@@ -91,6 +179,8 @@ const getNearbyGarages = async (userId, query) => {
   garages = garages
     .map((garage) => ({
       ...garage,
+      thumbnail:
+        garage.images.find((image) => image.isThumbnail === true) || null,
       distanceKm: calculateDistanceKm(
         defaultLocation.latitude,
         defaultLocation.longitude,
@@ -110,48 +200,20 @@ const getGarageById = async (garageId) => {
       id: garageId,
       isActive: true,
     },
-    include: {
-      services: {
-        where: { isActive: true },
-        include: {
-          service: {
-            include: {
-              category: true,
-            },
-          },
-        },
-      },
-      slots: {
-        where: {
-          isActive: true,
-          date: {
-            gte: new Date(),
-          },
-        },
-        orderBy: [{ date: "asc" }, { startTime: "asc" }],
-      },
-      reviews: {
-        take: 10,
-        orderBy: {
-          createdAt: "desc",
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      },
-    },
+    include: garageIncludeForDetails,
   });
 
   if (!garage) {
     throw new ApiError(404, "Garage not found");
   }
 
-  return garage;
+  return {
+    ...garage,
+    thumbnail: garage.images.find((image) => image.isThumbnail === true) || null,
+    availableSlots: garage.slots.filter(
+      (slot) => slot.bookedCount < slot.capacity
+    ),
+  };
 };
 
 const getGarageServices = async (garageId) => {
@@ -196,19 +258,18 @@ const getGarageSlots = async (garageId) => {
     throw new ApiError(404, "Garage not found");
   }
 
-  return prisma.garageSlot.findMany({
+  const slots = await prisma.garageSlot.findMany({
     where: {
       garageId,
       isActive: true,
       date: {
         gte: new Date(),
       },
-      bookedCount: {
-        lt: prisma.garageSlot.fields.capacity,
-      },
     },
     orderBy: [{ date: "asc" }, { startTime: "asc" }],
   });
+
+  return slots.filter((slot) => slot.bookedCount < slot.capacity);
 };
 
 module.exports = {

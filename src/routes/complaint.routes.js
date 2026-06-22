@@ -3,6 +3,7 @@ const express = require("express");
 const complaintController = require("../controllers/complaint.controller");
 const { protect } = require("../middlewares/auth.middleware");
 const validate = require("../middlewares/validate.middleware");
+const upload = require("../middlewares/upload.middleware");
 
 const {
   complaintIdValidation,
@@ -15,6 +16,7 @@ router.use(protect);
 
 router.post(
   "/",
+  upload.array("images", 10),
   createComplaintValidation,
   validate,
   complaintController.createComplaint

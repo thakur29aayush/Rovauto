@@ -3,7 +3,11 @@ const ApiResponse = require("../utils/apiResponse");
 const complaintService = require("../services/complaint.service");
 
 const createComplaint = asyncHandler(async (req, res) => {
-  const complaint = await complaintService.createComplaint(req.user.id, req.body);
+  const complaint = await complaintService.createComplaint(
+    req.user.id,
+    req.body,
+    req.files
+  );
 
   return res
     .status(201)

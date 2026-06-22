@@ -10,6 +10,7 @@ const bookingRoutes = require("./booking.routes");
 const paymentRoutes = require("./payment.routes");
 const reviewRoutes = require("./review.routes");
 const complaintRoutes = require("./complaint.routes");
+const garageMediaRoutes = require("./garageMedia.routes");
 
 const router = express.Router();
 
@@ -23,5 +24,6 @@ router.use("/bookings", bookingRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/reviews", reviewRoutes);
 router.use("/complaints", complaintRoutes);
+router.use("/garages", garageMediaRoutes);
 
 module.exports = router;

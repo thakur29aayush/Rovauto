@@ -53,6 +53,11 @@ enum LocationSource {
   MANUAL
 }
 
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
 model User {
   id              String  @id @default(uuid())
   name            String
@@ -93,10 +98,11 @@ model Otp {
 }
 
 model CustomerProfile {
-  id        String  @id @default(uuid())
-  userId    String  @unique
-  avatarUrl String?
-  address   String?
+  id             String  @id @default(uuid())
+  userId         String  @unique
+  avatarUrl      String?
+  avatarPublicId String?
+  address        String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -167,12 +173,51 @@ model Garage {
   bookings Booking[]
   reviews  Review[]
 
+  images GarageImage[]
+  videos GarageVideo[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([city])
   @@index([area])
   @@index([latitude, longitude])
+}
+
+model GarageImage {
+  id       String @id @default(uuid())
+  garageId String
+  imageUrl String
+  publicId String
+  order    Int    @default(0)
+
+  isThumbnail Boolean @default(false)
+
+  garage Garage @relation(fields: [garageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([garageId])
+  @@index([isThumbnail])
+}
+
+model GarageVideo {
+  id       String @id @default(uuid())
+  garageId String
+  videoUrl String
+  publicId String
+  order    Int    @default(0)
+
+  durationSeconds Int?
+  sizeBytes       Int?
+
+  garage Garage @relation(fields: [garageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([garageId])
 }
 
 model ServiceCategory {
@@ -330,8 +375,13 @@ model Complaint {
   description String
   status      ComplaintStatus @default(OPEN)
 
+  adminReply String?
+  resolvedAt DateTime?
+
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   booking Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  images ComplaintImage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -339,4 +389,19 @@ model Complaint {
   @@index([userId])
   @@index([bookingId])
   @@index([status])
+}
+
+model ComplaintImage {
+  id          String @id @default(uuid())
+  complaintId String
+  imageUrl    String
+  publicId    String
+  order       Int    @default(0)
+
+  complaint Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([complaintId])
 }
