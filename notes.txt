@@ -74,3 +74,35 @@ Customer Backend Modules
 
 BACKUP 
    pg_dump "YOUR_DATABASE_URL" > backup.sql
+
+
+Complete Customer Navigation
+
+Landing
+│
+├── Login
+├── Signup
+├── Verify OTP
+├── Forgot Password
+├── Reset Password
+│
+└── Dashboard
+     │
+     ├── Nearby Garages
+     ├── Garage Details
+     │      │
+     │      └── Booking
+     │              │
+     │              └── Payment
+     │                      │
+     │                      └── Booking Success
+     │
+     ├── Booking History
+     │      └── Booking Details
+     │
+     ├── My Vehicles
+     ├── Profile
+     ├── Saved Locations
+     ├── Reviews
+     ├── Complaints
+     └── Settings
