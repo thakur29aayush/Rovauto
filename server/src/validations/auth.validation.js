@@ -17,11 +17,12 @@ const signupValidation = [
     .normalizeEmail(),
 
   body("phone")
+    .optional({ checkFalsy: true })
     .trim()
-    .notEmpty()
-    .withMessage("Phone number is required")
     .isLength({ min: 10, max: 15 })
-    .withMessage("Phone number must be 10 to 15 digits"),
+    .withMessage("Phone number must be 10 to 15 digits")
+    .isNumeric()
+    .withMessage("Phone number must contain only digits"),
 
   body("password")
     .notEmpty()
