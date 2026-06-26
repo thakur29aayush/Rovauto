@@ -60,7 +60,7 @@ export default function Dashboard() {
   }
 
   const heroButton =
-    "inline-flex items-center justify-center rounded-full bg-brand px-8 py-3 text-sm font-bold text-ink shadow-lg shadow-brand/25 transition hover:scale-[1.02] hover:bg-brand-dark";
+    "inline-flex items-center justify-center rounded-full bg-brand px-8 py-3 text-sm font-bold !text-black shadow-lg shadow-brand/25 transition hover:scale-[1.02] hover:bg-brand-dark hover:!text-black";
 
   return (
     <div className="grid gap-6">
@@ -132,7 +132,7 @@ export default function Dashboard() {
           },
         ].map((item) => (
           <div key={item.l} className="card-soft p-5">
-            <div className="grid place-items-center h-10 w-10 rounded-xl bg-brand">
+            <div className="grid place-items-center h-10 w-10 rounded-xl bg-brand text-black">
               <item.icon />
             </div>
 
@@ -162,7 +162,7 @@ export default function Dashboard() {
           {activeBooking ? (
             <>
               <div className="flex items-center gap-4">
-                <span className="grid place-items-center h-14 w-14 rounded-2xl bg-brand">
+                <span className="grid place-items-center h-14 w-14 rounded-2xl bg-brand text-black">
                   <FiTruck className="text-xl" />
                 </span>
 

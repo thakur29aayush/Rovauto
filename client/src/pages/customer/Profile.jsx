@@ -3,7 +3,13 @@ import { useApp } from "@/hooks/useApp";
 import api from "@/api/axios";
 
 export default function Profile() {
-  const { user, setUser, fetchMe } = useApp();
+  const {
+    user,
+    setUser,
+    fetchProfile,
+    clearProfileCache,
+    clearDashboardCache,
+  } = useApp();
 
   const [form, setForm] = useState({
     name: "",
@@ -18,22 +24,24 @@ export default function Profile() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const loadProfile = async () => {
+  const fillForm = (data) => {
+    setForm({
+      name: data.name || "",
+      email: data.email || "",
+      phone: data.phone || "",
+      address: data.customerProfile?.address || data.address || "",
+    });
+
+    setUser(data);
+  };
+
+  const loadProfile = async ({ force = false } = {}) => {
     try {
       setLoading(true);
       setError("");
 
-      const res = await api.get("/customer/profile");
-      const data = res.data.data;
-
-      setForm({
-        name: data.name || "",
-        email: data.email || "",
-        phone: data.phone || "",
-        address: data.customerProfile?.address || data.address || "",
-      });
-
-      setUser(data);
+      const data = await fetchProfile({ force });
+      fillForm(data);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to load profile");
     } finally {
@@ -65,8 +73,10 @@ export default function Profile() {
         address: form.address,
       });
 
-      await fetchMe?.();
-      await loadProfile();
+      clearProfileCache?.();
+      clearDashboardCache?.();
+
+      await loadProfile({ force: true });
 
       setSuccess("Profile updated successfully");
     } catch (err) {
@@ -79,9 +89,7 @@ export default function Profile() {
   if (loading) {
     return (
       <div className="max-w-2xl">
-        <div className="card-soft p-6 text-muted">
-          Loading profile...
-        </div>
+        <div className="card-soft p-6 text-muted">Loading profile...</div>
       </div>
     );
   }

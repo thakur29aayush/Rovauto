@@ -9,6 +9,7 @@ const VEHICLE_META_CACHE_TTL = 24 * 60 * 60 * 1000;
 const VEHICLES_CACHE_TTL = 5 * 60 * 1000;
 const ACTIVE_BOOKINGS_CACHE_TTL = 60 * 1000;
 const SERVICE_HISTORY_CACHE_TTL = 5 * 60 * 1000;
+const PROFILE_CACHE_TTL = 5 * 60 * 1000;
 
 const readJson = (key, fallback = null) => {
   try {
@@ -83,8 +84,14 @@ export function AppProvider({ children }) {
   );
   const [serviceHistoryFetchedAt, setServiceHistoryFetchedAt] = useState(() =>
     readNumber("rov_service_history_time", null)
+  ); 
+  const [profileCache, setProfileCache] = useState(() =>
+    readJson("rov_profile", null)
   );
 
+  const [profileFetchedAt, setProfileFetchedAt] = useState(() =>
+    readNumber("rov_profile_time", null)
+  );
   const clearDashboardCache = () => {
     setDashboardCache(null);
     setDashboardFetchedAt(null);
@@ -169,6 +176,22 @@ export function AppProvider({ children }) {
     localStorage.setItem("rov_service_history_time", String(fetchedAt));
   };
 
+  const clearProfileCache = () => {
+  setProfileCache(null);
+  setProfileFetchedAt(null);
+
+  localStorage.removeItem("rov_profile");
+  localStorage.removeItem("rov_profile_time");
+};
+
+const saveProfileCache = (data, fetchedAt) => {
+  setProfileCache(data);
+  setProfileFetchedAt(fetchedAt);
+
+  localStorage.setItem("rov_profile", JSON.stringify(data));
+  localStorage.setItem("rov_profile_time", String(fetchedAt));
+};
+
   const clearBookingCaches = () => {
     clearDashboardCache();
     clearActiveBookingsCache();
@@ -219,6 +242,7 @@ export function AppProvider({ children }) {
     clearVehiclesCache();
     clearActiveBookingsCache();
     clearServiceHistoryCache();
+    clearProfileCache();
   };
 
   const logout = () => {
@@ -238,6 +262,7 @@ export function AppProvider({ children }) {
     clearVehiclesCache();
     clearActiveBookingsCache();
     clearServiceHistoryCache();
+    clearProfileCache();
   };
 
   const fetchMe = async () => {
@@ -358,6 +383,27 @@ export function AppProvider({ children }) {
     return data;
   };
 
+  const fetchProfile = async ({ force = false } = {}) => {
+  const now = Date.now();
+
+  if (!force && profileCache && profileFetchedAt) {
+    if (now - profileFetchedAt < PROFILE_CACHE_TTL) {
+      return profileCache;
+    }
+  }
+
+  const res = await api.get("/customer/profile");
+  const data = res.data.data;
+  const fetchedAt = Date.now();
+
+  saveProfileCache(data, fetchedAt);
+  setUser(data);
+
+  localStorage.setItem("user", JSON.stringify(data));
+  localStorage.setItem("rov_user", JSON.stringify(data));
+
+  return data;
+};
   const fetchServiceCategories = async ({ force = false } = {}) => {
     const now = Date.now();
 
@@ -473,6 +519,10 @@ export function AppProvider({ children }) {
       activeBookingsFetchedAt,
       serviceHistoryCache,
       serviceHistoryFetchedAt,
+      profileCache,
+      profileFetchedAt,
+      profileCache,
+      profileFetchedAt,
 
       setUser,
       setToken,
@@ -493,6 +543,8 @@ export function AppProvider({ children }) {
       setActiveBookingsFetchedAt,
       setServiceHistoryCache,
       setServiceHistoryFetchedAt,
+      setProfileCache,
+      setProfileFetchedAt,
 
       login,
       logout,
@@ -501,6 +553,7 @@ export function AppProvider({ children }) {
       fetchVehicles,
       fetchActiveBookings,
       fetchServiceHistory,
+      fetchProfile,
       fetchServiceCategories,
       fetchVehicleMeta,
 
@@ -510,6 +563,7 @@ export function AppProvider({ children }) {
       clearVehiclesCache,
       clearActiveBookingsCache,
       clearServiceHistoryCache,
+      clearProfileCache,
       clearBookingCaches,
 
       addVehicle,

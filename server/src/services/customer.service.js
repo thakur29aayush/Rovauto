@@ -1,6 +1,21 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
 const argon2 = require("argon2");
+const invalidateCustomerCache = require("../utils/invalidateCustomerCache");
+const { getCache, setCache, deleteCache } = require("../utils/cache");
+
+const PROFILE_CACHE_TTL = 5 * 60;
+
+const getProfileCacheKey = (userId) => {
+  return `customer:${userId}:profile`;
+};
+
+const invalidateProfileCaches = async (userId) => {
+  await Promise.all([
+    deleteCache(getProfileCacheKey(userId)),
+    invalidateCustomerCache(userId),
+  ]);
+};
 
 const completeOnboarding = async (userId, { vehicle, location }) => {
   const user = await prisma.user.findUnique({
@@ -72,9 +87,17 @@ const completeOnboarding = async (userId, { vehicle, location }) => {
     };
   });
 
+  await invalidateProfileCaches(userId);
+
   return result;
 };
+
 const getProfile = async (userId) => {
+  const cacheKey = getProfileCacheKey(userId);
+
+  const cached = await getCache(cacheKey);
+  if (cached) return cached;
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -87,13 +110,17 @@ const getProfile = async (userId) => {
       isPhoneVerified: true,
       isOnboarded: true,
       isActive: true,
+
       customerProfile: true,
+
       vehicles: {
         orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
       },
+
       locations: {
         orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
       },
+
       createdAt: true,
       updatedAt: true,
     },
@@ -102,6 +129,8 @@ const getProfile = async (userId) => {
   if (!user) {
     throw new ApiError(404, "User not found");
   }
+
+  await setCache(cacheKey, user, PROFILE_CACHE_TTL);
 
   return user;
 };
@@ -171,8 +200,11 @@ const updateProfile = async (userId, data) => {
     };
   });
 
+  await invalidateProfileCaches(userId);
+
   return result;
 };
+
 const changePassword = async (userId, { currentPassword, newPassword }) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -203,6 +235,8 @@ const changePassword = async (userId, { currentPassword, newPassword }) => {
     },
   });
 
+  await invalidateProfileCaches(userId);
+
   return {
     changed: true,
   };
@@ -230,10 +264,13 @@ const deleteAccount = async (userId, { password }) => {
     },
   });
 
+  await invalidateProfileCaches(userId);
+
   return {
     deleted: true,
   };
 };
+
 module.exports = {
   completeOnboarding,
   getProfile,
