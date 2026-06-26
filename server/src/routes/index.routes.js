@@ -18,14 +18,14 @@ const garageWalletRoutes = require("./garageWallet.routes");
 const garageRequestRoutes = require("./garageRequest.routes");
 const serviceMediaRoutes = require("./serviceMedia.routes");
 const sosRoutes = require("./sos.routes");
-
+const contactRoutes = require("./contact.routes");
 const router = express.Router();
 
 router.use("/auth", authRoutes);
 router.use("/customer", customerRoutes);
 router.use("/vehicles", vehicleRoutes);
 router.use("/locations", locationRoutes);
-
+router.use("/contact", contactRoutes);
 router.use("/services", serviceRoutes);
 router.use("/services", serviceMediaRoutes);
 router.use("/vehicle-meta", vehicleMetaRoutes);
