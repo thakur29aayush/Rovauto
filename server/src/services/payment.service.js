@@ -206,7 +206,31 @@ const verifyPayment = async (
   };
 };
 
+const getMyPayments = async (userId) => {
+  return prisma.payment.findMany({
+    where: {
+      booking: {
+        userId,
+      },
+    },
+    include: {
+      booking: {
+        include: {
+          services: {
+            include: {
+              service: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+};
 module.exports = {
   createPaymentOrder,
   verifyPayment,
+  getMyPayments,
 };

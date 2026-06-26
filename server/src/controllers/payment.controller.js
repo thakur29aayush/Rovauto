@@ -21,8 +21,15 @@ const verifyPayment = asyncHandler(async (req, res) => {
     )
   );
 });
+const getMyPayments = asyncHandler(async (req, res) => {
+  const payments = await paymentService.getMyPayments(req.user.id);
 
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Payments fetched successfully", payments));
+});
 module.exports = {
   createPaymentOrder,
   verifyPayment,
+  getMyPayments,
 };

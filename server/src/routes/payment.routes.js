@@ -12,7 +12,7 @@ const {
 const router = express.Router();
 
 router.use(protect);
-
+router.get("/", paymentController.getMyPayments);
 router.post(
   "/create-order",
   createPaymentOrderValidation,
