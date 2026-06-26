@@ -13,14 +13,23 @@ import {
 } from "react-icons/fi";
 
 export default function Dashboard() {
-  const { user, vehicle, vehicles, fetchDashboard } = useApp();
+  const {
+    user,
+    vehicle,
+    vehicles,
+    setVehicle,
+    setVehicles,
+    fetchDashboard,
+    fetchVehicles,
+  } = useApp();
 
   const [bookings, setBookings] = useState([]);
   const [wallet, setWallet] = useState(null);
   const [completedCount, setCompletedCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const hasVehicles = vehicles?.length > 0;
+  const currentVehicles = Array.isArray(vehicles) ? vehicles : [];
+  const hasVehicles = currentVehicles.length > 0;
 
   const activeBookings = bookings.filter((booking) =>
     [
@@ -34,15 +43,31 @@ export default function Dashboard() {
 
   const activeBooking = activeBookings[0];
 
+  const syncVehicleState = (list = []) => {
+    const safeList = Array.isArray(list) ? list : [];
+
+    setVehicles?.(safeList);
+
+    const defaultVehicle =
+      safeList.find((item) => item.isDefault) || safeList[0] || null;
+
+    setVehicle?.(defaultVehicle);
+  };
+
   const loadDashboard = async ({ force = false } = {}) => {
     try {
       setLoading(true);
 
-      const dashboard = await fetchDashboard({ force });
+      const [dashboard, vehicleList] = await Promise.all([
+        fetchDashboard({ force }),
+        fetchVehicles ? fetchVehicles({ force }) : Promise.resolve([]),
+      ]);
 
       setBookings(dashboard?.activeBookings || []);
       setWallet(dashboard?.wallet || null);
       setCompletedCount(dashboard?.completedBookingsCount || 0);
+
+      syncVehicleState(vehicleList || []);
     } catch (error) {
       console.error("Dashboard load failed:", error);
     } finally {
@@ -51,7 +76,7 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    loadDashboard();
+    loadDashboard({ force: true });
   }, []);
 
   if (loading) {
@@ -100,7 +125,7 @@ export default function Dashboard() {
               Book a service
             </Link>
           ) : (
-            <Link to="/dashboard/vehicles" className={heroButton}>
+            <Link to="/booking/vehicle" className={heroButton}>
               Add your first vehicle
             </Link>
           )}
@@ -125,7 +150,7 @@ export default function Dashboard() {
               </p>
             </div>
 
-            <Link to="/dashboard/vehicles" className="btn-primary">
+            <Link to="/booking/vehicle" className="btn-primary">
               <FiPlusCircle />
               Add Vehicle
             </Link>
@@ -156,7 +181,7 @@ export default function Dashboard() {
           {
             icon: FiTruck,
             label: "Vehicles",
-            number: vehicles?.length || 0,
+            number: currentVehicles.length,
             sub: hasVehicles
               ? vehicle
                 ? `${vehicle.brand} ${vehicle.model}`
@@ -268,7 +293,7 @@ export default function Dashboard() {
                 : [
                     "Add Vehicle",
                     "Save your first vehicle to start booking",
-                    "/dashboard/vehicles",
+                    "/booking/vehicle",
                   ],
               ["SOS", "Emergency roadside request", "/sos"],
               [
