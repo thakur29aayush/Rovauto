@@ -12,9 +12,20 @@ const app = express();
 
 app.use(helmet());
 
+const allowedOrigins = [
+  "http://localhost:8080",
+  "https://rovauto.vercel.app",
+];
+
 app.use(
   cors({
-    origin: "http://localhost:8080",
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
