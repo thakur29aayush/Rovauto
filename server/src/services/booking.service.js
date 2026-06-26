@@ -213,13 +213,52 @@ const createBooking = async (userId, data) => {
   return booking;
 };
 
+const ALLOWED_BOOKING_STATUSES = [
+  "PENDING_PAYMENT",
+  "SEARCHING_GARAGE",
+  "GARAGE_ASSIGNED",
+  "CONFIRMED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "CANCELLED",
+  "EXPIRED",
+];
+
 const getMyBookings = async (userId, query = {}) => {
   const { status } = query;
+
+  let statusFilter = {};
+
+  if (status) {
+    const statuses = String(status)
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    const invalidStatus = statuses.find(
+      (item) => !ALLOWED_BOOKING_STATUSES.includes(item)
+    );
+
+    if (invalidStatus) {
+      throw new ApiError(400, `Invalid booking status: ${invalidStatus}`);
+    }
+
+    statusFilter =
+      statuses.length > 1
+        ? {
+            status: {
+              in: statuses,
+            },
+          }
+        : {
+            status: statuses[0],
+          };
+  }
 
   return prisma.booking.findMany({
     where: {
       userId,
-      ...(status && { status }),
+      ...statusFilter,
     },
     include: bookingInclude,
     orderBy: {
@@ -227,7 +266,6 @@ const getMyBookings = async (userId, query = {}) => {
     },
   });
 };
-
 const getBookingById = async (userId, bookingId) => {
   const booking = await prisma.booking.findFirst({
     where: {
