@@ -99,7 +99,7 @@ export default function Register() {
             value={form.phone}
             onChange={change}
             maxLength={15}
-            placeholder="Mobile number optional"
+            placeholder="Mobile number (optional)"
             className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
           />
 
