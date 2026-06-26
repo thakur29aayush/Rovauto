@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CATEGORY_UI } from "@/data/services";
-import api from "@/api/axios";
 import { FiSearch, FiArrowRight, FiTool } from "react-icons/fi";
 import { useApp } from "@/hooks/useApp";
 
@@ -9,33 +8,33 @@ export default function Services() {
   const [q, setQ] = useState("");
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { cart } = useApp();
+
+  const { cart, fetchServiceCategories } = useApp();
 
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const res = await api.get("/services/categories");
-        setCategories(res.data.data || []);
-      } catch (err) {
-        console.error("Failed to load service categories:", err);
+        const data = await fetchServiceCategories();
+        setCategories(data || []);
+      } catch (error) {
+        console.error("Failed to load service categories:", error);
       } finally {
         setLoading(false);
       }
     };
 
     loadCategories();
-  }, []);
+  }, [fetchServiceCategories]);
 
   const filteredCategories = q
-    ? categories.filter((c) =>
-        c.name.toLowerCase().includes(q.toLowerCase())
+    ? categories.filter((category) =>
+        category.name.toLowerCase().includes(q.toLowerCase())
       )
     : categories;
 
-  const cartTotal = cart.reduce(
-    (a, b) => a + (b.basePrice || b.minPrice || b.price || 0),
-    0
-  );
+  const cartTotal = cart.reduce((total, item) => {
+    return total + (item.basePrice || item.minPrice || item.price || 0);
+  }, 0);
 
   return (
     <div className="container-x py-10">
@@ -49,9 +48,10 @@ export default function Services() {
 
         <div className="relative max-w-md w-full">
           <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+
           <input
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(event) => setQ(event.target.value)}
             placeholder="Search categories"
             className="w-full pl-11 pr-4 py-3 rounded-full border border-line focus:border-[#b9f000] outline-none"
           />
@@ -62,23 +62,25 @@ export default function Services() {
         <div className="card-soft p-8 text-muted">Loading services...</div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
-          {filteredCategories.map((c) => {
-            const ui = CATEGORY_UI[c.name] || {};
+          {filteredCategories.map((category) => {
+            const ui = CATEGORY_UI[category.name] || {};
             const Icon = ui.icon || FiTool;
 
             return (
               <Link
-                to={ui.isSos ? "/sos" : `/services/${c.id}`}
-                key={c.id}
+                to={ui.isSos ? "/sos" : `/services/${category.id}`}
+                key={category.id}
                 className="cursor-pointer rounded-3xl bg-white p-5 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1"
               >
-                <div className="text-xl font-bold mb-4">{c.name}</div>
+                <div className="text-xl font-bold mb-4">
+                  {category.name}
+                </div>
 
                 <div className="h-32 w-full rounded-2xl overflow-hidden bg-bg-soft">
                   {ui.image ? (
                     <img
                       src={ui.image}
-                      alt={c.name}
+                      alt={category.name}
                       className="h-full w-full object-cover transition-transform hover:scale-105"
                     />
                   ) : (

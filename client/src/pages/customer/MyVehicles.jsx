@@ -5,27 +5,38 @@ import api from "@/api/axios";
 import { FiPlus, FiTruck, FiTrash2, FiCheckCircle } from "react-icons/fi";
 
 export default function MyVehicles() {
-  const { vehicles, vehicle, setVehicle, setVehicles, fetchMe } = useApp();
+  const {
+    vehicles,
+    vehicle,
+    setVehicle,
+    setVehicles,
+    fetchVehicles,
+    clearDashboardCache,
+    clearVehiclesCache,
+  } = useApp();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const [defaultLoadingId, setDefaultLoadingId] = useState(null);
 
-  const loadVehicles = async () => {
+  const syncVehicleState = (list = []) => {
+    setVehicles(list);
+
+    const defaultVehicle =
+      list.find((item) => item.isDefault) || list[0] || null;
+
+    setVehicle(defaultVehicle);
+  };
+
+  const loadVehicles = async ({ force = false } = {}) => {
     try {
       setError("");
       setLoading(true);
 
-      const res = await api.get("/vehicles");
-      const list = res.data.data || [];
+      const list = await fetchVehicles({ force });
 
-      setVehicles(list);
-
-      const defaultVehicle =
-        list.find((item) => item.isDefault) || list[0] || null;
-
-      setVehicle(defaultVehicle);
+      syncVehicleState(list || []);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to fetch vehicles");
     } finally {
@@ -39,6 +50,7 @@ export default function MyVehicles() {
 
   const handleSetDefault = async (selectedVehicle) => {
     try {
+      setError("");
       setDefaultLoadingId(selectedVehicle.id);
 
       await api.patch(`/vehicles/${selectedVehicle.id}/default`);
@@ -54,7 +66,10 @@ export default function MyVehicles() {
         isDefault: true,
       });
 
-      await fetchMe?.();
+      clearVehiclesCache?.();
+      clearDashboardCache?.();
+
+      await loadVehicles({ force: true });
     } catch (err) {
       setError(err.response?.data?.message || "Failed to set default vehicle");
     } finally {
@@ -67,23 +82,19 @@ export default function MyVehicles() {
     if (!confirmed) return;
 
     try {
+      setError("");
       setDeletingId(id);
 
       await api.delete(`/vehicles/${id}`);
 
       const updatedVehicles = vehicles.filter((item) => item.id !== id);
-      setVehicles(updatedVehicles);
 
-      if (vehicle?.id === id) {
-        const nextVehicle =
-          updatedVehicles.find((item) => item.isDefault) ||
-          updatedVehicles[0] ||
-          null;
+      syncVehicleState(updatedVehicles);
 
-        setVehicle(nextVehicle);
-      }
+      clearVehiclesCache?.();
+      clearDashboardCache?.();
 
-      await fetchMe?.();
+      await loadVehicles({ force: true });
     } catch (err) {
       setError(err.response?.data?.message || "Failed to delete vehicle");
     } finally {
@@ -92,11 +103,7 @@ export default function MyVehicles() {
   };
 
   if (loading) {
-    return (
-      <div className="card-soft p-8 text-muted">
-        Loading vehicles...
-      </div>
-    );
+    return <div className="card-soft p-8 text-muted">Loading vehicles...</div>;
   }
 
   return (
@@ -127,6 +134,7 @@ export default function MyVehicles() {
               }`}
             >
               <button
+                type="button"
                 onClick={() => handleSetDefault(v)}
                 className="w-full text-left"
                 disabled={defaultLoadingId === v.id}
@@ -146,9 +154,7 @@ export default function MyVehicles() {
                       {v.registrationNumber || "No registration"}
                     </div>
 
-                    <div className="text-xs text-muted">
-                      Year: {v.year}
-                    </div>
+                    <div className="text-xs text-muted">Year: {v.year}</div>
                   </div>
                 </div>
               </button>
@@ -160,6 +166,7 @@ export default function MyVehicles() {
                   </span>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => handleSetDefault(v)}
                     disabled={defaultLoadingId === v.id}
                     className="text-xs font-medium text-ink hover:underline"
@@ -169,6 +176,7 @@ export default function MyVehicles() {
                 )}
 
                 <button
+                  type="button"
                   onClick={() => handleDelete(v.id)}
                   disabled={deletingId === v.id}
                   className="text-xs font-medium text-red-600 hover:underline inline-flex items-center gap-1"

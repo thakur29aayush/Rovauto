@@ -4,6 +4,11 @@ import api from "@/api/axios";
 const AppCtx = createContext(null);
 
 const DASHBOARD_CACHE_TTL = 5 * 60 * 1000;
+const SERVICES_CACHE_TTL = 30 * 60 * 1000;
+const VEHICLE_META_CACHE_TTL = 24 * 60 * 60 * 1000;
+const VEHICLES_CACHE_TTL = 5 * 60 * 1000;
+const ACTIVE_BOOKINGS_CACHE_TTL = 60 * 1000;
+const SERVICE_HISTORY_CACHE_TTL = 5 * 60 * 1000;
 
 const readJson = (key, fallback = null) => {
   try {
@@ -14,23 +19,20 @@ const readJson = (key, fallback = null) => {
   }
 };
 
+const readNumber = (key, fallback = null) => {
+  const value = Number(localStorage.getItem(key));
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+};
+
 export function AppProvider({ children }) {
   const [user, setUser] = useState(() =>
     readJson("user", readJson("rov_user", null))
   );
 
-  const [token, setToken] = useState(() => {
-    return localStorage.getItem("token") || null;
-  });
+  const [token, setToken] = useState(() => localStorage.getItem("token") || null);
 
-  const [vehicle, setVehicle] = useState(() => {
-    return readJson("rov_vehicle", null);
-  });
-
-  const [vehicles, setVehicles] = useState(() => {
-    return readJson("rov_vehicles", []);
-  });
-
+  const [vehicle, setVehicle] = useState(() => readJson("rov_vehicle", null));
+  const [vehicles, setVehicles] = useState(() => readJson("rov_vehicles", []));
   const [cart, setCart] = useState([]);
 
   const [location, setLocation] = useState({
@@ -41,18 +43,51 @@ export function AppProvider({ children }) {
 
   const [authLoading, setAuthLoading] = useState(true);
 
-  const [dashboardCache, setDashboardCache] = useState(() => {
-    return readJson("rov_dashboard", null);
-  });
+  const [dashboardCache, setDashboardCache] = useState(() =>
+    readJson("rov_dashboard", null)
+  );
+  const [dashboardFetchedAt, setDashboardFetchedAt] = useState(() =>
+    readNumber("rov_dashboard_time", null)
+  );
 
-  const [dashboardFetchedAt, setDashboardFetchedAt] = useState(() => {
-    return Number(localStorage.getItem("rov_dashboard_time")) || null;
-  });
+  const [serviceCategoriesCache, setServiceCategoriesCache] = useState(() =>
+    readJson("rov_service_categories", null)
+  );
+  const [serviceCategoriesFetchedAt, setServiceCategoriesFetchedAt] = useState(() =>
+    readNumber("rov_service_categories_time", null)
+  );
+
+  const [vehicleMetaCache, setVehicleMetaCache] = useState(() =>
+    readJson("rov_vehicle_meta", null)
+  );
+  const [vehicleMetaFetchedAt, setVehicleMetaFetchedAt] = useState(() =>
+    readNumber("rov_vehicle_meta_time", null)
+  );
+
+  const [vehiclesCache, setVehiclesCache] = useState(() =>
+    readJson("rov_vehicles_cache", null)
+  );
+  const [vehiclesFetchedAt, setVehiclesFetchedAt] = useState(() =>
+    readNumber("rov_vehicles_cache_time", null)
+  );
+
+  const [activeBookingsCache, setActiveBookingsCache] = useState(() =>
+    readJson("rov_active_bookings", null)
+  );
+  const [activeBookingsFetchedAt, setActiveBookingsFetchedAt] = useState(() =>
+    readNumber("rov_active_bookings_time", null)
+  );
+
+  const [serviceHistoryCache, setServiceHistoryCache] = useState(() =>
+    readJson("rov_service_history", null)
+  );
+  const [serviceHistoryFetchedAt, setServiceHistoryFetchedAt] = useState(() =>
+    readNumber("rov_service_history_time", null)
+  );
 
   const clearDashboardCache = () => {
     setDashboardCache(null);
     setDashboardFetchedAt(null);
-
     localStorage.removeItem("rov_dashboard");
     localStorage.removeItem("rov_dashboard_time");
   };
@@ -60,9 +95,100 @@ export function AppProvider({ children }) {
   const saveDashboardCache = (data, fetchedAt) => {
     setDashboardCache(data);
     setDashboardFetchedAt(fetchedAt);
-
     localStorage.setItem("rov_dashboard", JSON.stringify(data));
     localStorage.setItem("rov_dashboard_time", String(fetchedAt));
+  };
+
+  const clearServiceCategoriesCache = () => {
+    setServiceCategoriesCache(null);
+    setServiceCategoriesFetchedAt(null);
+    localStorage.removeItem("rov_service_categories");
+    localStorage.removeItem("rov_service_categories_time");
+  };
+
+  const saveServiceCategoriesCache = (data, fetchedAt) => {
+    setServiceCategoriesCache(data);
+    setServiceCategoriesFetchedAt(fetchedAt);
+    localStorage.setItem("rov_service_categories", JSON.stringify(data));
+    localStorage.setItem("rov_service_categories_time", String(fetchedAt));
+  };
+
+  const clearVehicleMetaCache = () => {
+    setVehicleMetaCache(null);
+    setVehicleMetaFetchedAt(null);
+    localStorage.removeItem("rov_vehicle_meta");
+    localStorage.removeItem("rov_vehicle_meta_time");
+  };
+
+  const saveVehicleMetaCache = (data, fetchedAt) => {
+    setVehicleMetaCache(data);
+    setVehicleMetaFetchedAt(fetchedAt);
+    localStorage.setItem("rov_vehicle_meta", JSON.stringify(data));
+    localStorage.setItem("rov_vehicle_meta_time", String(fetchedAt));
+  };
+
+  const clearVehiclesCache = () => {
+    setVehiclesCache(null);
+    setVehiclesFetchedAt(null);
+    localStorage.removeItem("rov_vehicles_cache");
+    localStorage.removeItem("rov_vehicles_cache_time");
+  };
+
+  const saveVehiclesCache = (data, fetchedAt) => {
+    setVehiclesCache(data);
+    setVehiclesFetchedAt(fetchedAt);
+    localStorage.setItem("rov_vehicles_cache", JSON.stringify(data));
+    localStorage.setItem("rov_vehicles_cache_time", String(fetchedAt));
+  };
+
+  const clearActiveBookingsCache = () => {
+    setActiveBookingsCache(null);
+    setActiveBookingsFetchedAt(null);
+    localStorage.removeItem("rov_active_bookings");
+    localStorage.removeItem("rov_active_bookings_time");
+  };
+
+  const saveActiveBookingsCache = (data, fetchedAt) => {
+    setActiveBookingsCache(data);
+    setActiveBookingsFetchedAt(fetchedAt);
+    localStorage.setItem("rov_active_bookings", JSON.stringify(data));
+    localStorage.setItem("rov_active_bookings_time", String(fetchedAt));
+  };
+
+  const clearServiceHistoryCache = () => {
+    setServiceHistoryCache(null);
+    setServiceHistoryFetchedAt(null);
+    localStorage.removeItem("rov_service_history");
+    localStorage.removeItem("rov_service_history_time");
+  };
+
+  const saveServiceHistoryCache = (data, fetchedAt) => {
+    setServiceHistoryCache(data);
+    setServiceHistoryFetchedAt(fetchedAt);
+    localStorage.setItem("rov_service_history", JSON.stringify(data));
+    localStorage.setItem("rov_service_history_time", String(fetchedAt));
+  };
+
+  const clearBookingCaches = () => {
+    clearDashboardCache();
+    clearActiveBookingsCache();
+    clearServiceHistoryCache();
+  };
+
+  const syncVehicles = (list = []) => {
+    const safeList = Array.isArray(list) ? list : [];
+
+    setVehicles(safeList);
+
+    const defaultVehicle =
+      safeList.find((item) => item.isDefault) || safeList[0] || null;
+
+    setVehicle(defaultVehicle);
+
+    localStorage.setItem("rov_vehicles", JSON.stringify(safeList));
+    localStorage.setItem("rov_vehicle", JSON.stringify(defaultVehicle));
+
+    return safeList;
   };
 
   const syncUserData = (me) => {
@@ -73,19 +199,7 @@ export function AppProvider({ children }) {
     localStorage.setItem("user", JSON.stringify(me));
     localStorage.setItem("rov_user", JSON.stringify(me));
 
-    const backendVehicles = me.vehicles || [];
-
-    setVehicles(backendVehicles);
-
-    const defaultVehicle =
-      backendVehicles.find((item) => item.isDefault) ||
-      backendVehicles[0] ||
-      null;
-
-    setVehicle(defaultVehicle);
-
-    localStorage.setItem("rov_vehicles", JSON.stringify(backendVehicles));
-    localStorage.setItem("rov_vehicle", JSON.stringify(defaultVehicle));
+    syncVehicles(me.vehicles || []);
 
     return me;
   };
@@ -100,7 +214,11 @@ export function AppProvider({ children }) {
     }
 
     setUser(userData);
+
     clearDashboardCache();
+    clearVehiclesCache();
+    clearActiveBookingsCache();
+    clearServiceHistoryCache();
   };
 
   const logout = () => {
@@ -117,6 +235,9 @@ export function AppProvider({ children }) {
     setCart([]);
 
     clearDashboardCache();
+    clearVehiclesCache();
+    clearActiveBookingsCache();
+    clearServiceHistoryCache();
   };
 
   const fetchMe = async () => {
@@ -163,24 +284,118 @@ export function AppProvider({ children }) {
     }
 
     if (data.vehicles) {
-      setVehicles(data.vehicles);
-      localStorage.setItem("rov_vehicles", JSON.stringify(data.vehicles));
-    }
-
-    if (data.vehicle !== undefined) {
-      setVehicle(data.vehicle);
-      localStorage.setItem("rov_vehicle", JSON.stringify(data.vehicle));
+      syncVehicles(data.vehicles);
+      saveVehiclesCache(data.vehicles, fetchedAt);
     }
 
     return data;
   };
 
-  useEffect(() => {
-    if (token) {
-      setAuthLoading(false);
-    } else {
-      setAuthLoading(false);
+  const fetchVehicles = async ({ force = false } = {}) => {
+    const now = Date.now();
+
+    if (!force && vehiclesCache && vehiclesFetchedAt) {
+      if (now - vehiclesFetchedAt < VEHICLES_CACHE_TTL) {
+        syncVehicles(vehiclesCache);
+        return vehiclesCache;
+      }
     }
+
+    const res = await api.get("/vehicles");
+    const data = res.data.data || [];
+    const fetchedAt = Date.now();
+
+    saveVehiclesCache(data, fetchedAt);
+    syncVehicles(data);
+
+    return data;
+  };
+
+  const fetchActiveBookings = async ({ force = false } = {}) => {
+    const now = Date.now();
+
+    if (!force && activeBookingsCache && activeBookingsFetchedAt) {
+      if (now - activeBookingsFetchedAt < ACTIVE_BOOKINGS_CACHE_TTL) {
+        return activeBookingsCache;
+      }
+    }
+
+    const res = await api.get("/bookings", {
+      params: {
+        status:
+          "PENDING_PAYMENT,SEARCHING_GARAGE,GARAGE_ASSIGNED,CONFIRMED,IN_PROGRESS",
+      },
+    });
+
+    const data = res.data.data || [];
+    const fetchedAt = Date.now();
+
+    saveActiveBookingsCache(data, fetchedAt);
+
+    return data;
+  };
+
+  const fetchServiceHistory = async ({ force = false } = {}) => {
+    const now = Date.now();
+
+    if (!force && serviceHistoryCache && serviceHistoryFetchedAt) {
+      if (now - serviceHistoryFetchedAt < SERVICE_HISTORY_CACHE_TTL) {
+        return serviceHistoryCache;
+      }
+    }
+
+    const res = await api.get("/bookings", {
+      params: {
+        status: "COMPLETED",
+      },
+    });
+
+    const data = res.data.data || [];
+    const fetchedAt = Date.now();
+
+    saveServiceHistoryCache(data, fetchedAt);
+
+    return data;
+  };
+
+  const fetchServiceCategories = async ({ force = false } = {}) => {
+    const now = Date.now();
+
+    if (!force && serviceCategoriesCache && serviceCategoriesFetchedAt) {
+      if (now - serviceCategoriesFetchedAt < SERVICES_CACHE_TTL) {
+        return serviceCategoriesCache;
+      }
+    }
+
+    const res = await api.get("/services/categories");
+    const data = res.data.data || [];
+    const fetchedAt = Date.now();
+
+    saveServiceCategoriesCache(data, fetchedAt);
+
+    return data;
+  };
+
+  const fetchVehicleMeta = async ({ force = false } = {}) => {
+    const now = Date.now();
+
+    if (!force && vehicleMetaCache && vehicleMetaFetchedAt) {
+      if (now - vehicleMetaFetchedAt < VEHICLE_META_CACHE_TTL) {
+        return vehicleMetaCache;
+      }
+    }
+
+    const res = await api.get("/vehicle-meta/brands");
+    const data = res.data.data || [];
+    const fetchedAt = Date.now();
+
+    saveVehicleMetaCache(data, fetchedAt);
+
+    return data;
+  };
+
+  useEffect(() => {
+    setAuthLoading(false);
   }, [token]);
 
   useEffect(() => {
@@ -207,12 +422,18 @@ export function AppProvider({ children }) {
 
     const updatedVehicles = [...vehicles, newVehicle];
 
-    setVehicles(updatedVehicles);
-    setVehicle(newVehicle);
+    syncVehicles(updatedVehicles);
 
     clearDashboardCache();
+    clearVehiclesCache();
 
     return newVehicle;
+  };
+
+  const updateVehiclesLocally = (list = []) => {
+    syncVehicles(list);
+    saveVehiclesCache(list, Date.now());
+    clearDashboardCache();
   };
 
   const addToCart = (service) => {
@@ -242,6 +463,16 @@ export function AppProvider({ children }) {
 
       dashboardCache,
       dashboardFetchedAt,
+      serviceCategoriesCache,
+      serviceCategoriesFetchedAt,
+      vehicleMetaCache,
+      vehicleMetaFetchedAt,
+      vehiclesCache,
+      vehiclesFetchedAt,
+      activeBookingsCache,
+      activeBookingsFetchedAt,
+      serviceHistoryCache,
+      serviceHistoryFetchedAt,
 
       setUser,
       setToken,
@@ -252,15 +483,37 @@ export function AppProvider({ children }) {
 
       setDashboardCache,
       setDashboardFetchedAt,
+      setServiceCategoriesCache,
+      setServiceCategoriesFetchedAt,
+      setVehicleMetaCache,
+      setVehicleMetaFetchedAt,
+      setVehiclesCache,
+      setVehiclesFetchedAt,
+      setActiveBookingsCache,
+      setActiveBookingsFetchedAt,
+      setServiceHistoryCache,
+      setServiceHistoryFetchedAt,
 
       login,
       logout,
       fetchMe,
       fetchDashboard,
+      fetchVehicles,
+      fetchActiveBookings,
+      fetchServiceHistory,
+      fetchServiceCategories,
+      fetchVehicleMeta,
 
       clearDashboardCache,
+      clearServiceCategoriesCache,
+      clearVehicleMetaCache,
+      clearVehiclesCache,
+      clearActiveBookingsCache,
+      clearServiceHistoryCache,
+      clearBookingCaches,
 
       addVehicle,
+      updateVehiclesLocally,
       addToCart,
       removeFromCart,
       clearCart,
@@ -275,6 +528,16 @@ export function AppProvider({ children }) {
       authLoading,
       dashboardCache,
       dashboardFetchedAt,
+      serviceCategoriesCache,
+      serviceCategoriesFetchedAt,
+      vehicleMetaCache,
+      vehicleMetaFetchedAt,
+      vehiclesCache,
+      vehiclesFetchedAt,
+      activeBookingsCache,
+      activeBookingsFetchedAt,
+      serviceHistoryCache,
+      serviceHistoryFetchedAt,
     ]
   );
 

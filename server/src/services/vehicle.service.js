@@ -1,6 +1,20 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
 const invalidateCustomerCache = require("../utils/invalidateCustomerCache");
+const { getCache, setCache, deleteCache } = require("../utils/cache");
+
+const VEHICLES_CACHE_TTL = 5 * 60;
+
+const getVehiclesCacheKey = (userId) => {
+  return `customer:${userId}:vehicles`;
+};
+
+const invalidateVehicleCaches = async (userId) => {
+  await Promise.all([
+    deleteCache(getVehiclesCacheKey(userId)),
+    invalidateCustomerCache(userId),
+  ]);
+};
 
 const createVehicle = async (userId, data) => {
   const vehicleCount = await prisma.vehicle.count({
@@ -30,16 +44,25 @@ const createVehicle = async (userId, data) => {
     });
   });
 
-  await invalidateCustomerCache(userId);
+  await invalidateVehicleCaches(userId);
 
   return result;
 };
 
 const getMyVehicles = async (userId) => {
-  return prisma.vehicle.findMany({
+  const cacheKey = getVehiclesCacheKey(userId);
+
+  const cached = await getCache(cacheKey);
+  if (cached) return cached;
+
+  const vehicles = await prisma.vehicle.findMany({
     where: { userId },
     orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
   });
+
+  await setCache(cacheKey, vehicles, VEHICLES_CACHE_TTL);
+
+  return vehicles;
 };
 
 const getVehicleById = async (userId, vehicleId) => {
@@ -96,7 +119,7 @@ const updateVehicle = async (userId, vehicleId, data) => {
     });
   });
 
-  await invalidateCustomerCache(userId);
+  await invalidateVehicleCaches(userId);
 
   return result;
 };
@@ -144,7 +167,7 @@ const deleteVehicle = async (userId, vehicleId) => {
     }
   });
 
-  await invalidateCustomerCache(userId);
+  await invalidateVehicleCaches(userId);
 
   return {
     deleted: true,
@@ -175,7 +198,7 @@ const setDefaultVehicle = async (userId, vehicleId) => {
     });
   });
 
-  await invalidateCustomerCache(userId);
+  await invalidateVehicleCaches(userId);
 
   return result;
 };

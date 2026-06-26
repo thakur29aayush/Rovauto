@@ -2,6 +2,9 @@ const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
 const generateBookingCode = require("../utils/bookingCode");
 const invalidateCustomerCache = require("../utils/invalidateCustomerCache");
+const { getCache, setCache, deletePattern } = require("../utils/cache");
+
+const BOOKINGS_CACHE_TTL = 60;
 
 const bookingInclude = {
   user: {
@@ -61,6 +64,42 @@ const calculateHandlingFee = (totalServiceAmount) => {
 
 const getServiceEstimatedPrice = (service) => {
   return service.basePrice || service.minPrice || 0;
+};
+
+const normalizeStatuses = (status) => {
+  if (!status) return [];
+
+  const statuses = String(status)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const invalidStatus = statuses.find(
+    (item) => !ALLOWED_BOOKING_STATUSES.includes(item)
+  );
+
+  if (invalidStatus) {
+    throw new ApiError(400, `Invalid booking status: ${invalidStatus}`);
+  }
+
+  return [...new Set(statuses)].sort();
+};
+
+const getBookingsCacheKey = (userId, query = {}) => {
+  const statuses = normalizeStatuses(query.status);
+
+  if (statuses.length === 0) {
+    return `customer:${userId}:bookings:all`;
+  }
+
+  return `customer:${userId}:bookings:${statuses.join(",")}`;
+};
+
+const invalidateBookingCaches = async (userId) => {
+  await Promise.all([
+    deletePattern(`customer:${userId}:bookings:*`),
+    invalidateCustomerCache(userId),
+  ]);
 };
 
 const createBooking = async (userId, data) => {
@@ -222,30 +261,21 @@ const createBooking = async (userId, data) => {
     });
   });
 
-  await invalidateCustomerCache(userId);
+  await invalidateBookingCaches(userId);
 
   return booking;
 };
 
 const getMyBookings = async (userId, query = {}) => {
-  const { status } = query;
+  const statuses = normalizeStatuses(query.status);
+  const cacheKey = getBookingsCacheKey(userId, query);
+
+  const cached = await getCache(cacheKey);
+  if (cached) return cached;
 
   let statusFilter = {};
 
-  if (status) {
-    const statuses = String(status)
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-
-    const invalidStatus = statuses.find(
-      (item) => !ALLOWED_BOOKING_STATUSES.includes(item)
-    );
-
-    if (invalidStatus) {
-      throw new ApiError(400, `Invalid booking status: ${invalidStatus}`);
-    }
-
+  if (statuses.length > 0) {
     statusFilter =
       statuses.length > 1
         ? {
@@ -258,7 +288,7 @@ const getMyBookings = async (userId, query = {}) => {
           };
   }
 
-  return prisma.booking.findMany({
+  const bookings = await prisma.booking.findMany({
     where: {
       userId,
       ...statusFilter,
@@ -268,9 +298,18 @@ const getMyBookings = async (userId, query = {}) => {
       createdAt: "desc",
     },
   });
+
+  await setCache(cacheKey, bookings, BOOKINGS_CACHE_TTL);
+
+  return bookings;
 };
 
 const getBookingById = async (userId, bookingId) => {
+  const cacheKey = `customer:${userId}:booking:${bookingId}`;
+
+  const cached = await getCache(cacheKey);
+  if (cached) return cached;
+
   const booking = await prisma.booking.findFirst({
     where: {
       id: bookingId,
@@ -282,6 +321,8 @@ const getBookingById = async (userId, bookingId) => {
   if (!booking) {
     throw new ApiError(404, "Booking not found");
   }
+
+  await setCache(cacheKey, booking, BOOKINGS_CACHE_TTL);
 
   return booking;
 };
@@ -359,7 +400,7 @@ const cancelBooking = async (userId, bookingId) => {
     });
   });
 
-  await invalidateCustomerCache(userId);
+  await invalidateBookingCaches(userId);
 
   return cancelledBooking;
 };
