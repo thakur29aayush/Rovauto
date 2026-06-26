@@ -1,5 +1,5 @@
 import {
-  FiTool,
+  FiSettings,
   FiZap,
   FiWind,
   FiShield,
@@ -33,7 +33,7 @@ export const CATEGORY_UI = {
   },
   "Denting & Painting": {
     image: painting,
-    icon: FiTool,
+    icon: FiSettings,
     color: "#ff8a3d",
   },
   Batteries: {
@@ -49,7 +49,7 @@ export const CATEGORY_UI = {
   },
   Modifications: {
     image: modification,
-    icon: FiTool,
+    icon: FiSettings,
     color: "#a78bfa",
   },
 };
