@@ -1,6 +1,10 @@
+require("dotenv/config");
+
 const prisma = require("../config/prisma");
 
 const seedNotifications = async () => {
+  console.log("Seeding Notifications...");
+
   const users = await prisma.user.findMany({
     where: {
       role: "CUSTOMER",
@@ -25,40 +29,67 @@ const seedNotifications = async () => {
   ];
 
   for (const item of globalNotifications) {
-    await prisma.notification.create({
-      data: item,
+    const existing = await prisma.notification.findFirst({
+      where: {
+        userId: null,
+        title: item.title,
+        type: item.type,
+      },
     });
+
+    if (!existing) {
+      await prisma.notification.create({
+        data: item,
+      });
+    }
   }
 
   for (const user of users) {
-    await prisma.notification.createMany({
-      data: [
-        {
+    const userNotifications = [
+      {
+        userId: user.id,
+        title: "Welcome to RovAuto",
+        message:
+          "Your account is ready. Add your vehicle and book trusted services.",
+        type: "SYSTEM",
+        link: "/dashboard",
+      },
+      {
+        userId: user.id,
+        title: "Complete your vehicle profile",
+        message:
+          "Add your default vehicle to get better service recommendations.",
+        type: "SYSTEM",
+        link: "/dashboard/vehicles",
+      },
+    ];
+
+    for (const item of userNotifications) {
+      const existing = await prisma.notification.findFirst({
+        where: {
           userId: user.id,
-          title: "Welcome to RovAuto",
-          message: "Your account is ready. Add your vehicle and book trusted services.",
-          type: "SYSTEM",
-          link: "/dashboard",
+          title: item.title,
+          type: item.type,
         },
-        {
-          userId: user.id,
-          title: "Complete your vehicle profile",
-          message: "Add your default vehicle to get better service recommendations.",
-          type: "SYSTEM",
-          link: "/dashboard/vehicles",
-        },
-      ],
-    });
+      });
+
+      if (!existing) {
+        await prisma.notification.create({
+          data: item,
+        });
+      }
+    }
   }
 
-  console.log("Notifications seeded successfully");
+  console.log("✅ Notifications Seeded Successfully");
 };
 
 seedNotifications()
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  })
-  .finally(async () => {
+  .then(async () => {
     await prisma.$disconnect();
+  })
+  .catch(async (error) => {
+    console.error(error);
+    await prisma.$disconnect();
+    process.exit(1);
   });
