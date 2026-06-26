@@ -9,7 +9,7 @@ import {
 
 import carWash from "@/assets/car_wash.png";
 import serviceRepair from "@/assets/Service And Repair.png";
-import acService from "@/assets/AC Service.png";
+import acService from "@/assets/AC service.png";
 import painting from "@/assets/painting.png";
 import battery from "@/assets/battery.png";
 import roadside from "@/assets/Roadside.png";
