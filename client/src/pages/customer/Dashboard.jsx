@@ -9,6 +9,7 @@ import {
   FiCheckCircle,
   FiClock,
   FiRefreshCcw,
+  FiPlusCircle,
 } from "react-icons/fi";
 
 export default function Dashboard() {
@@ -18,6 +19,8 @@ export default function Dashboard() {
   const [wallet, setWallet] = useState(null);
   const [completedCount, setCompletedCount] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const hasVehicles = vehicles?.length > 0;
 
   const activeBookings = bookings.filter((booking) =>
     [
@@ -74,7 +77,9 @@ export default function Dashboard() {
             </h2>
 
             <p className="mt-2 text-white/70">
-              Manage bookings, wallet, vehicles, and service requests.
+              {hasVehicles
+                ? "Manage bookings, wallet, vehicles, and service requests."
+                : "Add your first vehicle to start booking services."}
             </p>
           </div>
 
@@ -90,9 +95,15 @@ export default function Dashboard() {
         </div>
 
         <div className="relative mt-6 flex flex-wrap gap-3">
-          <Link to="/booking/vehicle" className={heroButton}>
-            Book a service
-          </Link>
+          {hasVehicles ? (
+            <Link to="/booking/vehicle" className={heroButton}>
+              Book a service
+            </Link>
+          ) : (
+            <Link to="/dashboard/vehicles" className={heroButton}>
+              Add your first vehicle
+            </Link>
+          )}
 
           <Link to="/sos" className={heroButton}>
             SOS
@@ -103,6 +114,24 @@ export default function Dashboard() {
           </Link>
         </div>
       </div>
+
+      {!hasVehicles && (
+        <div className="rounded-3xl border border-brand/40 bg-brand-soft/60 p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-xl font-bold">Vehicle setup required</h3>
+              <p className="mt-1 text-sm text-muted">
+                Add your vehicle once, then booking services becomes available.
+              </p>
+            </div>
+
+            <Link to="/dashboard/vehicles" className="btn-primary">
+              <FiPlusCircle />
+              Add Vehicle
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
@@ -128,7 +157,11 @@ export default function Dashboard() {
             icon: FiTruck,
             label: "Vehicles",
             number: vehicles?.length || 0,
-            sub: vehicle ? `${vehicle.brand} ${vehicle.model}` : "Add a vehicle",
+            sub: hasVehicles
+              ? vehicle
+                ? `${vehicle.brand} ${vehicle.model}`
+                : "Manage your vehicles"
+              : "Add your first vehicle",
           },
         ].map((item) => {
           const Icon = item.icon;
@@ -179,7 +212,8 @@ export default function Dashboard() {
                   </div>
 
                   <div className="text-xs text-muted">
-                    {activeBooking.vehicle?.brand} {activeBooking.vehicle?.model}
+                    {activeBooking.vehicle?.brand}{" "}
+                    {activeBooking.vehicle?.model}
                     {activeBooking.garage
                       ? ` · ${activeBooking.garage.name}`
                       : " · Waiting for garage"}
@@ -213,7 +247,9 @@ export default function Dashboard() {
             </>
           ) : (
             <div className="text-sm text-muted">
-              No active service right now. Civilization briefly holds.
+              {hasVehicles
+                ? "No active service right now. Civilization briefly holds."
+                : "No active service yet. Add a vehicle first, because booking a ghost car remains unsupported."}
             </div>
           )}
         </div>
@@ -223,13 +259,25 @@ export default function Dashboard() {
 
           <ul className="grid gap-3 text-sm">
             {[
-              [
-                "Book Service",
-                "Choose services and request nearby garages",
-                "/booking/vehicle",
-              ],
+              hasVehicles
+                ? [
+                    "Book Service",
+                    "Choose services and request nearby garages",
+                    "/booking/vehicle",
+                  ]
+                : [
+                    "Add Vehicle",
+                    "Save your first vehicle to start booking",
+                    "/dashboard/vehicles",
+                  ],
               ["SOS", "Emergency roadside request", "/sos"],
-              ["My Vehicles", "Manage your saved vehicles", "/dashboard/vehicles"],
+              [
+                "My Vehicles",
+                hasVehicles
+                  ? "Manage your saved vehicles"
+                  : "Add and manage vehicles",
+                "/dashboard/vehicles",
+              ],
             ].map(([name, desc, to]) => (
               <li key={name}>
                 <Link to={to} className="flex items-start gap-3 hover:text-ink">
