@@ -10,13 +10,30 @@ if (process.env.REDIS_URL) {
   redis = new Redis(process.env.REDIS_URL, {
     tls: isTlsRedis ? {} : undefined,
 
-    maxRetriesPerRequest: null,
-    enableReadyCheck: false,
     lazyConnect: true,
+    enableReadyCheck: false,
+    maxRetriesPerRequest: null,
+    connectTimeout: 10000,
+    commandTimeout: 5000,
 
     retryStrategy(times) {
       if (times > 3) return null;
       return Math.min(times * 300, 1500);
+    },
+
+    reconnectOnError(error) {
+      const message = error.message || "";
+
+      if (
+        message.includes("READONLY") ||
+        message.includes("ETIMEDOUT") ||
+        message.includes("EPIPE") ||
+        message.includes("ECONNRESET")
+      ) {
+        return true;
+      }
+
+      return false;
     },
   });
 
@@ -32,9 +49,15 @@ if (process.env.REDIS_URL) {
     console.error("Redis error:", error.message);
   });
 
+  redis.on("close", () => {
+    console.warn("Redis connection closed");
+  });
+
   redis.on("end", () => {
     console.warn("Redis connection ended");
   });
+} else {
+  console.warn("REDIS_URL missing. Redis cache disabled.");
 }
 
 module.exports = redis;

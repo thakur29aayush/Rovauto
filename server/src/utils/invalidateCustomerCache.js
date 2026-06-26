@@ -1,7 +1,9 @@
 const { deletePattern } = require("./cache");
 
 const invalidateCustomerCache = async (userId) => {
-  await deletePattern(`customer:${userId}:*`);
+  if (!userId) return false;
+
+  return deletePattern(`customer:${userId}:*`);
 };
 
 module.exports = invalidateCustomerCache;

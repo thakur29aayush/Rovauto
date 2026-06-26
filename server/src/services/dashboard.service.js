@@ -3,42 +3,6 @@ const { getCache, setCache } = require("../utils/cache");
 
 const DASHBOARD_TTL = Number(process.env.DASHBOARD_CACHE_TTL || 60);
 
-const dashboardInclude = {
-  vehicles: {
-    orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
-  },
-  customerProfile: true,
-  wallet: true,
-};
-
-const bookingListInclude = {
-  vehicle: true,
-  garage: {
-    select: {
-      id: true,
-      name: true,
-      phone: true,
-      whatsappNo: true,
-      latitude: true,
-      longitude: true,
-    },
-  },
-  services: {
-    include: {
-      service: {
-        select: {
-          id: true,
-          name: true,
-          basePrice: true,
-          minPrice: true,
-        },
-      },
-    },
-  },
-  payment: true,
-  review: true,
-};
-
 const ACTIVE_STATUSES = [
   "PENDING_PAYMENT",
   "SEARCHING_GARAGE",
@@ -47,10 +11,49 @@ const ACTIVE_STATUSES = [
   "IN_PROGRESS",
 ];
 
+const bookingListInclude = {
+  vehicle: true,
+
+  garage: {
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      whatsappNo: true,
+      latitude: true,
+      longitude: true,
+      area: true,
+      city: true,
+      ratingAvg: true,
+      ratingCount: true,
+      isVerified: true,
+    },
+  },
+
+  services: {
+    include: {
+      service: {
+        select: {
+          id: true,
+          name: true,
+          basePrice: true,
+          minPrice: true,
+          maxPrice: true,
+          durationMin: true,
+        },
+      },
+    },
+  },
+
+  payment: true,
+  review: true,
+};
+
 const getCustomerDashboard = async (userId) => {
   const cacheKey = `customer:${userId}:dashboard`;
 
   const cached = await getCache(cacheKey);
+
   if (cached) {
     return {
       ...cached,
@@ -58,7 +61,7 @@ const getCustomerDashboard = async (userId) => {
     };
   }
 
-  const [user, activeBookings, completedBookingsCount, recentBookings] =
+  const [user, wallet, activeBookings, completedBookingsCount, recentBookings] =
     await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
@@ -69,13 +72,18 @@ const getCustomerDashboard = async (userId) => {
           phone: true,
           role: true,
           isEmailVerified: true,
+          isPhoneVerified: true,
           isOnboarded: true,
+          isActive: true,
           customerProfile: true,
           vehicles: {
             orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
           },
-          wallet: true,
         },
+      }),
+
+      prisma.wallet.findUnique({
+        where: { userId },
       }),
 
       prisma.booking.findMany({
@@ -111,11 +119,16 @@ const getCustomerDashboard = async (userId) => {
       }),
     ]);
 
+  const vehicles = user?.vehicles || [];
+
   const data = {
     user,
-    vehicles: user?.vehicles || [],
-    vehicle: user?.vehicles?.find((v) => v.isDefault) || user?.vehicles?.[0] || null,
-    wallet: user?.wallet || null,
+    vehicles,
+    vehicle: vehicles.find((item) => item.isDefault) || vehicles[0] || null,
+    wallet:
+      wallet || {
+        balance: 0,
+      },
     activeBookings,
     completedBookingsCount,
     recentBookings,
