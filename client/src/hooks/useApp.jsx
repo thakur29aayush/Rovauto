@@ -521,8 +521,6 @@ const saveProfileCache = (data, fetchedAt) => {
       serviceHistoryFetchedAt,
       profileCache,
       profileFetchedAt,
-      profileCache,
-      profileFetchedAt,
 
       setUser,
       setToken,
