@@ -1,33 +1,85 @@
 const redis = require("../config/redis");
 
+const ensureRedisConnected = async () => {
+  if (!redis) return false;
+
+  if (redis.status === "ready") return true;
+
+  if (redis.status === "wait" || redis.status === "end") {
+    try {
+      await redis.connect();
+      return true;
+    } catch (error) {
+      console.error("Redis connect failed:", error.message);
+      return false;
+    }
+  }
+
+  return redis.status === "ready";
+};
+
 const getCache = async (key) => {
-  if (!redis) return null;
+  try {
+    const connected = await ensureRedisConnected();
+    if (!connected) return null;
 
-  const cached = await redis.get(key);
-  if (!cached) return null;
+    const cached = await redis.get(key);
+    if (!cached) return null;
 
-  return JSON.parse(cached);
+    console.log(`✅ Cache Hit: ${key}`);
+    return JSON.parse(cached);
+  } catch (error) {
+    console.error("Redis get failed:", error.message);
+    return null;
+  }
 };
 
 const setCache = async (key, data, ttlSeconds = 60) => {
-  if (!redis) return;
+  try {
+    const connected = await ensureRedisConnected();
+    if (!connected) return;
 
-  await redis.set(key, JSON.stringify(data), "EX", ttlSeconds);
+    await redis.set(key, JSON.stringify(data), "EX", ttlSeconds);
+    console.log(`💾 Cache Set: ${key}`);
+  } catch (error) {
+    console.error("Redis set failed:", error.message);
+  }
 };
 
 const deleteCache = async (key) => {
-  if (!redis) return;
+  try {
+    const connected = await ensureRedisConnected();
+    if (!connected) return;
 
-  await redis.del(key);
+    await redis.del(key);
+    console.log(`🧹 Cache Deleted: ${key}`);
+  } catch (error) {
+    console.error("Redis delete failed:", error.message);
+  }
 };
 
 const deletePattern = async (pattern) => {
-  if (!redis) return;
+  try {
+    const connected = await ensureRedisConnected();
+    if (!connected) return;
 
-  const keys = await redis.keys(pattern);
+    const stream = redis.scanStream({
+      match: pattern,
+      count: 100,
+    });
 
-  if (keys.length > 0) {
-    await redis.del(keys);
+    const keys = [];
+
+    for await (const resultKeys of stream) {
+      keys.push(...resultKeys);
+    }
+
+    if (keys.length > 0) {
+      await redis.del(...keys);
+      console.log(`🧹 Cache Deleted Pattern: ${pattern}`);
+    }
+  } catch (error) {
+    console.error("Redis pattern delete failed:", error.message);
   }
 };
 
