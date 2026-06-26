@@ -1,6 +1,7 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
 const generateBookingCode = require("../utils/bookingCode");
+const invalidateCustomerCache = require("../utils/invalidateCustomerCache");
 
 const bookingInclude = {
   user: {
@@ -37,6 +38,17 @@ const bookingInclude = {
   review: true,
   complaints: true,
 };
+
+const ALLOWED_BOOKING_STATUSES = [
+  "PENDING_PAYMENT",
+  "SEARCHING_GARAGE",
+  "GARAGE_ASSIGNED",
+  "CONFIRMED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "CANCELLED",
+  "EXPIRED",
+];
 
 const calculateHandlingFee = (totalServiceAmount) => {
   if (totalServiceAmount >= 300 && totalServiceAmount < 1000) return 30;
@@ -210,19 +222,10 @@ const createBooking = async (userId, data) => {
     });
   });
 
+  await invalidateCustomerCache(userId);
+
   return booking;
 };
-
-const ALLOWED_BOOKING_STATUSES = [
-  "PENDING_PAYMENT",
-  "SEARCHING_GARAGE",
-  "GARAGE_ASSIGNED",
-  "CONFIRMED",
-  "IN_PROGRESS",
-  "COMPLETED",
-  "CANCELLED",
-  "EXPIRED",
-];
 
 const getMyBookings = async (userId, query = {}) => {
   const { status } = query;
@@ -266,6 +269,7 @@ const getMyBookings = async (userId, query = {}) => {
     },
   });
 };
+
 const getBookingById = async (userId, bookingId) => {
   const booking = await prisma.booking.findFirst({
     where: {
@@ -332,7 +336,7 @@ const cancelBooking = async (userId, bookingId) => {
     throw new ApiError(400, "This booking cannot be cancelled");
   }
 
-  return prisma.$transaction(async (tx) => {
+  const cancelledBooking = await prisma.$transaction(async (tx) => {
     await tx.garageBroadcastRequest.updateMany({
       where: {
         bookingId,
@@ -354,6 +358,10 @@ const cancelBooking = async (userId, bookingId) => {
       include: bookingInclude,
     });
   });
+
+  await invalidateCustomerCache(userId);
+
+  return cancelledBooking;
 };
 
 module.exports = {

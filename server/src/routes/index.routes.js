@@ -19,6 +19,7 @@ const garageRequestRoutes = require("./garageRequest.routes");
 const serviceMediaRoutes = require("./serviceMedia.routes");
 const sosRoutes = require("./sos.routes");
 const contactRoutes = require("./contact.routes");
+const dashboardRoutes = require("./dashboard.routes");
 const router = express.Router();
 
 router.use("/auth", authRoutes);
@@ -36,7 +37,7 @@ router.use("/bookings", bookingRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/reviews", reviewRoutes);
 router.use("/complaints", complaintRoutes);
-
+router.use("/dashboard", dashboardRoutes);
 router.use("/wallet", walletRoutes);
 router.use("/garage/wallet", garageWalletRoutes);
 router.use("/garage/requests", garageRequestRoutes);

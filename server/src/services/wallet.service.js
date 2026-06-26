@@ -1,5 +1,6 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
+const invalidateCustomerCache = require("../utils/invalidateCustomerCache");
 
 const getOrCreateWallet = async (userId) => {
   const user = await prisma.user.findUnique({
@@ -75,7 +76,7 @@ const creditWallet = async (userId, amount, type = "CREDIT", meta = {}) => {
 
   const wallet = await getOrCreateWallet(userId);
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const currentWallet = await tx.wallet.findUnique({
       where: { id: wallet.id },
     });
@@ -108,6 +109,10 @@ const creditWallet = async (userId, amount, type = "CREDIT", meta = {}) => {
       transaction,
     };
   });
+
+  await invalidateCustomerCache(userId);
+
+  return result;
 };
 
 const debitWallet = async (userId, amount, type = "DEBIT", description) => {
@@ -117,7 +122,7 @@ const debitWallet = async (userId, amount, type = "DEBIT", description) => {
 
   const wallet = await getOrCreateWallet(userId);
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const currentWallet = await tx.wallet.findUnique({
       where: { id: wallet.id },
     });
@@ -152,6 +157,10 @@ const debitWallet = async (userId, amount, type = "DEBIT", description) => {
       transaction,
     };
   });
+
+  await invalidateCustomerCache(userId);
+
+  return result;
 };
 
 const rechargeWallet = async (userId, amount, meta = {}) => {

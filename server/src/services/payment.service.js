@@ -3,6 +3,7 @@ const razorpay = require("../config/razorpay");
 const ApiError = require("../utils/apiError");
 const verifyRazorpaySignature = require("../utils/razorpaySignature");
 const garageRequestService = require("./garageRequest.service");
+const invalidateCustomerCache = require("../utils/invalidateCustomerCache");
 
 const bookingInclude = {
   user: {
@@ -149,6 +150,8 @@ const verifyPayment = async (
       },
     });
 
+    await invalidateCustomerCache(userId);
+
     throw new ApiError(400, "Invalid payment signature");
   }
 
@@ -196,8 +199,12 @@ const verifyPayment = async (
       },
     });
 
+    await invalidateCustomerCache(userId);
+
     throw error;
   }
+
+  await invalidateCustomerCache(userId);
 
   return {
     ...result,
@@ -229,6 +236,7 @@ const getMyPayments = async (userId) => {
     },
   });
 };
+
 module.exports = {
   createPaymentOrder,
   verifyPayment,

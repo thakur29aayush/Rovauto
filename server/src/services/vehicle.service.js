@@ -1,5 +1,6 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
+const invalidateCustomerCache = require("../utils/invalidateCustomerCache");
 
 const createVehicle = async (userId, data) => {
   const vehicleCount = await prisma.vehicle.count({
@@ -16,7 +17,7 @@ const createVehicle = async (userId, data) => {
       });
     }
 
-    const vehicle = await tx.vehicle.create({
+    return tx.vehicle.create({
       data: {
         userId,
         brand: data.brand,
@@ -27,23 +28,18 @@ const createVehicle = async (userId, data) => {
         isDefault: shouldBeDefault,
       },
     });
-
-    return vehicle;
   });
+
+  await invalidateCustomerCache(userId);
 
   return result;
 };
 
 const getMyVehicles = async (userId) => {
-  const vehicles = await prisma.vehicle.findMany({
+  return prisma.vehicle.findMany({
     where: { userId },
-    orderBy: [
-      { isDefault: "desc" },
-      { createdAt: "desc" },
-    ],
+    orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
   });
-
-  return vehicles;
 };
 
 const getVehicleById = async (userId, vehicleId) => {
@@ -83,7 +79,7 @@ const updateVehicle = async (userId, vehicleId, data) => {
       });
     }
 
-    const updatedVehicle = await tx.vehicle.update({
+    return tx.vehicle.update({
       where: { id: vehicleId },
       data: {
         ...(data.brand !== undefined && { brand: data.brand }),
@@ -98,9 +94,9 @@ const updateVehicle = async (userId, vehicleId, data) => {
         }),
       },
     });
-
-    return updatedVehicle;
   });
+
+  await invalidateCustomerCache(userId);
 
   return result;
 };
@@ -118,9 +114,7 @@ const deleteVehicle = async (userId, vehicleId) => {
   }
 
   const bookingCount = await prisma.booking.count({
-    where: {
-      vehicleId,
-    },
+    where: { vehicleId },
   });
 
   if (bookingCount > 0) {
@@ -150,6 +144,8 @@ const deleteVehicle = async (userId, vehicleId) => {
     }
   });
 
+  await invalidateCustomerCache(userId);
+
   return {
     deleted: true,
   };
@@ -173,13 +169,13 @@ const setDefaultVehicle = async (userId, vehicleId) => {
       data: { isDefault: false },
     });
 
-    const updatedVehicle = await tx.vehicle.update({
+    return tx.vehicle.update({
       where: { id: vehicleId },
       data: { isDefault: true },
     });
-
-    return updatedVehicle;
   });
+
+  await invalidateCustomerCache(userId);
 
   return result;
 };
