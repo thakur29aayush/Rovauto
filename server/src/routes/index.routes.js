@@ -1,5 +1,6 @@
 const express = require("express");
 
+const notificationRoutes = require("./notification.routes");
 const vehicleMetaRoutes = require("./vehicleMeta.routes");
 const authRoutes = require("./auth.routes");
 const customerRoutes = require("./customer.routes");
@@ -32,7 +33,7 @@ router.use("/services", serviceMediaRoutes);
 router.use("/vehicle-meta", vehicleMetaRoutes);
 router.use("/garages", garageRoutes);
 router.use("/garages", garageMediaRoutes);
-
+router.use("/notifications", notificationRoutes);
 router.use("/bookings", bookingRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/reviews", reviewRoutes);

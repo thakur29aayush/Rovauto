@@ -1,22 +1,138 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import api from "@/api/axios";
 import { FiBell } from "react-icons/fi";
-const N = [
-  { t: "Mechanic arriving in 15 minutes", time: "2 min ago", new: true },
-  { t: "Your booking #RV2384 is confirmed", time: "1 hour ago", new: true },
-  { t: "Warranty W-2384 activated", time: "Yesterday" },
-  { t: "Special: 15% off on AC services this week", time: "2 days ago" },
-];
+
+const formatTime = (date) => {
+  if (!date) return "";
+
+  const diff = Date.now() - new Date(date).getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  if (days === 1) return "Yesterday";
+
+  return `${days} days ago`;
+};
+
 export default function Notifications() {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadNotifications = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const res = await api.get("/notifications");
+      setNotifications(res.data.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load notifications");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const markRead = async (notification) => {
+    if (notification.isRead) return;
+
+    try {
+      await api.patch(`/notifications/${notification.id}/read`);
+
+      setNotifications((current) =>
+        current.map((item) =>
+          item.id === notification.id ? { ...item, isRead: true } : item
+        )
+      );
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to mark notification read");
+    }
+  };
+
+  const markAllRead = async () => {
+    try {
+      await api.patch("/notifications/read-all");
+
+      setNotifications((current) =>
+        current.map((item) => ({ ...item, isRead: true }))
+      );
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to mark all as read");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div>
+        <h2 className="text-2xl font-bold mb-6">Notifications</h2>
+        <div className="card-soft p-6 text-muted">Loading notifications...</div>
+      </div>
+    );
+  }
+
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Notifications</h2>
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <h2 className="text-2xl font-bold">Notifications</h2>
+
+        {notifications.some((item) => !item.isRead) && (
+          <button type="button" onClick={markAllRead} className="btn-ghost text-sm">
+            Mark all read
+          </button>
+        )}
+      </div>
+
+      {error && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
       <div className="grid gap-3">
-        {N.map((n, i) => (
-          <div key={i} className={`card-soft p-4 flex items-center gap-4 ${n.new ? "border-l-4 border-l-brand" : ""}`}>
-            <span className="grid place-items-center h-10 w-10 rounded-xl bg-brand"><FiBell /></span>
-            <div className="flex-1"><div className="font-medium">{n.t}</div><div className="text-xs text-muted">{n.time}</div></div>
-            {n.new && <span className="chip-brand">New</span>}
+        {notifications.map((notification) => {
+          const Card = notification.link ? Link : "button";
+
+          return (
+            <Card
+              key={notification.id}
+              to={notification.link || undefined}
+              type={notification.link ? undefined : "button"}
+              onClick={() => markRead(notification)}
+              className={`card-soft p-4 flex items-center gap-4 text-left ${
+                !notification.isRead ? "border-l-4 border-l-brand" : ""
+              }`}
+            >
+              <span className="grid place-items-center h-10 w-10 rounded-xl bg-brand">
+                <FiBell />
+              </span>
+
+              <div className="flex-1">
+                <div className="font-medium">{notification.title}</div>
+                <div className="text-xs text-muted">{notification.message}</div>
+                <div className="text-xs text-muted mt-1">
+                  {formatTime(notification.createdAt)}
+                </div>
+              </div>
+
+              {!notification.isRead && <span className="chip-brand">New</span>}
+            </Card>
+          );
+        })}
+
+        {notifications.length === 0 && (
+          <div className="card-soft p-8 text-center text-muted">
+            No notifications yet. Peaceful. Suspicious, but peaceful.
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
