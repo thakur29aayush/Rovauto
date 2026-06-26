@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useApp } from "@/hooks/useApp";
-import api from "@/api/axios";
 import {
   FiTruck,
   FiCalendar,
@@ -9,43 +8,46 @@ import {
   FiArrowRight,
   FiCheckCircle,
   FiClock,
+  FiRefreshCcw,
 } from "react-icons/fi";
 
 export default function Dashboard() {
-  const { user, vehicle, vehicles, fetchMe } = useApp();
+  const { user, vehicle, vehicles, fetchDashboard } = useApp();
 
   const [bookings, setBookings] = useState([]);
   const [wallet, setWallet] = useState(null);
+  const [completedCount, setCompletedCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const activeBookings = bookings.filter((b) =>
-    ["PENDING_PAYMENT", "SEARCHING_GARAGE", "CONFIRMED", "IN_PROGRESS"].includes(
-      b.status
-    )
+  const activeBookings = bookings.filter((booking) =>
+    [
+      "PENDING_PAYMENT",
+      "SEARCHING_GARAGE",
+      "GARAGE_ASSIGNED",
+      "CONFIRMED",
+      "IN_PROGRESS",
+    ].includes(booking.status)
   );
 
-  const completedBookings = bookings.filter((b) => b.status === "COMPLETED");
   const activeBooking = activeBookings[0];
 
+  const loadDashboard = async ({ force = false } = {}) => {
+    try {
+      setLoading(true);
+
+      const dashboard = await fetchDashboard({ force });
+
+      setBookings(dashboard.activeBookings || []);
+      setWallet(dashboard.wallet || null);
+      setCompletedCount(dashboard.completedBookingsCount || 0);
+    } catch (error) {
+      console.error("Dashboard load failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        await fetchMe();
-
-        const [bookingRes, walletRes] = await Promise.all([
-          api.get("/bookings"),
-          api.get("/wallet"),
-        ]);
-
-        setBookings(bookingRes.data.data || []);
-        setWallet(walletRes.data.data || null);
-      } catch (err) {
-        console.error("Dashboard load failed:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadDashboard();
   }, []);
 
@@ -65,15 +67,29 @@ export default function Dashboard() {
       <div className="rounded-3xl bg-gradient-to-br from-ink to-ink-2 text-white p-8 relative overflow-hidden">
         <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-brand/20 blur-3xl" />
 
-        <h2 className="text-3xl font-bold">
-          Hello {user?.name || "there"} 👋
-        </h2>
+        <div className="relative flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold">
+              Hello {user?.name || "there"} 👋
+            </h2>
 
-        <p className="text-white/70 mt-2">
-          Manage bookings, wallet, vehicles, and service requests.
-        </p>
+            <p className="text-white/70 mt-2">
+              Manage bookings, wallet, vehicles, and service requests.
+            </p>
+          </div>
 
-        <div className="mt-6 flex flex-wrap gap-3">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => loadDashboard({ force: true })}
+            className="btn-ghost text-white border-white/20 hover:border-white disabled:opacity-50"
+          >
+            <FiRefreshCcw className={loading ? "animate-spin" : ""} />
+            Refresh
+          </button>
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-3 relative">
           <Link to="/booking/vehicle" className={heroButton}>
             Book a service
           </Link>
@@ -99,7 +115,7 @@ export default function Dashboard() {
           {
             icon: FiClock,
             l: "Completed",
-            n: completedBookings.length,
+            n: completedCount,
             sub: "Completed services",
           },
           {
@@ -114,15 +130,15 @@ export default function Dashboard() {
             n: vehicles?.length || 0,
             sub: vehicle ? `${vehicle.brand} ${vehicle.model}` : "Add a vehicle",
           },
-        ].map((s) => (
-          <div key={s.l} className="card-soft p-5">
+        ].map((item) => (
+          <div key={item.l} className="card-soft p-5">
             <div className="grid place-items-center h-10 w-10 rounded-xl bg-brand">
-              <s.icon />
+              <item.icon />
             </div>
 
-            <div className="text-3xl font-bold mt-3">{s.n}</div>
-            <div className="text-sm">{s.l}</div>
-            <div className="text-xs text-muted mt-1">{s.sub}</div>
+            <div className="text-3xl font-bold mt-3">{item.n}</div>
+            <div className="text-sm">{item.l}</div>
+            <div className="text-xs text-muted mt-1">{item.sub}</div>
           </div>
         ))}
       </div>
@@ -133,7 +149,11 @@ export default function Dashboard() {
             <h3 className="font-semibold">Active service</h3>
 
             {activeBooking && (
-              <Link to="/tracking" className="text-sm text-ink font-medium">
+              <Link
+                to="/tracking"
+                state={{ bookingId: activeBooking.id }}
+                className="text-sm text-ink font-medium"
+              >
                 Track <FiArrowRight className="inline" />
               </Link>
             )}
@@ -149,7 +169,7 @@ export default function Dashboard() {
                 <div className="flex-1">
                   <div className="font-semibold">
                     {activeBooking.services
-                      ?.map((s) => s.service?.name)
+                      ?.map((item) => item.service?.name)
                       .filter(Boolean)
                       .join(", ") || "Vehicle Service"}
                   </div>
@@ -176,8 +196,10 @@ export default function Dashboard() {
                         ? "20%"
                         : activeBooking.status === "SEARCHING_GARAGE"
                         ? "40%"
+                        : activeBooking.status === "GARAGE_ASSIGNED"
+                        ? "55%"
                         : activeBooking.status === "CONFIRMED"
-                        ? "60%"
+                        ? "65%"
                         : activeBooking.status === "IN_PROGRESS"
                         ? "80%"
                         : "100%",

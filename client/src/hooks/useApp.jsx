@@ -3,6 +3,8 @@ import api from "@/api/axios";
 
 const AppCtx = createContext(null);
 
+const DASHBOARD_CACHE_TTL = 5 * 60 * 1000;
+
 const readJson = (key, fallback = null) => {
   try {
     const value = localStorage.getItem(key);
@@ -13,9 +15,9 @@ const readJson = (key, fallback = null) => {
 };
 
 export function AppProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    return readJson("user", readJson("rov_user", null));
-  });
+  const [user, setUser] = useState(() =>
+    readJson("user", readJson("rov_user", null))
+  );
 
   const [token, setToken] = useState(() => {
     return localStorage.getItem("token") || null;
@@ -30,6 +32,7 @@ export function AppProvider({ children }) {
   });
 
   const [cart, setCart] = useState([]);
+
   const [location, setLocation] = useState({
     area: "Indirapuram",
     city: "Ghaziabad",
@@ -37,6 +40,55 @@ export function AppProvider({ children }) {
   });
 
   const [authLoading, setAuthLoading] = useState(true);
+
+  const [dashboardCache, setDashboardCache] = useState(() => {
+    return readJson("rov_dashboard", null);
+  });
+
+  const [dashboardFetchedAt, setDashboardFetchedAt] = useState(() => {
+    return Number(localStorage.getItem("rov_dashboard_time")) || null;
+  });
+
+  const clearDashboardCache = () => {
+    setDashboardCache(null);
+    setDashboardFetchedAt(null);
+
+    localStorage.removeItem("rov_dashboard");
+    localStorage.removeItem("rov_dashboard_time");
+  };
+
+  const saveDashboardCache = (data, fetchedAt) => {
+    setDashboardCache(data);
+    setDashboardFetchedAt(fetchedAt);
+
+    localStorage.setItem("rov_dashboard", JSON.stringify(data));
+    localStorage.setItem("rov_dashboard_time", String(fetchedAt));
+  };
+
+  const syncUserData = (me) => {
+    if (!me) return null;
+
+    setUser(me);
+
+    localStorage.setItem("user", JSON.stringify(me));
+    localStorage.setItem("rov_user", JSON.stringify(me));
+
+    const backendVehicles = me.vehicles || [];
+
+    setVehicles(backendVehicles);
+
+    const defaultVehicle =
+      backendVehicles.find((item) => item.isDefault) ||
+      backendVehicles[0] ||
+      null;
+
+    setVehicle(defaultVehicle);
+
+    localStorage.setItem("rov_vehicles", JSON.stringify(backendVehicles));
+    localStorage.setItem("rov_vehicle", JSON.stringify(defaultVehicle));
+
+    return me;
+  };
 
   const login = (userData, authToken) => {
     localStorage.setItem("user", JSON.stringify(userData));
@@ -48,18 +100,23 @@ export function AppProvider({ children }) {
     }
 
     setUser(userData);
+    clearDashboardCache();
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("rov_user");
+    localStorage.removeItem("rov_vehicle");
+    localStorage.removeItem("rov_vehicles");
 
     setToken(null);
     setUser(null);
     setVehicle(null);
     setVehicles([]);
     setCart([]);
+
+    clearDashboardCache();
   };
 
   const fetchMe = async () => {
@@ -74,23 +131,8 @@ export function AppProvider({ children }) {
       const res = await api.get("/auth/me");
       const me = res.data.data;
 
-      setUser(me);
-      localStorage.setItem("user", JSON.stringify(me));
-      localStorage.setItem("rov_user", JSON.stringify(me));
-
-      const backendVehicles = me.vehicles || [];
-      setVehicles(backendVehicles);
-
-      const defaultVehicle =
-        backendVehicles.find((v) => v.isDefault) || backendVehicles[0] || null;
-
-      setVehicle(defaultVehicle);
-
-      localStorage.setItem("rov_vehicles", JSON.stringify(backendVehicles));
-      localStorage.setItem("rov_vehicle", JSON.stringify(defaultVehicle));
-
-      return me;
-    } catch (error) {
+      return syncUserData(me);
+    } catch {
       logout();
       return null;
     } finally {
@@ -98,9 +140,48 @@ export function AppProvider({ children }) {
     }
   };
 
+  const fetchDashboard = async ({ force = false } = {}) => {
+    const now = Date.now();
+
+    if (!force && dashboardCache && dashboardFetchedAt) {
+      if (now - dashboardFetchedAt < DASHBOARD_CACHE_TTL) {
+        return dashboardCache;
+      }
+    }
+
+    const res = await api.get("/dashboard/customer");
+    const data = res.data.data;
+    const fetchedAt = Date.now();
+
+    saveDashboardCache(data, fetchedAt);
+
+    if (data.user) {
+      syncUserData({
+        ...data.user,
+        vehicles: data.vehicles || data.user.vehicles || [],
+      });
+    }
+
+    if (data.vehicles) {
+      setVehicles(data.vehicles);
+      localStorage.setItem("rov_vehicles", JSON.stringify(data.vehicles));
+    }
+
+    if (data.vehicle !== undefined) {
+      setVehicle(data.vehicle);
+      localStorage.setItem("rov_vehicle", JSON.stringify(data.vehicle));
+    }
+
+    return data;
+  };
+
   useEffect(() => {
-    fetchMe();
-  }, []);
+    if (token) {
+      setAuthLoading(false);
+    } else {
+      setAuthLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
     if (user) {
@@ -129,13 +210,15 @@ export function AppProvider({ children }) {
     setVehicles(updatedVehicles);
     setVehicle(newVehicle);
 
+    clearDashboardCache();
+
     return newVehicle;
   };
 
-  const addToCart = (svc) => {
+  const addToCart = (service) => {
     setCart((current) => {
-      const exists = current.find((item) => item.id === svc.id);
-      return exists ? current : [...current, svc];
+      const exists = current.find((item) => item.id === service.id);
+      return exists ? current : [...current, service];
     });
   };
 
@@ -157,6 +240,9 @@ export function AppProvider({ children }) {
       location,
       authLoading,
 
+      dashboardCache,
+      dashboardFetchedAt,
+
       setUser,
       setToken,
       setVehicle,
@@ -164,15 +250,32 @@ export function AppProvider({ children }) {
       setCart,
       setLocation,
 
+      setDashboardCache,
+      setDashboardFetchedAt,
+
       login,
       logout,
       fetchMe,
+      fetchDashboard,
+
+      clearDashboardCache,
+
       addVehicle,
       addToCart,
       removeFromCart,
       clearCart,
     }),
-    [user, token, vehicle, vehicles, cart, location, authLoading]
+    [
+      user,
+      token,
+      vehicle,
+      vehicles,
+      cart,
+      location,
+      authLoading,
+      dashboardCache,
+      dashboardFetchedAt,
+    ]
   );
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
