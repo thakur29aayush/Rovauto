@@ -1,5 +1,6 @@
 const express = require("express");
 
+const vehicleMetaRoutes = require("./vehicleMeta.routes");
 const authRoutes = require("./auth.routes");
 const customerRoutes = require("./customer.routes");
 const vehicleRoutes = require("./vehicle.routes");
@@ -27,7 +28,7 @@ router.use("/locations", locationRoutes);
 
 router.use("/services", serviceRoutes);
 router.use("/services", serviceMediaRoutes);
-
+router.use("/vehicle-meta", vehicleMetaRoutes);
 router.use("/garages", garageRoutes);
 router.use("/garages", garageMediaRoutes);
 

@@ -14,9 +14,11 @@ function ProtectedRoute({ children }) {
 
 function VehicleCheck({ children }) {
   const { user, vehicles } = useApp();
-  if (user && user.role === "customer" && vehicles.length === 0) {
+
+  if (user?.role === "CUSTOMER" && vehicles.length === 0) {
     return <Navigate to="/booking/vehicle" replace />;
   }
+
   return children;
 }
 

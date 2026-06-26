@@ -1,26 +1,194 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useApp } from "@/hooks/useApp";
-import { FiPlus, FiTruck } from "react-icons/fi";
+import api from "@/api/axios";
+import { FiPlus, FiTruck, FiTrash2, FiCheckCircle } from "react-icons/fi";
 
 export default function MyVehicles() {
-  const { vehicles, vehicle, setVehicle } = useApp();
+  const { vehicles, vehicle, setVehicle, setVehicles, fetchMe } = useApp();
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+  const [defaultLoadingId, setDefaultLoadingId] = useState(null);
+
+  const loadVehicles = async () => {
+    try {
+      setError("");
+      setLoading(true);
+
+      const res = await api.get("/vehicles");
+      const list = res.data.data || [];
+
+      setVehicles(list);
+
+      const defaultVehicle =
+        list.find((item) => item.isDefault) || list[0] || null;
+
+      setVehicle(defaultVehicle);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to fetch vehicles");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadVehicles();
+  }, []);
+
+  const handleSetDefault = async (selectedVehicle) => {
+    try {
+      setDefaultLoadingId(selectedVehicle.id);
+
+      await api.patch(`/vehicles/${selectedVehicle.id}/default`);
+
+      const updatedVehicles = vehicles.map((item) => ({
+        ...item,
+        isDefault: item.id === selectedVehicle.id,
+      }));
+
+      setVehicles(updatedVehicles);
+      setVehicle({
+        ...selectedVehicle,
+        isDefault: true,
+      });
+
+      await fetchMe?.();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to set default vehicle");
+    } finally {
+      setDefaultLoadingId(null);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    const confirmed = window.confirm("Delete this vehicle?");
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(id);
+
+      await api.delete(`/vehicles/${id}`);
+
+      const updatedVehicles = vehicles.filter((item) => item.id !== id);
+      setVehicles(updatedVehicles);
+
+      if (vehicle?.id === id) {
+        const nextVehicle =
+          updatedVehicles.find((item) => item.isDefault) ||
+          updatedVehicles[0] ||
+          null;
+
+        setVehicle(nextVehicle);
+      }
+
+      await fetchMe?.();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete vehicle");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="card-soft p-8 text-muted">
+        Loading vehicles...
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">My Vehicles</h2>
-        <Link to="/booking/vehicle" className="btn-primary"><FiPlus /> Add Vehicle</Link>
+
+        <Link to="/booking/vehicle" className="btn-primary">
+          <FiPlus /> Add Vehicle
+        </Link>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {vehicles.map((v) => (
-          <button key={v.id} onClick={() => setVehicle(v)} className={`card-soft p-5 text-left transition ${vehicle?.id === v.id ? "ring-2 ring-ink" : ""}`}>
-            <div className="flex items-center gap-3">
-              <span className="grid place-items-center h-12 w-12 rounded-2xl bg-brand"><FiTruck /></span>
-              <div><div className="font-semibold">{v.brand} {v.model}</div><div className="text-xs text-muted">{v.fuel} · {v.reg}</div></div>
+        {vehicles.map((v) => {
+          const isActive = vehicle?.id === v.id || v.isDefault;
+
+          return (
+            <div
+              key={v.id}
+              className={`card-soft p-5 text-left transition ${
+                isActive ? "ring-2 ring-ink" : ""
+              }`}
+            >
+              <button
+                onClick={() => handleSetDefault(v)}
+                className="w-full text-left"
+                disabled={defaultLoadingId === v.id}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="grid place-items-center h-12 w-12 rounded-2xl bg-brand">
+                    <FiTruck />
+                  </span>
+
+                  <div>
+                    <div className="font-semibold">
+                      {v.brand} {v.model}
+                    </div>
+
+                    <div className="text-xs text-muted">
+                      {v.fuelType || "Fuel"} ·{" "}
+                      {v.registrationNumber || "No registration"}
+                    </div>
+
+                    <div className="text-xs text-muted">
+                      Year: {v.year}
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              <div className="mt-4 flex items-center justify-between gap-2">
+                {isActive ? (
+                  <span className="chip-brand inline-flex">
+                    <FiCheckCircle /> Default
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => handleSetDefault(v)}
+                    disabled={defaultLoadingId === v.id}
+                    className="text-xs font-medium text-ink hover:underline"
+                  >
+                    {defaultLoadingId === v.id ? "Setting..." : "Set Default"}
+                  </button>
+                )}
+
+                <button
+                  onClick={() => handleDelete(v.id)}
+                  disabled={deletingId === v.id}
+                  className="text-xs font-medium text-red-600 hover:underline inline-flex items-center gap-1"
+                >
+                  <FiTrash2 />
+                  {deletingId === v.id ? "Deleting..." : "Delete"}
+                </button>
+              </div>
             </div>
-            {vehicle?.id === v.id && <span className="chip-brand mt-4 inline-flex">Active</span>}
-          </button>
-        ))}
-        {vehicles.length === 0 && <div className="card-soft p-8 text-center text-muted">No vehicles yet. <Link to="/booking/vehicle" className="text-ink font-medium">Add one</Link></div>}
+          );
+        })}
+
+        {vehicles.length === 0 && (
+          <div className="card-soft p-8 text-center text-muted">
+            No vehicles yet.{" "}
+            <Link to="/booking/vehicle" className="text-ink font-medium">
+              Add one
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

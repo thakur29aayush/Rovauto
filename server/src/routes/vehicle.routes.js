@@ -19,17 +19,17 @@ router
   .post(createVehicleValidation, validate, vehicleController.createVehicle)
   .get(vehicleController.getMyVehicles);
 
-router
-  .route("/:id")
-  .get(vehicleIdValidation, validate, vehicleController.getVehicleById)
-  .patch(updateVehicleValidation, validate, vehicleController.updateVehicle)
-  .delete(vehicleIdValidation, validate, vehicleController.deleteVehicle);
-
 router.patch(
   "/:id/default",
   vehicleIdValidation,
   validate,
   vehicleController.setDefaultVehicle
 );
+
+router
+  .route("/:id")
+  .get(vehicleIdValidation, validate, vehicleController.getVehicleById)
+  .patch(updateVehicleValidation, validate, vehicleController.updateVehicle)
+  .delete(vehicleIdValidation, validate, vehicleController.deleteVehicle);
 
 module.exports = router;
