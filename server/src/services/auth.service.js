@@ -9,23 +9,46 @@ const {
 const { createAuthToken } = require("./token.service");
 
 const signup = async ({ name, email, phone, password }) => {
+  const cleanName = name?.trim();
+  const cleanEmail = email?.trim()?.toLowerCase();
+  const cleanPhone = phone?.trim() || null;
+
+  if (!cleanName || !cleanEmail || !password) {
+    throw new ApiError(400, "Name, email and password are required");
+  }
+
+  if (password.length < 8) {
+    throw new ApiError(400, "Password must be at least 8 characters");
+  }
+
+  const duplicateChecks = [{ email: cleanEmail }];
+
+  if (cleanPhone) {
+    duplicateChecks.push({ phone: cleanPhone });
+  }
+
   const existingUser = await prisma.user.findFirst({
     where: {
-      OR: [{ email }, { phone }],
+      OR: duplicateChecks,
     },
   });
 
   if (existingUser) {
-    throw new ApiError(409, "User with this email or phone already exists");
+    throw new ApiError(
+      409,
+      existingUser.email === cleanEmail
+        ? "User with this email already exists"
+        : "User with this phone already exists"
+    );
   }
 
   const hashedPassword = await argon2.hash(password);
 
   const user = await prisma.user.create({
     data: {
-      name,
-      email,
-      phone,
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
       password: hashedPassword,
       customerProfile: {
         create: {},
@@ -43,8 +66,10 @@ const signup = async ({ name, email, phone, password }) => {
 };
 
 const verifyOtp = async ({ email, otp }) => {
+  const cleanEmail = email?.trim()?.toLowerCase();
+
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { email: cleanEmail },
   });
 
   if (!user) {
@@ -109,8 +134,10 @@ const verifyOtp = async ({ email, otp }) => {
 };
 
 const resendOtp = async ({ email }) => {
+  const cleanEmail = email?.trim()?.toLowerCase();
+
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { email: cleanEmail },
   });
 
   if (!user) {
@@ -129,9 +156,15 @@ const resendOtp = async ({ email }) => {
 };
 
 const login = async ({ identifier, password }) => {
+  const cleanIdentifier = identifier?.trim()?.toLowerCase();
+
+  if (!cleanIdentifier || !password) {
+    throw new ApiError(400, "Email/phone and password are required");
+  }
+
   const user = await prisma.user.findFirst({
     where: {
-      OR: [{ email: identifier }, { phone: identifier }],
+      OR: [{ email: cleanIdentifier }, { phone: cleanIdentifier }],
     },
   });
 
@@ -163,7 +196,7 @@ const login = async ({ identifier, password }) => {
     isOnboarded: user.isOnboarded,
   };
 
-  const token = createAuthToken(user);
+  const token = createAuthToken(safeUser);
 
   return {
     user: safeUser,
@@ -198,10 +231,11 @@ const getMe = async (userId) => {
   return user;
 };
 
-
 const forgotPassword = async ({ email }) => {
+  const cleanEmail = email?.trim()?.toLowerCase();
+
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { email: cleanEmail },
   });
 
   if (!user) {
@@ -220,8 +254,10 @@ const forgotPassword = async ({ email }) => {
 };
 
 const resetPassword = async ({ email, otp, newPassword }) => {
+  const cleanEmail = email?.trim()?.toLowerCase();
+
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { email: cleanEmail },
   });
 
   if (!user) {

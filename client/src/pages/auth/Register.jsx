@@ -17,7 +17,10 @@ export default function Register() {
   const [error, setError] = useState("");
 
   const change = (e) => {
-    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const submit = async (e) => {
@@ -26,12 +29,22 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await api.post("/auth/signup", form);
+      const payload = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+      };
+
+      if (form.phone.trim()) {
+        payload.phone = form.phone.trim();
+      }
+
+      await api.post("/auth/signup", payload);
 
       nav("/otp", {
         state: {
           email: form.email,
-          phone: form.phone,
+          phone: form.phone || null,
           fromSignup: true,
         },
       });
@@ -43,18 +56,20 @@ export default function Register() {
   };
 
   return (
-    <div className="container-x py-16 grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
+    <div className="container-x grid min-h-[80vh] items-center gap-12 py-16 lg:grid-cols-2">
       <div className="hidden lg:block">
         <Logo />
-        <h1 className="text-5xl font-bold mt-8 leading-tight">
+
+        <h1 className="mt-8 text-5xl font-bold leading-tight">
           Create your <span className="text-brand-dark">Rovauto</span> account.
         </h1>
-        <p className="text-muted mt-4 max-w-md">
+
+        <p className="mt-4 max-w-md text-muted">
           Book trusted services and manage your vehicle care.
         </p>
       </div>
 
-      <div className="card-soft p-7 max-w-md w-full mx-auto">
+      <div className="card-soft mx-auto w-full max-w-md p-7">
         <h2 className="text-2xl font-bold">Create account</h2>
 
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
@@ -66,7 +81,7 @@ export default function Register() {
             value={form.name}
             onChange={change}
             placeholder="Full name"
-            className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
+            className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
           />
 
           <input
@@ -76,17 +91,16 @@ export default function Register() {
             onChange={change}
             type="email"
             placeholder="Email"
-            className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
+            className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
           />
 
           <input
-            required
             name="phone"
             value={form.phone}
             onChange={change}
             maxLength={15}
-            placeholder="Mobile number"
-            className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
+            placeholder="Mobile number optional"
+            className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
           />
 
           <input
@@ -97,7 +111,7 @@ export default function Register() {
             type="password"
             placeholder="Password"
             minLength={8}
-            className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
+            className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
           />
 
           <button disabled={loading} className="btn-primary mt-2">
@@ -106,7 +120,7 @@ export default function Register() {
 
           <div className="text-center text-sm text-muted">
             Already a member?{" "}
-            <Link to="/login" className="text-ink font-medium">
+            <Link to="/login" className="font-medium text-ink">
               Login
             </Link>
           </div>

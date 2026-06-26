@@ -37,9 +37,9 @@ export default function Dashboard() {
 
       const dashboard = await fetchDashboard({ force });
 
-      setBookings(dashboard.activeBookings || []);
-      setWallet(dashboard.wallet || null);
-      setCompletedCount(dashboard.completedBookingsCount || 0);
+      setBookings(dashboard?.activeBookings || []);
+      setWallet(dashboard?.wallet || null);
+      setCompletedCount(dashboard?.completedBookingsCount || 0);
     } catch (error) {
       console.error("Dashboard load failed:", error);
     } finally {
@@ -60,12 +60,12 @@ export default function Dashboard() {
   }
 
   const heroButton =
-    "inline-flex items-center justify-center rounded-full bg-brand px-8 py-3 text-sm font-bold !text-black shadow-lg shadow-brand/25 transition hover:scale-[1.02] hover:bg-brand-dark hover:!text-black";
+    "btn-primary px-8 py-3 !text-black hover:!text-black active:!text-black visited:!text-black focus:!text-black";
 
   return (
     <div className="grid gap-6">
-      <div className="rounded-3xl bg-gradient-to-br from-ink to-ink-2 text-white p-8 relative overflow-hidden">
-        <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-brand/20 blur-3xl" />
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-ink to-ink-2 p-8 text-white">
+        <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-brand/20 blur-3xl" />
 
         <div className="relative flex items-start justify-between gap-4">
           <div>
@@ -73,7 +73,7 @@ export default function Dashboard() {
               Hello {user?.name || "there"} 👋
             </h2>
 
-            <p className="text-white/70 mt-2">
+            <p className="mt-2 text-white/70">
               Manage bookings, wallet, vehicles, and service requests.
             </p>
           </div>
@@ -82,14 +82,14 @@ export default function Dashboard() {
             type="button"
             disabled={loading}
             onClick={() => loadDashboard({ force: true })}
-            className="btn-ghost text-white border-white/20 hover:border-white disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <FiRefreshCcw className={loading ? "animate-spin" : ""} />
             Refresh
           </button>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-3 relative">
+        <div className="relative mt-6 flex flex-wrap gap-3">
           <Link to="/booking/vehicle" className={heroButton}>
             Book a service
           </Link>
@@ -104,55 +104,59 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           {
             icon: FiCalendar,
-            l: "Active Bookings",
-            n: activeBookings.length,
+            label: "Active Bookings",
+            number: activeBookings.length,
             sub: "Current service requests",
           },
           {
             icon: FiClock,
-            l: "Completed",
-            n: completedCount,
+            label: "Completed",
+            number: completedCount,
             sub: "Completed services",
           },
           {
             icon: FiShield,
-            l: "Wallet Coins",
-            n: wallet?.balance || 0,
+            label: "Wallet Coins",
+            number: wallet?.balance || 0,
             sub: "RovAuto wallet balance",
           },
           {
             icon: FiTruck,
-            l: "Vehicles",
-            n: vehicles?.length || 0,
+            label: "Vehicles",
+            number: vehicles?.length || 0,
             sub: vehicle ? `${vehicle.brand} ${vehicle.model}` : "Add a vehicle",
           },
-        ].map((item) => (
-          <div key={item.l} className="card-soft p-5">
-            <div className="grid place-items-center h-10 w-10 rounded-xl bg-brand text-black">
-              <item.icon />
-            </div>
+        ].map((item) => {
+          const Icon = item.icon;
 
-            <div className="text-3xl font-bold mt-3">{item.n}</div>
-            <div className="text-sm">{item.l}</div>
-            <div className="text-xs text-muted mt-1">{item.sub}</div>
-          </div>
-        ))}
+          return (
+            <div key={item.label} className="card-soft p-5">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-brand text-black">
+                <Icon />
+              </div>
+
+              <div className="mt-3 text-3xl font-bold">{item.number}</div>
+              <div className="text-sm">{item.label}</div>
+              <div className="mt-1 text-xs text-muted">{item.sub}</div>
+            </div>
+          );
+        })}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-5">
+      <div className="grid gap-5 lg:grid-cols-3">
         <div className="card-soft p-6 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="font-semibold">Active service</h3>
 
             {activeBooking && (
               <Link
                 to="/tracking"
                 state={{ bookingId: activeBooking.id }}
-                className="text-sm text-ink font-medium"
+                className="text-sm font-medium text-ink"
               >
                 Track <FiArrowRight className="inline" />
               </Link>
@@ -162,7 +166,7 @@ export default function Dashboard() {
           {activeBooking ? (
             <>
               <div className="flex items-center gap-4">
-                <span className="grid place-items-center h-14 w-14 rounded-2xl bg-brand text-black">
+                <span className="grid h-14 w-14 place-items-center rounded-2xl bg-brand text-black">
                   <FiTruck className="text-xl" />
                 </span>
 
@@ -183,11 +187,11 @@ export default function Dashboard() {
                 </div>
 
                 <span className="chip-brand">
-                  {activeBooking.status.replaceAll("_", " ")}
+                  {activeBooking.status?.replaceAll("_", " ")}
                 </span>
               </div>
 
-              <div className="mt-4 h-2 bg-bg-soft rounded-full overflow-hidden">
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-bg-soft">
                 <div
                   className="h-full bg-brand"
                   style={{
@@ -215,7 +219,7 @@ export default function Dashboard() {
         </div>
 
         <div className="card-soft p-6">
-          <h3 className="font-semibold mb-3">Quick Actions</h3>
+          <h3 className="mb-3 font-semibold">Quick Actions</h3>
 
           <ul className="grid gap-3 text-sm">
             {[
@@ -229,7 +233,7 @@ export default function Dashboard() {
             ].map(([name, desc, to]) => (
               <li key={name}>
                 <Link to={to} className="flex items-start gap-3 hover:text-ink">
-                  <FiCheckCircle className="text-brand-dark mt-0.5" />
+                  <FiCheckCircle className="mt-0.5 text-brand-dark" />
 
                   <div>
                     <div className="font-medium">{name}</div>
