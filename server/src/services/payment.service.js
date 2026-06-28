@@ -33,6 +33,10 @@ const bookingInclude = {
 };
 
 const createPaymentOrder = async (userId, { bookingId }) => {
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    throw new ApiError(500, "Razorpay payment gateway is not configured");
+  }
+
   const booking = await prisma.booking.findFirst({
     where: {
       id: bookingId,
