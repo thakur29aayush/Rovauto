@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FiMail,
   FiPhone,
@@ -7,6 +7,7 @@ import {
   FiChevronDown,
 } from "react-icons/fi";
 import api from "@/api/axios";
+import { useApp } from "@/hooks/useApp";
 
 const FAQS = [
   [
@@ -28,6 +29,8 @@ const FAQS = [
 ];
 
 export default function Contact() {
+  const { user, fetchProfile } = useApp();
+
   const [sent, setSent] = useState(false);
   const [open, setOpen] = useState(0);
 
@@ -37,8 +40,39 @@ export default function Contact() {
     message: "",
   });
 
+  const [profileLoading, setProfileLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const fillUser = (data) => {
+    setForm((prev) => ({
+      ...prev,
+      name: data?.name || "",
+      email: data?.email || "",
+    }));
+  };
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        setProfileLoading(true);
+
+        if (user?.name || user?.email) {
+          fillUser(user);
+          return;
+        }
+
+        const profile = await fetchProfile?.();
+        fillUser(profile);
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to load user details");
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    loadUser();
+  }, [user, fetchProfile]);
 
   const change = (e) => {
     setForm((prev) => ({
@@ -54,14 +88,17 @@ export default function Contact() {
       setLoading(true);
       setError("");
 
-      await api.post("/contact", form);
+      await api.post("/contact", {
+        name: form.name,
+        email: form.email,
+        message: form.message,
+      });
 
       setSent(true);
-      setForm({
-        name: "",
-        email: "",
+      setForm((prev) => ({
+        ...prev,
         message: "",
-      });
+      }));
     } catch (err) {
       setError(err.response?.data?.message || "Failed to send message");
     } finally {
@@ -151,19 +188,19 @@ export default function Contact() {
                 required
                 name="name"
                 value={form.name}
-                onChange={change}
-                placeholder="Your name"
-                className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
+                readOnly
+                placeholder={profileLoading ? "Loading name..." : "Your name"}
+                className="px-4 py-3 rounded-xl border border-line bg-bg-soft text-muted outline-none cursor-not-allowed"
               />
 
               <input
                 required
                 name="email"
                 value={form.email}
-                onChange={change}
+                readOnly
                 type="email"
-                placeholder="Email"
-                className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
+                placeholder={profileLoading ? "Loading email..." : "Email"}
+                className="px-4 py-3 rounded-xl border border-line bg-bg-soft text-muted outline-none cursor-not-allowed"
               />
 
               <textarea
@@ -176,7 +213,10 @@ export default function Contact() {
                 className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
               />
 
-              <button disabled={loading} className="btn-primary">
+              <button
+                disabled={loading || profileLoading || !form.name || !form.email}
+                className="btn-primary disabled:opacity-60"
+              >
                 {loading ? "Sending..." : "Send Message"}
               </button>
             </form>
@@ -202,9 +242,7 @@ export default function Contact() {
                 </button>
 
                 {open === i && (
-                  <div className="px-5 pb-5 text-muted text-sm">
-                    {a}
-                  </div>
+                  <div className="px-5 pb-5 text-muted text-sm">{a}</div>
                 )}
               </div>
             ))}
