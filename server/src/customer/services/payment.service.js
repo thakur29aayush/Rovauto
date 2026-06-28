@@ -37,6 +37,25 @@ const bookingInclude = {
   broadcasts: true,
 };
 
+const getCashfreeCustomerPhone = (phone) => {
+  const digits = String(phone || "").replace(/\D/g, "");
+
+  if (digits.length >= 10) {
+    return digits.slice(-10);
+  }
+
+  return "9999999999";
+};
+
+const getCashfreeErrorMessage = (error, fallback) => {
+  const cashfreeMessage =
+    error.response?.data?.message ||
+    error.response?.data?.error_description ||
+    error.response?.data?.error;
+
+  return cashfreeMessage || fallback;
+};
+
 const createPaymentOrder = async (userId, { bookingId }) => {
   if (!isCashfreeConfigured()) {
     throw new ApiError(500, "Cashfree payment gateway is not configured");
@@ -81,32 +100,41 @@ const createPaymentOrder = async (userId, { bookingId }) => {
   const cashfreeOrderId = `cf_${booking.bookingCode}_${Date.now()}`;
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
-  const cashfreeRes = await axios.post(
-    `${getCashfreeBaseUrl()}/orders`,
-    {
-      order_id: cashfreeOrderId,
-      order_amount: amount,
-      order_currency: "INR",
-      customer_details: {
-        customer_id: userId,
-        customer_name: booking.user?.name || "Rovauto Customer",
-        customer_email: booking.user?.email || undefined,
-        customer_phone: booking.user?.phone || "9999999999",
-      },
-      order_meta: {
-        return_url: `${frontendUrl}/dashboard/payments?cashfree_order_id={order_id}`,
-        notify_url: process.env.CASHFREE_NOTIFY_URL || undefined,
-      },
-      order_note: `Booking ${booking.bookingCode}`,
-      order_tags: {
-        bookingId: booking.id,
-        userId,
-      },
-    },
-    { headers: getCashfreeHeaders() }
-  );
+  let cashfreeOrder;
 
-  const cashfreeOrder = cashfreeRes.data;
+  try {
+    const cashfreeRes = await axios.post(
+      `${getCashfreeBaseUrl()}/orders`,
+      {
+        order_id: cashfreeOrderId,
+        order_amount: amount,
+        order_currency: "INR",
+        customer_details: {
+          customer_id: userId,
+          customer_name: booking.user?.name || "Rovauto Customer",
+          customer_email: booking.user?.email || undefined,
+          customer_phone: getCashfreeCustomerPhone(booking.user?.phone),
+        },
+        order_meta: {
+          return_url: `${frontendUrl}/dashboard/payments?cashfree_order_id={order_id}`,
+          notify_url: process.env.CASHFREE_NOTIFY_URL || undefined,
+        },
+        order_note: `Booking ${booking.bookingCode}`,
+        order_tags: {
+          bookingId: booking.id,
+          userId,
+        },
+      },
+      { headers: getCashfreeHeaders() }
+    );
+
+    cashfreeOrder = cashfreeRes.data;
+  } catch (error) {
+    throw new ApiError(
+      error.response?.status || 502,
+      getCashfreeErrorMessage(error, "Unable to create Cashfree order")
+    );
+  }
 
   const payment = await prisma.payment.upsert({
     where: {
@@ -183,12 +211,21 @@ const verifyPayment = async (userId, { bookingId, cashfreeOrderId }) => {
     throw new ApiError(400, "Invalid Cashfree order ID");
   }
 
-  const cashfreeRes = await axios.get(
-    `${getCashfreeBaseUrl()}/orders/${cashfreeOrderId}`,
-    { headers: getCashfreeHeaders() }
-  );
+  let cashfreeOrder;
 
-  const cashfreeOrder = cashfreeRes.data;
+  try {
+    const cashfreeRes = await axios.get(
+      `${getCashfreeBaseUrl()}/orders/${cashfreeOrderId}`,
+      { headers: getCashfreeHeaders() }
+    );
+
+    cashfreeOrder = cashfreeRes.data;
+  } catch (error) {
+    throw new ApiError(
+      error.response?.status || 502,
+      getCashfreeErrorMessage(error, "Unable to verify Cashfree payment")
+    );
+  }
   const orderStatus = cashfreeOrder.order_status;
 
   if (orderStatus !== "PAID") {
