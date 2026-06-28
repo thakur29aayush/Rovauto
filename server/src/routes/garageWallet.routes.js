@@ -8,7 +8,7 @@ const validate = require("../middlewares/validate.middleware");
 const {
   walletRechargeSchema,
   walletTransactionQuerySchema,
-} = require("../validations/wallet.validation");
+} = require("../customer/validations/wallet.validation");
 
 const router = express.Router();
 

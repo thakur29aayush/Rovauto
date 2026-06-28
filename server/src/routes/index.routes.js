@@ -1,26 +1,26 @@
 const express = require("express");
 
-const notificationRoutes = require("./notification.routes");
-const vehicleMetaRoutes = require("./vehicleMeta.routes");
-const authRoutes = require("./auth.routes");
-const customerRoutes = require("./customer.routes");
-const vehicleRoutes = require("./vehicle.routes");
-const locationRoutes = require("./location.routes");
-const serviceRoutes = require("./service.routes");
+const notificationRoutes = require("../customer/routes/notification.routes");
+const vehicleMetaRoutes = require("../customer/routes/vehicleMeta.routes");
+const authRoutes = require("../customer/routes/auth.routes");
+const customerRoutes = require("../customer/routes/customer.routes");
+const vehicleRoutes = require("../customer/routes/vehicle.routes");
+const locationRoutes = require("../customer/routes/location.routes");
+const serviceRoutes = require("../customer/routes/service.routes");
 const garageRoutes = require("./garage.routes");
-const bookingRoutes = require("./booking.routes");
-const paymentRoutes = require("./payment.routes");
-const reviewRoutes = require("./review.routes");
-const complaintRoutes = require("./complaint.routes");
+const bookingRoutes = require("../customer/routes/booking.routes");
+const paymentRoutes = require("../customer/routes/payment.routes");
+const reviewRoutes = require("../customer/routes/review.routes");
+const complaintRoutes = require("../customer/routes/complaint.routes");
 const garageMediaRoutes = require("./garageMedia.routes");
 
-const walletRoutes = require("./wallet.routes");
+const walletRoutes = require("../customer/routes/wallet.routes");
 const garageWalletRoutes = require("./garageWallet.routes");
 const garageRequestRoutes = require("./garageRequest.routes");
-const serviceMediaRoutes = require("./serviceMedia.routes");
-const sosRoutes = require("./sos.routes");
-const contactRoutes = require("./contact.routes");
-const dashboardRoutes = require("./dashboard.routes");
+const serviceMediaRoutes = require("../customer/routes/serviceMedia.routes");
+const sosRoutes = require("../customer/routes/sos.routes");
+const contactRoutes = require("../customer/routes/contact.routes");
+const dashboardRoutes = require("../customer/routes/dashboard.routes");
 const router = express.Router();
 
 router.use("/auth", authRoutes);
