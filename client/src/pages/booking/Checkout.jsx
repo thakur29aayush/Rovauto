@@ -45,7 +45,7 @@ export default function Checkout() {
 
   const subTotal = cart.reduce((sum, item) => sum + getServicePrice(item), 0);
   const displaySubTotal = subTotal || 0;
-  const fee = calculateHandlingFee(displaySubTotal);
+  const fee = cart.length === 0 ? 0 : calculateHandlingFee(displaySubTotal);
   const payAtGarage = displaySubTotal;
 
   const buildLocationPayload = () => ({
@@ -239,15 +239,19 @@ export default function Checkout() {
 
         <div className="mb-2 font-semibold">Order Summary</div>
         <div className="grid gap-2 text-sm">
-          {(cart.length
-            ? cart
-            : [{ id: "demo", name: "Standard Service Package", price: 3500 }]
-          ).map((item) => (
-            <div key={item.id} className="flex justify-between gap-4">
-              <span className="min-w-0 truncate">{item.name}</span>
-              <span className="font-semibold">Rs. {getServicePrice(item)}</span>
+          {cart.length === 0 ? (
+            <div className="flex justify-between gap-4 text-muted">
+              <span>No services selected</span>
+              <span>Rs. 0</span>
             </div>
-          ))}
+          ) : (
+            cart.map((item) => (
+              <div key={item.id} className="flex justify-between gap-4">
+                <span className="min-w-0 truncate">{item.name}</span>
+                <span className="font-semibold">Rs. {getServicePrice(item)}</span>
+              </div>
+            ))
+          )}
           <div className="flex justify-between text-muted">
             <span>Platform fee</span>
             <span>Rs. {fee}</span>
