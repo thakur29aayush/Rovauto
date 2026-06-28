@@ -7,8 +7,8 @@ const walletRechargeSchema = [
 
   body("paymentMethod")
     .optional({ nullable: true, checkFalsy: true })
-    .isIn(["RAZORPAY", "UPI"])
-    .withMessage("Payment method must be RAZORPAY or UPI"),
+    .isIn(["CASHFREE", "UPI"])
+    .withMessage("Payment method must be CASHFREE or UPI"),
 ];
 
 const useWalletSchema = [

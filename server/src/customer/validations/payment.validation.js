@@ -7,20 +7,10 @@ const createPaymentOrderValidation = [
 const verifyPaymentValidation = [
   body("bookingId").isUUID().withMessage("Valid booking ID is required"),
 
-  body("razorpayOrderId")
+  body("cashfreeOrderId")
     .trim()
     .notEmpty()
-    .withMessage("Razorpay order ID is required"),
-
-  body("razorpayPaymentId")
-    .trim()
-    .notEmpty()
-    .withMessage("Razorpay payment ID is required"),
-
-  body("razorpaySignature")
-    .trim()
-    .notEmpty()
-    .withMessage("Razorpay signature is required"),
+    .withMessage("Cashfree order ID is required"),
 ];
 
 module.exports = {

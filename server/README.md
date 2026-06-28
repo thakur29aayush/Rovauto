@@ -7,7 +7,7 @@ Express + Prisma backend for Rovauto.
 - REST API under `/api/v1`
 - JWT-protected customer APIs
 - Customer booking, vehicle, service, payment, wallet, complaint, review, notification, profile, dashboard, and SOS modules
-- Razorpay order creation and payment verification
+- Cashfree order creation and payment verification
 - Pending-payment support through persisted `Payment` and `Booking` states
 - Garage request broadcasting after successful payment verification
 - Redis-backed cache utility with safe fallback when `REDIS_URL` is not configured
@@ -60,8 +60,10 @@ JWT_EXPIRES_IN="7d"
 RESEND_API_KEY=""
 EMAIL_FROM=""
 
-RAZORPAY_KEY_ID=""
-RAZORPAY_KEY_SECRET=""
+CASHFREE_APP_ID=""
+CASHFREE_SECRET_KEY=""
+CASHFREE_ENV="sandbox"
+CASHFREE_NOTIFY_URL=""
 
 CLOUDINARY_CLOUD_NAME=""
 CLOUDINARY_API_KEY=""
@@ -126,7 +128,7 @@ Mounted under `/api/v1`:
 
 ## Production Notes
 
-- Add Razorpay webhooks before real production payment traffic.
+- Add Cashfree webhooks before real production payment traffic.
 - Keep all secrets in deployment environment variables, not committed files.
 - Confirm role checks on garage/admin routes before public launch.
 - Configure `CLIENT_URL` / `FRONTEND_URL` for production CORS.

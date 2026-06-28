@@ -126,7 +126,7 @@ export default function Payments() {
             {items.map((payment) => (
               <tr key={payment.id} className="border-t border-line">
                 <td className="px-4 py-3 font-medium">
-                  {payment.razorpayPaymentId || payment.razorpayOrderId || payment.id}
+                  {payment.cashfreePaymentId || payment.cashfreeOrderId || payment.id}
                 </td>
 
                 <td className="px-4 py-3">{getServiceText(payment)}</td>
@@ -138,7 +138,7 @@ export default function Payments() {
                     ? "Wallet + UPI"
                     : payment.walletAmountUsed > 0
                     ? "Wallet"
-                    : "Razorpay"}
+                    : "Cashfree"}
                 </td>
 
                 <td className="px-4 py-3">

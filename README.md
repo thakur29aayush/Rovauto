@@ -4,7 +4,7 @@
 ![Backend](https://img.shields.io/badge/Backend-Express-green)
 ![Database](https://img.shields.io/badge/Database-PostgreSQL-lightgrey)
 ![ORM](https://img.shields.io/badge/ORM-Prisma-2D3748)
-![Payments](https://img.shields.io/badge/Payments-Razorpay-purple)
+![Payments](https://img.shields.io/badge/Payments-Cashfree-purple)
 
 Rovauto is a full-stack vehicle service and roadside assistance platform. It connects customers with service providers, supports vehicle management, service booking, online payments, SOS requests, wallets, complaints, reviews, notifications, and dashboard workflows.
 
@@ -17,7 +17,7 @@ The current implementation is strongest on the customer side. Garage and admin p
 - Customer registration, login, OTP, password recovery, profile, and dashboard flows
 - Vehicle add/select/default management
 - Service category browsing and booking checkout
-- Razorpay order creation and payment verification
+- Cashfree order creation and payment verification
 - Pending-payment recovery from Checkout, Active Bookings, Payments, and Tracking
 - Tracking disabled until a booking is paid
 - SOS frontend and backend request flow
@@ -53,7 +53,7 @@ The current implementation is strongest on the customer side. Garage and admin p
 - Express Validator
 - Multer
 - Cloudinary
-- Razorpay
+- Cashfree
 - Redis with ioredis
 - Resend
 
@@ -64,7 +64,7 @@ The current implementation is strongest on the customer side. Garage and admin p
 ```text
 User -> React/Vite Client -> Axios -> Express API -> Services -> Prisma -> PostgreSQL
                                                |
-                                               +-> Razorpay / Cloudinary / Resend / Redis
+                                               +-> Cashfree / Cloudinary / Resend / Redis
 ```
 
 The API is served under:
@@ -162,8 +162,10 @@ JWT_EXPIRES_IN="7d"
 RESEND_API_KEY=""
 EMAIL_FROM=""
 
-RAZORPAY_KEY_ID=""
-RAZORPAY_KEY_SECRET=""
+CASHFREE_APP_ID=""
+CASHFREE_SECRET_KEY=""
+CASHFREE_ENV="sandbox"
+CASHFREE_NOTIFY_URL=""
 
 REDIS_URL=""
 CLIENT_URL="http://localhost:8080"
@@ -280,7 +282,7 @@ Mounted under `/api/v1`:
 2. Add/select a vehicle.
 3. Pick services.
 4. Checkout creates a backend booking.
-5. Razorpay payment order is created.
+5. Cashfree payment order is created.
 6. Successful payment verification moves the booking to garage search.
 7. If payment is created but not completed, the user can retry from Active Bookings, Payments, or Tracking.
 8. Tracking is blocked until payment is complete.
@@ -289,7 +291,7 @@ Mounted under `/api/v1`:
 
 ## Production Notes
 
-- Add Razorpay webhooks before real production payment traffic.
+- Add Cashfree webhooks before real production payment traffic.
 - Configure all production secrets in hosting environment variables.
 - Configure production CORS with `CLIENT_URL` / `FRONTEND_URL`.
 - Compress large images before scaling traffic.

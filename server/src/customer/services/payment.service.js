@@ -1,7 +1,12 @@
 const prisma = require("../../config/prisma");
-const razorpay = require("../../config/razorpay");
+const axios = require("axios");
+const {
+  getCashfreeBaseUrl,
+  getCashfreeHeaders,
+  getCashfreeMode,
+  isCashfreeConfigured,
+} = require("../../config/cashfree");
 const ApiError = require("../../utils/apiError");
-const verifyRazorpaySignature = require("../../utils/razorpaySignature");
 const garageRequestService = require("../../services/garageRequest.service");
 const invalidateCustomerCache = require("../../utils/invalidateCustomerCache");
 
@@ -33,8 +38,8 @@ const bookingInclude = {
 };
 
 const createPaymentOrder = async (userId, { bookingId }) => {
-  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-    throw new ApiError(500, "Razorpay payment gateway is not configured");
+  if (!isCashfreeConfigured()) {
+    throw new ApiError(500, "Cashfree payment gateway is not configured");
   }
 
   const booking = await prisma.booking.findFirst({
@@ -44,6 +49,14 @@ const createPaymentOrder = async (userId, { bookingId }) => {
     },
     include: {
       payment: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+        },
+      },
     },
   });
 
@@ -65,15 +78,35 @@ const createPaymentOrder = async (userId, { bookingId }) => {
     throw new ApiError(400, "No online payment required for this booking");
   }
 
-  const razorpayOrder = await razorpay.orders.create({
-    amount: amount * 100,
-    currency: "INR",
-    receipt: booking.bookingCode,
-    notes: {
-      bookingId: booking.id,
-      userId,
+  const cashfreeOrderId = `cf_${booking.bookingCode}_${Date.now()}`;
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+  const cashfreeRes = await axios.post(
+    `${getCashfreeBaseUrl()}/orders`,
+    {
+      order_id: cashfreeOrderId,
+      order_amount: amount,
+      order_currency: "INR",
+      customer_details: {
+        customer_id: userId,
+        customer_name: booking.user?.name || "Rovauto Customer",
+        customer_email: booking.user?.email || undefined,
+        customer_phone: booking.user?.phone || "9999999999",
+      },
+      order_meta: {
+        return_url: `${frontendUrl}/dashboard/payments?cashfree_order_id={order_id}`,
+        notify_url: process.env.CASHFREE_NOTIFY_URL || undefined,
+      },
+      order_note: `Booking ${booking.bookingCode}`,
+      order_tags: {
+        bookingId: booking.id,
+        userId,
+      },
     },
-  });
+    { headers: getCashfreeHeaders() }
+  );
+
+  const cashfreeOrder = cashfreeRes.data;
 
   const payment = await prisma.payment.upsert({
     where: {
@@ -83,7 +116,11 @@ const createPaymentOrder = async (userId, { bookingId }) => {
       amount,
       currency: "INR",
       status: "CREATED",
-      razorpayOrderId: razorpayOrder.id,
+      cashfreeOrderId: cashfreeOrder.order_id,
+      cashfreePaymentId: cashfreeOrder.cf_order_id
+        ? String(cashfreeOrder.cf_order_id)
+        : null,
+      cashfreePaymentSessionId: cashfreeOrder.payment_session_id,
       upiAmountPaid: amount,
     },
     create: {
@@ -91,7 +128,11 @@ const createPaymentOrder = async (userId, { bookingId }) => {
       amount,
       currency: "INR",
       status: "CREATED",
-      razorpayOrderId: razorpayOrder.id,
+      cashfreeOrderId: cashfreeOrder.order_id,
+      cashfreePaymentId: cashfreeOrder.cf_order_id
+        ? String(cashfreeOrder.cf_order_id)
+        : null,
+      cashfreePaymentSessionId: cashfreeOrder.payment_session_id,
       walletAmountUsed: booking.walletAmountUsed || 0,
       upiAmountPaid: amount,
     },
@@ -99,20 +140,22 @@ const createPaymentOrder = async (userId, { bookingId }) => {
 
   return {
     payment,
-    razorpayOrder: {
-      id: razorpayOrder.id,
-      amount: razorpayOrder.amount,
-      currency: razorpayOrder.currency,
-      receipt: razorpayOrder.receipt,
+    cashfreeOrder: {
+      id: cashfreeOrder.order_id,
+      cfOrderId: cashfreeOrder.cf_order_id,
+      amount: cashfreeOrder.order_amount,
+      currency: cashfreeOrder.order_currency,
+      paymentSessionId: cashfreeOrder.payment_session_id,
     },
-    keyId: process.env.RAZORPAY_KEY_ID,
+    mode: getCashfreeMode(),
   };
 };
 
-const verifyPayment = async (
-  userId,
-  { bookingId, razorpayOrderId, razorpayPaymentId, razorpaySignature }
-) => {
+const verifyPayment = async (userId, { bookingId, cashfreeOrderId }) => {
+  if (!isCashfreeConfigured()) {
+    throw new ApiError(500, "Cashfree payment gateway is not configured");
+  }
+
   const booking = await prisma.booking.findFirst({
     where: {
       id: bookingId,
@@ -136,27 +179,31 @@ const verifyPayment = async (
     throw new ApiError(400, "Payment already verified");
   }
 
-  if (booking.payment.razorpayOrderId !== razorpayOrderId) {
-    throw new ApiError(400, "Invalid Razorpay order ID");
+  if (booking.payment.cashfreeOrderId !== cashfreeOrderId) {
+    throw new ApiError(400, "Invalid Cashfree order ID");
   }
 
-  const isValidSignature = verifyRazorpaySignature({
-    razorpayOrderId,
-    razorpayPaymentId,
-    razorpaySignature,
-  });
+  const cashfreeRes = await axios.get(
+    `${getCashfreeBaseUrl()}/orders/${cashfreeOrderId}`,
+    { headers: getCashfreeHeaders() }
+  );
 
-  if (!isValidSignature) {
-    await prisma.payment.update({
-      where: { bookingId },
-      data: {
-        status: "FAILED",
-      },
-    });
+  const cashfreeOrder = cashfreeRes.data;
+  const orderStatus = cashfreeOrder.order_status;
 
-    await invalidateCustomerCache(userId);
+  if (orderStatus !== "PAID") {
+    if (["EXPIRED", "TERMINATED", "FAILED"].includes(orderStatus)) {
+      await prisma.payment.update({
+        where: { bookingId },
+        data: {
+          status: "FAILED",
+        },
+      });
 
-    throw new ApiError(400, "Invalid payment signature");
+      await invalidateCustomerCache(userId);
+    }
+
+    throw new ApiError(400, "Cashfree payment is not completed yet");
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -166,8 +213,9 @@ const verifyPayment = async (
       },
       data: {
         status: "PAID",
-        razorpayPaymentId,
-        razorpaySignature,
+        cashfreePaymentId: cashfreeOrder.cf_order_id
+          ? String(cashfreeOrder.cf_order_id)
+          : booking.payment.cashfreePaymentId,
       },
     });
 

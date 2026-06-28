@@ -10,7 +10,7 @@ model User {
   id                 String              @id @default(uuid())
   name               String
   email              String              @unique
-  phone              String?              @unique
+  phone              String?             @unique
   password           String
   role               Role                @default(CUSTOMER)
   isEmailVerified    Boolean             @default(false)
@@ -303,19 +303,19 @@ model GarageBroadcastRequest {
 }
 
 model Payment {
-  id                String        @id @default(uuid())
-  bookingId         String        @unique
-  amount            Int
-  currency          String        @default("INR")
-  status            PaymentStatus @default(CREATED)
-  razorpayOrderId   String?       @unique
-  razorpayPaymentId String?       @unique
-  razorpaySignature String?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  upiAmountPaid     Int           @default(0)
-  walletAmountUsed  Int           @default(0)
-  booking           Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  id                       String        @id @default(uuid())
+  bookingId                String        @unique
+  amount                   Int
+  currency                 String        @default("INR")
+  status                   PaymentStatus @default(CREATED)
+  cashfreeOrderId          String?       @unique
+  cashfreePaymentId        String?       @unique
+  cashfreePaymentSessionId String?
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+  upiAmountPaid            Int           @default(0)
+  walletAmountUsed         Int           @default(0)
+  booking                  Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }
 
 model Wallet {
@@ -338,8 +338,8 @@ model WalletTransaction {
   amount            Int
   balanceAfter      Int?
   description       String?
-  razorpayOrderId   String?
-  razorpayPaymentId String?
+  cashfreeOrderId   String?
+  cashfreePaymentId String?
   createdAt         DateTime                @default(now())
   user              User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   wallet            Wallet                  @relation(fields: [walletId], references: [id], onDelete: Cascade)
@@ -369,8 +369,8 @@ model GarageWalletTransaction {
   amount            Int
   balanceAfter      Int?
   description       String?
-  razorpayOrderId   String?
-  razorpayPaymentId String?
+  cashfreeOrderId   String?
+  cashfreePaymentId String?
   createdAt         DateTime                @default(now())
   garage            Garage                  @relation(fields: [garageId], references: [id], onDelete: Cascade)
   garageWallet      GarageWallet            @relation(fields: [garageWalletId], references: [id], onDelete: Cascade)

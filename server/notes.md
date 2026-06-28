@@ -9,7 +9,7 @@
 | ORM                | Prisma ORM                           |
 | Authentication     | JWT + Argon2                         |
 | Email Verification | Resend OTP                           |
-| Payments           | Razorpay                             |
+| Payments           | Cashfree                             |
 | Media Storage      | Cloudinary                           |
 | Maps               | GPS Coordinates + Distance Filtering |
 | Password Security  | Argon2 Hashing                       |
@@ -181,10 +181,10 @@ Platform automatically deducts acceptance fee when a booking is accepted.
 
 Platform fee only.
 
-Razorpay
+Cashfree
 
 * Create Order
-* Verify Signature
+* Verify Order Status
 
 Platform Fee
 
@@ -321,7 +321,7 @@ Booking Created
 (PENDING_PAYMENT)
     │
 Platform Fee Payment
-(Razorpay)
+(Cashfree)
     │
 Payment Verified
     │
@@ -355,7 +355,7 @@ Review / Complaint
 * Service Media
 * Multi-Service Booking
 * Dynamic Platform Fee
-* Razorpay Integration
+* Cashfree Integration
 * Garage Broadcasting
 * Automatic Garage Assignment
 * SOS
@@ -383,7 +383,7 @@ Review / Complaint
 
 ## Payments
 
-* Razorpay Webhooks
+* Cashfree Webhooks
 * Automatic Refunds
 * Final Garage Bill Payment
 * Partial Wallet Payment

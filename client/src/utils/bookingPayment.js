@@ -1,20 +1,20 @@
 import api from "@/api/axios";
 
-export const loadRazorpayCheckout = () =>
+export const loadCashfreeCheckout = () =>
   new Promise((resolve, reject) => {
-    if (window.Razorpay) {
+    if (window.Cashfree) {
       resolve(true);
       return;
     }
 
     const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
     script.onload = () => resolve(true);
-    script.onerror = () => reject(new Error("Unable to load Razorpay checkout"));
+    script.onerror = () => reject(new Error("Unable to load Cashfree checkout"));
     document.body.appendChild(script);
   });
 
-export const payForBooking = async ({ booking, user }) => {
+export const payForBooking = async ({ booking }) => {
   if (!booking?.id) {
     throw new Error("Booking not found");
   }
@@ -23,48 +23,33 @@ export const payForBooking = async ({ booking, user }) => {
     bookingId: booking.id,
   });
 
-  const { razorpayOrder, keyId } = orderRes.data.data;
+  const { cashfreeOrder, mode } = orderRes.data.data;
 
-  await loadRazorpayCheckout();
+  await loadCashfreeCheckout();
 
-  return new Promise((resolve, reject) => {
-    const checkout = new window.Razorpay({
-      key: keyId,
-      amount: razorpayOrder.amount,
-      currency: razorpayOrder.currency,
-      name: "Rovauto",
-      description: `Booking ${booking.bookingCode}`,
-      order_id: razorpayOrder.id,
-      prefill: {
-        name: user?.name || "",
-        email: user?.email || "",
-        contact: user?.phone || "",
-      },
-      notes: {
-        bookingId: booking.id,
-      },
-      handler: async (response) => {
-        try {
-          const verifyRes = await api.post("/payments/verify", {
-            bookingId: booking.id,
-            razorpayOrderId: response.razorpay_order_id,
-            razorpayPaymentId: response.razorpay_payment_id,
-            razorpaySignature: response.razorpay_signature,
-          });
+  if (!cashfreeOrder?.paymentSessionId) {
+    throw new Error("Cashfree payment session was not created");
+  }
 
-          resolve(verifyRes.data.data.booking);
-        } catch (err) {
-          reject(err);
-        }
-      },
-      modal: {
-        ondismiss: () => reject(new Error("Payment cancelled")),
-      },
-      theme: {
-        color: "#b9f000",
-      },
-    });
-
-    checkout.open();
+  const cashfree = window.Cashfree({
+    mode: mode || "sandbox",
   });
+
+  const checkoutResult = await cashfree.checkout({
+    paymentSessionId: cashfreeOrder.paymentSessionId,
+    redirectTarget: "_modal",
+  });
+
+  if (checkoutResult?.error) {
+    throw new Error(
+      checkoutResult.error.message || "Payment cancelled or failed"
+    );
+  }
+
+  const verifyRes = await api.post("/payments/verify", {
+    bookingId: booking.id,
+    cashfreeOrderId: cashfreeOrder.id,
+  });
+
+  return verifyRes.data.data.booking;
 };

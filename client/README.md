@@ -6,7 +6,7 @@ React + Vite frontend for the Rovauto customer, garage, and admin experiences.
 
 - Public marketing and service category pages
 - Customer auth, vehicle selection, service selection, checkout, payments, active bookings, service history, notifications, and profile pages
-- Razorpay checkout integration through backend payment APIs
+- Cashfree checkout integration through backend payment APIs
 - Pending-payment recovery from Active Bookings, Payments, and Tracking
 - Tracking disabled until a booking is paid
 - Route-level code splitting with React.lazy() and Suspense

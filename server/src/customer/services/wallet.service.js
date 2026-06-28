@@ -98,8 +98,8 @@ const creditWallet = async (userId, amount, type = "CREDIT", meta = {}) => {
         status: "SUCCESS",
         amount,
         balanceAfter,
-        razorpayOrderId: meta.razorpayOrderId || null,
-        razorpayPaymentId: meta.razorpayPaymentId || null,
+        cashfreeOrderId: meta.cashfreeOrderId || null,
+        cashfreePaymentId: meta.cashfreePaymentId || null,
         description: meta.description || "Wallet credited",
       },
     });

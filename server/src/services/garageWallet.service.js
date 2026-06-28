@@ -96,8 +96,8 @@ const rechargeGarageWallet = async (garageId, amount, meta = {}) => {
         status: "SUCCESS",
         amount,
         balanceAfter,
-        razorpayOrderId: meta.razorpayOrderId || null,
-        razorpayPaymentId: meta.razorpayPaymentId || null,
+        cashfreeOrderId: meta.cashfreeOrderId || null,
+        cashfreePaymentId: meta.cashfreePaymentId || null,
         description: meta.description || "Garage wallet recharge",
       },
     });

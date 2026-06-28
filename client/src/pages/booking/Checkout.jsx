@@ -117,7 +117,7 @@ export default function Checkout() {
           <h3 className="mb-4 text-lg font-semibold">Payment Method</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             {[
-              ["Razorpay", "UPI, cards, wallets"],
+              ["Cashfree", "UPI, cards, wallets"],
               ["UPI", "PhonePe, GPay, Paytm"],
               ["Credit / Debit Card", "Visa, Master, Amex"],
               ["Net Banking", "All major banks"],
@@ -231,7 +231,7 @@ export default function Checkout() {
           <FiLock /> {loading ? "Processing..." : `Pay Rs. ${fee} & Book Slot`}
         </button>
         <div className="mt-3 text-center text-xs text-muted">
-          Secured by Razorpay. 100% refund on cancellation
+          Secured by Cashfree. 100% refund on cancellation
         </div>
       </aside>
     </div>
