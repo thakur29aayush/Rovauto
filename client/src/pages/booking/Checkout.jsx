@@ -44,7 +44,7 @@ export default function Checkout() {
   const [error, setError] = useState("");
 
   const subTotal = cart.reduce((sum, item) => sum + getServicePrice(item), 0);
-  const displaySubTotal = subTotal || 3500;
+  const displaySubTotal = subTotal || 0;
   const fee = calculateHandlingFee(displaySubTotal);
   const payAtGarage = displaySubTotal;
 
