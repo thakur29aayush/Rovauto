@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
-import { payForBooking } from "@/utils/bookingPayment";
+import { isPaymentAuthError, payForBooking } from "@/utils/bookingPayment";
 
 const getServicesText = (booking) => {
   return (
@@ -37,6 +37,7 @@ const formatStatus = (status) => {
 export default function ActiveBookings() {
   const { user, fetchActiveBookings, clearBookingCaches } = useApp();
   const nav = useNavigate();
+  const location = useLocation();
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +82,16 @@ export default function ActiveBookings() {
         },
       });
     } catch (err) {
+      if (isPaymentAuthError(err)) {
+        nav("/login", {
+          state: {
+            from: location,
+            message: "Please login to continue payment.",
+          },
+        });
+        return;
+      }
+
       setError(
         err.response?.data?.message ||
           err.message ||

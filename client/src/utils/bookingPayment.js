@@ -1,5 +1,20 @@
 import api from "@/api/axios";
 
+const PAYMENT_AUTH_REQUIRED = "PAYMENT_AUTH_REQUIRED";
+
+export const isPaymentAuthError = (error) =>
+  error?.code === PAYMENT_AUTH_REQUIRED || error?.response?.status === 401;
+
+const requirePaymentAuth = () => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    const error = new Error("Please login to continue payment.");
+    error.code = PAYMENT_AUTH_REQUIRED;
+    throw error;
+  }
+};
+
 export const loadCashfreeCheckout = () =>
   new Promise((resolve, reject) => {
     if (window.Cashfree) {
@@ -18,6 +33,8 @@ export const payForBooking = async ({ booking }) => {
   if (!booking?.id) {
     throw new Error("Booking not found");
   }
+
+  requirePaymentAuth();
 
   const orderRes = await api.post("/payments/create-order", {
     bookingId: booking.id,

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
 import api from "@/api/axios";
-import { payForBooking } from "@/utils/bookingPayment";
+import { isPaymentAuthError, payForBooking } from "@/utils/bookingPayment";
 import { FiCheckCircle, FiLock, FiTrash2, FiTruck } from "react-icons/fi";
 
 const DEFAULT_LOCATION = {
@@ -27,6 +27,7 @@ export default function Checkout() {
   const { cart, vehicle, location, user, clearCart, clearBookingCaches } =
     useApp();
   const nav = useNavigate();
+  const routeLocation = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -89,6 +90,16 @@ export default function Checkout() {
         },
       });
     } catch (err) {
+      if (isPaymentAuthError(err)) {
+        nav("/login", {
+          state: {
+            from: routeLocation,
+            message: "Please login to continue payment.",
+          },
+        });
+        return;
+      }
+
       setError(
         err.response?.data?.message ||
           err.message ||

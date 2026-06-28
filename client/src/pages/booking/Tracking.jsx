@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { STATUS_STEPS } from "@/data/garages";
 import api from "@/api/axios";
 import { useApp } from "@/hooks/useApp";
-import { payForBooking } from "@/utils/bookingPayment";
+import { isPaymentAuthError, payForBooking } from "@/utils/bookingPayment";
 import {
   FiPhone,
   FiNavigation,
@@ -80,6 +80,16 @@ export default function Tracking() {
         },
       });
     } catch (err) {
+      if (isPaymentAuthError(err)) {
+        nav("/login", {
+          state: {
+            from: location,
+            message: "Please login to continue payment.",
+          },
+        });
+        return;
+      }
+
       setError(
         err.response?.data?.message ||
           err.message ||

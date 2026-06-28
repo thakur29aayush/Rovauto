@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "@/api/axios";
 import { useApp } from "@/hooks/useApp";
-import { payForBooking } from "@/utils/bookingPayment";
+import { isPaymentAuthError, payForBooking } from "@/utils/bookingPayment";
 
 const formatDate = (date) => {
   if (!date) return "-";
@@ -30,6 +30,7 @@ const canPay = (payment) => {
 export default function Payments() {
   const { user, clearBookingCaches } = useApp();
   const nav = useNavigate();
+  const location = useLocation();
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +74,16 @@ export default function Payments() {
         },
       });
     } catch (err) {
+      if (isPaymentAuthError(err)) {
+        nav("/login", {
+          state: {
+            from: location,
+            message: "Please login to continue payment.",
+          },
+        });
+        return;
+      }
+
       setError(
         err.response?.data?.message ||
           err.message ||

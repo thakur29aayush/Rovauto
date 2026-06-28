@@ -7,6 +7,7 @@ import { FiArrowRight } from "react-icons/fi";
 export default function Login() {
   const { state } = useLocation();
   const from = state?.from?.pathname || null;
+  const notice = state?.message || "";
 
   const nav = useNavigate();
 
@@ -86,6 +87,12 @@ export default function Login() {
         {error && (
           <p className="mt-3 text-sm text-red-600">
             {error}
+          </p>
+        )}
+
+        {notice && !error && (
+          <p className="mt-3 text-sm text-red-600">
+            {notice}
           </p>
         )}
 
