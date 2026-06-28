@@ -70,8 +70,8 @@ CLOUDINARY_API_KEY=""
 CLOUDINARY_API_SECRET=""
 
 REDIS_URL=""
-CLIENT_URL="http://localhost:8080"
-FRONTEND_URL="http://localhost:8080"
+CLIENT_URL="https://your-frontend-domain.com"
+FRONTEND_URL="https://your-frontend-domain.com"
 ```
 
 `REDIS_URL` is optional in development. If it is missing, cache calls are disabled safely.

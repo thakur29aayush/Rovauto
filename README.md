@@ -168,8 +168,8 @@ CASHFREE_ENV="sandbox"
 CASHFREE_NOTIFY_URL=""
 
 REDIS_URL=""
-CLIENT_URL="http://localhost:8080"
-FRONTEND_URL="http://localhost:8080"
+CLIENT_URL="https://your-frontend-domain.com"
+FRONTEND_URL="https://your-frontend-domain.com"
 ```
 
 Run Prisma:

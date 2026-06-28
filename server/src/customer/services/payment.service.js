@@ -70,6 +70,24 @@ const getCashfreeApiError = (error, fallback) => {
   return new ApiError(cashfreeStatus || 502, message);
 };
 
+const getPaymentReturnBaseUrl = () => {
+  const url =
+    process.env.FRONTEND_URL ||
+    process.env.CLIENT_URL ||
+    "https://rovauto.vercel.app";
+
+  const normalizedUrl = url.replace(/\/+$/, "");
+
+  if (!normalizedUrl.startsWith("https://")) {
+    throw new ApiError(
+      500,
+      "Cashfree return URL must use HTTPS. Set FRONTEND_URL to your deployed frontend URL."
+    );
+  }
+
+  return normalizedUrl;
+};
+
 const createPaymentOrder = async (userId, { bookingId }) => {
   if (!isCashfreeConfigured()) {
     throw new ApiError(500, "Cashfree payment gateway is not configured");
@@ -112,7 +130,7 @@ const createPaymentOrder = async (userId, { bookingId }) => {
   }
 
   const cashfreeOrderId = `cf_${booking.bookingCode}_${Date.now()}`;
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const frontendUrl = getPaymentReturnBaseUrl();
 
   let cashfreeOrder;
 
