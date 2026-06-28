@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
 import api from "@/api/axios";
-import { FiCheckCircle, FiLock, FiTruck } from "react-icons/fi";
+import { FiCheckCircle, FiLock, FiTrash2, FiTruck } from "react-icons/fi";
 
 const DEFAULT_LOCATION = {
   latitude: 28.6369,
@@ -237,7 +237,18 @@ export default function Checkout() {
 
         <hr className="my-4 border-line" />
 
-        <div className="mb-2 font-semibold">Order Summary</div>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <div className="font-semibold">Order Summary</div>
+          {cart.length > 0 && (
+            <button
+              type="button"
+              onClick={clearCart}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-muted transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+            >
+              <FiTrash2 /> Clear
+            </button>
+          )}
+        </div>
         <div className="grid gap-2 text-sm">
           {cart.length === 0 ? (
             <div className="flex justify-between gap-4 text-muted">
