@@ -21,12 +21,17 @@ export default function Dashboard() {
     setVehicles,
     fetchDashboard,
     fetchVehicles,
+    dashboardCache,
   } = useApp();
 
-  const [bookings, setBookings] = useState([]);
-  const [wallet, setWallet] = useState(null);
-  const [completedCount, setCompletedCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [bookings, setBookings] = useState(
+    () => dashboardCache?.activeBookings || []
+  );
+  const [wallet, setWallet] = useState(() => dashboardCache?.wallet || null);
+  const [completedCount, setCompletedCount] = useState(
+    () => dashboardCache?.completedBookingsCount || 0
+  );
+  const [loading, setLoading] = useState(() => !dashboardCache);
 
   const currentVehicles = Array.isArray(vehicles) ? vehicles : [];
   const hasVehicles = currentVehicles.length > 0;
@@ -56,7 +61,9 @@ export default function Dashboard() {
 
   const loadDashboard = async ({ force = false } = {}) => {
     try {
-      setLoading(true);
+      if (force || !dashboardCache) {
+        setLoading(true);
+      }
 
       const [dashboard, vehicleList] = await Promise.all([
         fetchDashboard({ force }),
@@ -76,7 +83,7 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    loadDashboard({ force: true });
+    loadDashboard();
   }, []);
 
   if (loading) {
