@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "@/api/axios";
+import { useApp } from "@/hooks/useApp";
+import { payForBooking } from "@/utils/bookingPayment";
 
 const formatDate = (date) => {
   if (!date) return "-";
@@ -20,33 +23,70 @@ const getServiceText = (payment) => {
   );
 };
 
+const canPay = (payment) => {
+  return payment.status === "CREATED" && payment.booking?.status === "PENDING_PAYMENT";
+};
+
 export default function Payments() {
+  const { user, clearBookingCaches } = useApp();
+  const nav = useNavigate();
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [payingId, setPayingId] = useState(null);
   const [error, setError] = useState("");
 
+  const loadPayments = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const res = await api.get("/payments");
+      setItems(res.data.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load payments");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadPayments = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const res = await api.get("/payments");
-        setItems(res.data.data || []);
-      } catch (err) {
-        setError(err.response?.data?.message || "Failed to load payments");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadPayments();
   }, []);
+
+  const payPayment = async (payment) => {
+    try {
+      setPayingId(payment.id);
+      setError("");
+
+      const verifiedBooking = await payForBooking({
+        booking: payment.booking,
+        user,
+      });
+
+      clearBookingCaches?.();
+      await loadPayments();
+      nav("/tracking", {
+        state: {
+          bookingId: verifiedBooking.id,
+          bookingCode: verifiedBooking.bookingCode,
+        },
+      });
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Could not complete payment. Please try again."
+      );
+    } finally {
+      setPayingId(null);
+    }
+  };
 
   if (loading) {
     return (
       <div>
-        <h2 className="text-2xl font-bold mb-6">Payments</h2>
+        <h2 className="mb-6 text-2xl font-bold">Payments</h2>
         <div className="card-soft p-6 text-muted">Loading payments...</div>
       </div>
     );
@@ -54,7 +94,7 @@ export default function Payments() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Payments</h2>
+      <h2 className="mb-6 text-2xl font-bold">Payments</h2>
 
       {error && (
         <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -66,13 +106,19 @@ export default function Payments() {
         <table className="w-full text-sm">
           <thead className="bg-bg-soft text-left">
             <tr>
-              {["Txn ID", "Service", "Date", "Method", "Status", "Amount"].map(
-                (h) => (
-                  <th key={h} className="px-4 py-3 font-semibold">
-                    {h}
-                  </th>
-                )
-              )}
+              {[
+                "Txn ID",
+                "Service",
+                "Date",
+                "Method",
+                "Status",
+                "Amount",
+                "Action",
+              ].map((heading) => (
+                <th key={heading} className="px-4 py-3 font-semibold">
+                  {heading}
+                </th>
+              ))}
             </tr>
           </thead>
 
@@ -96,20 +142,31 @@ export default function Payments() {
                 </td>
 
                 <td className="px-4 py-3">
-                  <span className="chip-brand">
-                    {payment.status}
-                  </span>
+                  <span className="chip-brand">{payment.status}</span>
                 </td>
 
-                <td className="px-4 py-3 font-semibold">
-                  ₹{payment.amount}
+                <td className="px-4 py-3 font-semibold">Rs. {payment.amount}</td>
+
+                <td className="px-4 py-3">
+                  {canPay(payment) ? (
+                    <button
+                      type="button"
+                      onClick={() => payPayment(payment)}
+                      disabled={payingId === payment.id}
+                      className="btn-primary text-xs disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {payingId === payment.id ? "Processing..." : "Pay Now"}
+                    </button>
+                  ) : (
+                    <span className="text-xs text-muted">-</span>
+                  )}
                 </td>
               </tr>
             ))}
 
             {items.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted">
+                <td colSpan={7} className="px-4 py-8 text-center text-muted">
                   No payments yet.
                 </td>
               </tr>

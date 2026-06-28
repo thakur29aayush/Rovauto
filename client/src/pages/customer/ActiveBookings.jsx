@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
+import { payForBooking } from "@/utils/bookingPayment";
 
 const getServicesText = (booking) => {
   return (
@@ -34,11 +35,13 @@ const formatStatus = (status) => {
 };
 
 export default function ActiveBookings() {
-  const { fetchActiveBookings } = useApp();
+  const { user, fetchActiveBookings, clearBookingCaches } = useApp();
+  const nav = useNavigate();
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [payingId, setPayingId] = useState(null);
   const [error, setError] = useState("");
 
   const loadBookings = async ({ force = false } = {}) => {
@@ -62,10 +65,36 @@ export default function ActiveBookings() {
     loadBookings();
   }, []);
 
+  const payBooking = async (booking) => {
+    try {
+      setPayingId(booking.id);
+      setError("");
+
+      const verifiedBooking = await payForBooking({ booking, user });
+
+      clearBookingCaches?.();
+      await loadBookings({ force: true });
+      nav("/tracking", {
+        state: {
+          bookingId: verifiedBooking.id,
+          bookingCode: verifiedBooking.bookingCode,
+        },
+      });
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Could not complete payment. Please try again."
+      );
+    } finally {
+      setPayingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div>
-        <h2 className="text-2xl font-bold mb-6">Active Bookings</h2>
+        <h2 className="mb-6 text-2xl font-bold">Active Bookings</h2>
         <div className="card-soft p-6 text-muted">
           Loading active bookings...
         </div>
@@ -75,7 +104,7 @@ export default function ActiveBookings() {
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-4 mb-6">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <h2 className="text-2xl font-bold">Active Bookings</h2>
 
         <button
@@ -95,32 +124,57 @@ export default function ActiveBookings() {
       )}
 
       <div className="grid gap-4">
-        {bookings.map((booking) => (
-          <div
-            key={booking.id}
-            className="card-soft p-5 flex flex-wrap items-center gap-4"
-          >
-            <div className="flex-1 min-w-0">
-              <div className="text-xs text-muted">#{booking.bookingCode}</div>
+        {bookings.map((booking) => {
+          const isPendingPayment = booking.status === "PENDING_PAYMENT";
 
-              <div className="font-semibold">{getServicesText(booking)}</div>
-
-              <div className="text-sm text-muted">{getGarageText(booking)}</div>
-            </div>
-
-            <span className="chip-brand">{formatStatus(booking.status)}</span>
-
-            <div className="font-bold">₹{getAmount(booking)}</div>
-
-            <Link
-              to="/tracking"
-              state={{ bookingId: booking.id }}
-              className="btn-dark"
+          return (
+            <div
+              key={booking.id}
+              className="card-soft flex flex-wrap items-center gap-4 p-5"
             >
-              Track
-            </Link>
-          </div>
-        ))}
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-muted">#{booking.bookingCode}</div>
+
+                <div className="font-semibold">{getServicesText(booking)}</div>
+
+                <div className="text-sm text-muted">{getGarageText(booking)}</div>
+              </div>
+
+              <span className="chip-brand">{formatStatus(booking.status)}</span>
+
+              <div className="font-bold">Rs. {getAmount(booking)}</div>
+
+              {isPendingPayment ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => payBooking(booking)}
+                    disabled={payingId === booking.id}
+                    className="btn-primary disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {payingId === booking.id ? "Processing..." : "Pay Now"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled
+                    className="btn-dark cursor-not-allowed opacity-50"
+                    title="Complete payment to enable tracking"
+                  >
+                    Track
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/tracking"
+                  state={{ bookingId: booking.id }}
+                  className="btn-dark"
+                >
+                  Track
+                </Link>
+              )}
+            </div>
+          );
+        })}
 
         {bookings.length === 0 && (
           <div className="card-soft p-8 text-center text-muted">
