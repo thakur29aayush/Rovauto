@@ -2,8 +2,17 @@ import api from "@/api/axios";
 
 const PAYMENT_AUTH_REQUIRED = "PAYMENT_AUTH_REQUIRED";
 
-export const isPaymentAuthError = (error) =>
-  error?.code === PAYMENT_AUTH_REQUIRED || error?.response?.status === 401;
+export const isPaymentAuthError = (error) => {
+  const message = error?.response?.data?.message || "";
+
+  return (
+    error?.code === PAYMENT_AUTH_REQUIRED ||
+    (error?.response?.status === 401 &&
+      /authentication token|invalid or expired token|user no longer exists/i.test(
+        message
+      ))
+  );
+};
 
 const requirePaymentAuth = () => {
   const token = localStorage.getItem("token");

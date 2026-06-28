@@ -56,6 +56,20 @@ const getCashfreeErrorMessage = (error, fallback) => {
   return cashfreeMessage || fallback;
 };
 
+const getCashfreeApiError = (error, fallback) => {
+  const cashfreeStatus = error.response?.status;
+  const message = getCashfreeErrorMessage(error, fallback);
+
+  if (cashfreeStatus === 401 || cashfreeStatus === 403) {
+    return new ApiError(
+      502,
+      "Cashfree rejected the payment gateway credentials. Please check CASHFREE_APP_ID, CASHFREE_SECRET_KEY, and CASHFREE_ENV on the backend."
+    );
+  }
+
+  return new ApiError(cashfreeStatus || 502, message);
+};
+
 const createPaymentOrder = async (userId, { bookingId }) => {
   if (!isCashfreeConfigured()) {
     throw new ApiError(500, "Cashfree payment gateway is not configured");
@@ -130,10 +144,7 @@ const createPaymentOrder = async (userId, { bookingId }) => {
 
     cashfreeOrder = cashfreeRes.data;
   } catch (error) {
-    throw new ApiError(
-      error.response?.status || 502,
-      getCashfreeErrorMessage(error, "Unable to create Cashfree order")
-    );
+    throw getCashfreeApiError(error, "Unable to create Cashfree order");
   }
 
   const payment = await prisma.payment.upsert({
@@ -221,10 +232,7 @@ const verifyPayment = async (userId, { bookingId, cashfreeOrderId }) => {
 
     cashfreeOrder = cashfreeRes.data;
   } catch (error) {
-    throw new ApiError(
-      error.response?.status || 502,
-      getCashfreeErrorMessage(error, "Unable to verify Cashfree payment")
-    );
+    throw getCashfreeApiError(error, "Unable to verify Cashfree payment");
   }
   const orderStatus = cashfreeOrder.order_status;
 
