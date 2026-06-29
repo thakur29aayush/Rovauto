@@ -7,7 +7,7 @@ const signup = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(new ApiResponse(201, "Signup successful. OTP sent to email.", result));
+    .json(new ApiResponse(201, "OTP sent to email and phone.", result));
 });
 
 const verifyOtp = asyncHandler(async (req, res) => {
@@ -15,7 +15,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, "Email verified successfully", result));
+    .json(new ApiResponse(200, "Account verified successfully", result));
 });
 
 const resendOtp = asyncHandler(async (req, res) => {
@@ -24,6 +24,22 @@ const resendOtp = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, "OTP resent successfully", result));
+});
+
+const sendPhoneOtp = asyncHandler(async (req, res) => {
+  const result = await authService.sendPhoneOtp(req.body);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "OTP sent successfully", result));
+});
+
+const verifyPhoneOtp = asyncHandler(async (req, res) => {
+  const result = await authService.verifyPhoneNumberOtp(req.body, req.user?.id);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Phone verified successfully", result));
 });
 
 const login = asyncHandler(async (req, res) => {
@@ -62,6 +78,8 @@ module.exports = {
   signup,
   verifyOtp,
   resendOtp,
+  sendPhoneOtp,
+  verifyPhoneOtp,
   login,
   me,
   forgotPassword,

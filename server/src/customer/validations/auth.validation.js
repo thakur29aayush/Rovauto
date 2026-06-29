@@ -17,12 +17,11 @@ const signupValidation = [
     .normalizeEmail(),
 
   body("phone")
-    .optional({ checkFalsy: true })
     .trim()
-    .isLength({ min: 10, max: 15 })
-    .withMessage("Phone number must be 10 to 15 digits")
-    .isNumeric()
-    .withMessage("Phone number must contain only digits"),
+    .notEmpty()
+    .withMessage("Phone number is required")
+    .matches(/^\+[1-9]\d{7,14}$/)
+    .withMessage("Phone number must include country code, for example +9779812345678"),
 
   body("password")
     .notEmpty()
@@ -46,6 +45,13 @@ const verifyOtpValidation = [
     .withMessage("Please enter a valid email")
     .normalizeEmail(),
 
+  body("phone")
+    .trim()
+    .notEmpty()
+    .withMessage("Phone number is required")
+    .matches(/^\+[1-9]\d{7,14}$/)
+    .withMessage("Phone number must include country code, for example +9779812345678"),
+
   body("otp")
     .trim()
     .notEmpty()
@@ -62,6 +68,40 @@ const resendOtpValidation = [
     .isEmail()
     .withMessage("Please enter a valid email")
     .normalizeEmail(),
+
+  body("phone")
+    .trim()
+    .notEmpty()
+    .withMessage("Phone number is required")
+    .matches(/^\+[1-9]\d{7,14}$/)
+    .withMessage("Phone number must include country code, for example +9779812345678"),
+];
+
+const sendPhoneOtpValidation = [
+  body("phone")
+    .trim()
+    .notEmpty()
+    .withMessage("Phone number is required")
+    .matches(/^\+[1-9]\d{7,14}$/)
+    .withMessage("Phone number must include country code, for example +9779812345678"),
+];
+
+const verifyPhoneOtpValidation = [
+  body("phone")
+    .trim()
+    .notEmpty()
+    .withMessage("Phone number is required")
+    .matches(/^\+[1-9]\d{7,14}$/)
+    .withMessage("Phone number must include country code, for example +9779812345678"),
+
+  body("otp")
+    .trim()
+    .notEmpty()
+    .withMessage("OTP is required")
+    .isLength({ min: 6, max: 6 })
+    .withMessage("OTP must be 6 digits")
+    .isNumeric()
+    .withMessage("OTP must contain only digits"),
 ];
 
 const loginValidation = [
@@ -112,6 +152,8 @@ module.exports = {
   signupValidation,
   verifyOtpValidation,
   resendOtpValidation,
+  sendPhoneOtpValidation,
+  verifyPhoneOtpValidation,
   loginValidation,
   forgotPasswordValidation,
   resetPasswordValidation,

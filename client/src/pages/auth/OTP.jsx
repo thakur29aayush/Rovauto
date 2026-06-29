@@ -8,17 +8,18 @@ export default function OTP() {
   const nav = useNavigate();
 
   const email = state?.email;
+  const phone = state?.phone;
 
   const [otp, setOtp] = useState(Array(6).fill(""));
-  const [timer, setTimer] = useState(30);
+  const [timer, setTimer] = useState(60);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const refs = useRef([]);
 
   useEffect(() => {
-    if (!email) nav("/register");
-  }, [email, nav]);
+    if (!email || !phone) nav("/register");
+  }, [email, phone, nav]);
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -52,6 +53,7 @@ export default function OTP() {
     try {
       const res = await api.post("/auth/verify-otp", {
         email,
+        phone,
         otp: finalOtp,
       });
 
@@ -78,8 +80,8 @@ export default function OTP() {
     setError("");
 
     try {
-      await api.post("/auth/resend-otp", { email });
-      setTimer(30);
+      await api.post("/auth/resend-otp", { email, phone });
+      setTimer(60);
     } catch (err) {
       setError(err.response?.data?.message || "Could not resend OTP");
     }
@@ -90,11 +92,12 @@ export default function OTP() {
       <div className="card-soft p-7 max-w-md w-full text-center">
         <Logo className="h-10 mx-auto" showText={false} />
 
-        <h2 className="text-2xl font-bold mt-4">Verify your email</h2>
+        <h2 className="text-2xl font-bold mt-4">Verify your account</h2>
 
         <p className="text-sm text-muted mt-1">
           Enter the 6-digit OTP sent to{" "}
-          <span className="text-ink font-medium">{email}</span>
+          <span className="text-ink font-medium">{email}</span> and{" "}
+          <span className="text-ink font-medium">{phone}</span>
         </p>
 
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}

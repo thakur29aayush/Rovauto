@@ -2,36 +2,57 @@ const argon2 = require("argon2");
 const prisma = require("../../config/prisma");
 const ApiError = require("../../utils/apiError");
 const hashOtp = require("../../utils/hashOtp");
+const { normalizePhone } = require("../../utils/phone");
 const {
   createSignupOtp,
+  createPhoneOtp,
+  verifyPhoneOtp,
+  verifySignupOtp,
   createResetPasswordOtp,
 } = require("./otp.service");
 const { createAuthToken } = require("./token.service");
 
+const PENDING_SIGNUP_EXPIRY_MS = 15 * 60 * 1000;
+
+const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
+
+const toSafeUser = (user) => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  phone: user.phone,
+  role: user.role,
+  isEmailVerified: user.isEmailVerified,
+  isPhoneVerified: user.isPhoneVerified,
+  isOnboarded: user.isOnboarded,
+});
+
 const signup = async ({ name, email, phone, password, role = "CUSTOMER" }) => {
   const cleanName = name?.trim();
-  const cleanEmail = email?.trim()?.toLowerCase();
-  const cleanPhone = phone?.trim() || null;
+  const cleanEmail = normalizeEmail(email);
+  const cleanPhone = normalizePhone(phone);
   const validRoles = ["CUSTOMER", "GARAGE_OWNER"];
   const userRole = validRoles.includes(role) ? role : "CUSTOMER";
 
-  if (!cleanName || !cleanEmail || !password) {
-    throw new ApiError(400, "Name, email and password are required");
+  if (!cleanName || !cleanEmail || !cleanPhone || !password) {
+    throw new ApiError(400, "Name, email, phone and password are required");
   }
 
   if (password.length < 8) {
     throw new ApiError(400, "Password must be at least 8 characters");
   }
 
-  const duplicateChecks = [{ email: cleanEmail }];
-
-  if (cleanPhone) {
-    duplicateChecks.push({ phone: cleanPhone });
-  }
+  await prisma.pendingSignup.deleteMany({
+    where: {
+      expiresAt: {
+        lte: new Date(),
+      },
+    },
+  });
 
   const existingUser = await prisma.user.findFirst({
     where: {
-      OR: duplicateChecks,
+      OR: [{ email: cleanEmail }, { phone: cleanPhone }],
     },
   });
 
@@ -44,127 +65,189 @@ const signup = async ({ name, email, phone, password, role = "CUSTOMER" }) => {
     );
   }
 
-  const hashedPassword = await argon2.hash(password);
-
-  const userData = {
-    name: cleanName,
-    email: cleanEmail,
-    phone: cleanPhone,
-    password: hashedPassword,
-    role: userRole,
-  };
-
-  if (userRole === "CUSTOMER") {
-    userData.customerProfile = { create: {} };
-  } else if (userRole === "GARAGE_OWNER") {
-    userData.garageOwnerProfile = { create: {} };
-  }
-
-  const user = await prisma.user.create({
-    data: userData,
+  const conflictingPendingSignup = await prisma.pendingSignup.findFirst({
+    where: {
+      OR: [{ email: cleanEmail }, { phone: cleanPhone }],
+      NOT: {
+        AND: [{ email: cleanEmail }, { phone: cleanPhone }],
+      },
+    },
   });
 
-  await createSignupOtp(user.id, user.email);
+  if (conflictingPendingSignup) {
+    throw new ApiError(409, "Email or phone is already pending verification");
+  }
+
+  const hashedPassword = await argon2.hash(password);
+
+  const pendingSignup = await prisma.pendingSignup.upsert({
+    where: { email: cleanEmail },
+    update: {
+      name: cleanName,
+      phone: cleanPhone,
+      passwordHash: hashedPassword,
+      role: userRole,
+      isEmailVerified: false,
+      isPhoneVerified: false,
+      expiresAt: new Date(Date.now() + PENDING_SIGNUP_EXPIRY_MS),
+    },
+    create: {
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      passwordHash: hashedPassword,
+      role: userRole,
+      expiresAt: new Date(Date.now() + PENDING_SIGNUP_EXPIRY_MS),
+    },
+  });
+
+  await createSignupOtp({
+    email: pendingSignup.email,
+    phone: pendingSignup.phone,
+  });
 
   return {
-    userId: user.id,
-    email: user.email,
-    message: "Signup successful. OTP sent to email.",
+    email: pendingSignup.email,
+    phone: pendingSignup.phone,
+    message: "OTP sent to email and phone.",
   };
 };
 
-const verifyOtp = async ({ email, otp }) => {
-  const cleanEmail = email?.trim()?.toLowerCase();
+const verifyOtp = async ({ email, phone, otp }) => {
+  const cleanEmail = normalizeEmail(email);
+  const cleanPhone = normalizePhone(phone);
 
-  const user = await prisma.user.findUnique({
-    where: { email: cleanEmail },
-  });
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
-
-  if (user.isEmailVerified) {
-    throw new ApiError(400, "Email already verified");
-  }
-
-  const otpHash = hashOtp(otp);
-
-  const validOtp = await prisma.otp.findFirst({
+  const pendingSignup = await prisma.pendingSignup.findFirst({
     where: {
-      userId: user.id,
-      otpHash,
-      purpose: "SIGNUP",
-      usedAt: null,
-      expiresAt: {
-        gt: new Date(),
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
+      email: cleanEmail,
+      phone: cleanPhone,
     },
   });
 
-  if (!validOtp) {
-    throw new ApiError(400, "Invalid or expired OTP");
+  if (!pendingSignup || pendingSignup.expiresAt <= new Date()) {
+    if (pendingSignup) {
+      await prisma.pendingSignup.delete({ where: { id: pendingSignup.id } });
+    }
+    throw new ApiError(400, "Signup verification expired. Please register again.");
   }
 
-  await prisma.$transaction([
-    prisma.otp.update({
-      where: { id: validOtp.id },
-      data: { usedAt: new Date() },
-    }),
-    prisma.user.update({
-      where: { id: user.id },
-      data: { isEmailVerified: true },
-    }),
-  ]);
-
-  const updatedUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      role: true,
-      isEmailVerified: true,
-      isOnboarded: true,
-    },
+  await verifySignupOtp({
+    email: cleanEmail,
+    phone: cleanPhone,
+    otp,
   });
 
-  const token = createAuthToken(updatedUser);
+  const user = await prisma.$transaction(async (tx) => {
+    const createdUser = await tx.user.create({
+      data: {
+        name: pendingSignup.name,
+        email: pendingSignup.email,
+        phone: pendingSignup.phone,
+        password: pendingSignup.passwordHash,
+        role: pendingSignup.role,
+        isEmailVerified: true,
+        isPhoneVerified: true,
+        ...(pendingSignup.role === "CUSTOMER" && {
+          customerProfile: { create: {} },
+        }),
+      },
+    });
+
+    await tx.pendingSignup.delete({
+      where: { id: pendingSignup.id },
+    });
+
+    return createdUser;
+  });
+
+  const safeUser = toSafeUser(user);
+  const token = createAuthToken(safeUser);
 
   return {
-    user: updatedUser,
+    user: safeUser,
     token,
   };
 };
 
-const resendOtp = async ({ email }) => {
-  const cleanEmail = email?.trim()?.toLowerCase();
+const resendOtp = async ({ email, phone }) => {
+  const cleanEmail = normalizeEmail(email);
+  const cleanPhone = normalizePhone(phone);
 
-  const user = await prisma.user.findUnique({
-    where: { email: cleanEmail },
+  const pendingSignup = await prisma.pendingSignup.findFirst({
+    where: {
+      email: cleanEmail,
+      phone: cleanPhone,
+    },
   });
 
-  if (!user) {
-    throw new ApiError(404, "User not found");
+  if (!pendingSignup || pendingSignup.expiresAt <= new Date()) {
+    throw new ApiError(400, "Signup verification expired. Please register again.");
   }
 
-  if (user.isEmailVerified) {
-    throw new ApiError(400, "Email already verified");
-  }
-
-  await createSignupOtp(user.id, user.email);
+  await createSignupOtp({
+    email: pendingSignup.email,
+    phone: pendingSignup.phone,
+  });
 
   return {
     message: "OTP resent successfully",
   };
 };
 
+const sendPhoneOtp = async ({ phone }) => {
+  const cleanPhone = normalizePhone(phone);
+
+  await createPhoneOtp({
+    phone: cleanPhone,
+    otp: require("../../utils/generateOtp")(),
+  });
+
+  return {
+    phone: cleanPhone,
+    message: "OTP sent successfully",
+  };
+};
+
+const verifyPhoneNumberOtp = async ({ phone, otp }, userId = null) => {
+  const cleanPhone = normalizePhone(phone);
+
+  await verifyPhoneOtp({
+    phone: cleanPhone,
+    otp,
+  });
+
+  if (userId) {
+    await prisma.user.updateMany({
+      where: {
+        id: userId,
+        phone: cleanPhone,
+      },
+      data: {
+        isPhoneVerified: true,
+      },
+    });
+  } else {
+    await prisma.user.updateMany({
+      where: {
+        phone: cleanPhone,
+      },
+      data: {
+        isPhoneVerified: true,
+      },
+    });
+  }
+
+  return {
+    phone: cleanPhone,
+    verified: true,
+  };
+};
+
 const login = async ({ identifier, password }) => {
-  const cleanIdentifier = identifier?.trim()?.toLowerCase();
+  const rawIdentifier = identifier?.trim();
+  const cleanIdentifier = rawIdentifier?.startsWith("+")
+    ? normalizePhone(rawIdentifier)
+    : normalizeEmail(rawIdentifier);
 
   if (!cleanIdentifier || !password) {
     throw new ApiError(400, "Email/phone and password are required");
@@ -190,20 +273,11 @@ const login = async ({ identifier, password }) => {
     throw new ApiError(401, "Invalid credentials");
   }
 
-  if (!user.isEmailVerified) {
-    throw new ApiError(403, "Please verify your email before login");
+  if (!user.isEmailVerified || !user.isPhoneVerified) {
+    throw new ApiError(403, "Please verify your email and phone before login");
   }
 
-  const safeUser = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    role: user.role,
-    isEmailVerified: user.isEmailVerified,
-    isOnboarded: user.isOnboarded,
-  };
-
+  const safeUser = toSafeUser(user);
   const token = createAuthToken(safeUser);
 
   return {
@@ -240,7 +314,7 @@ const getMe = async (userId) => {
 };
 
 const forgotPassword = async ({ email }) => {
-  const cleanEmail = email?.trim()?.toLowerCase();
+  const cleanEmail = normalizeEmail(email);
 
   const user = await prisma.user.findUnique({
     where: { email: cleanEmail },
@@ -262,7 +336,7 @@ const forgotPassword = async ({ email }) => {
 };
 
 const resetPassword = async ({ email, otp, newPassword }) => {
-  const cleanEmail = email?.trim()?.toLowerCase();
+  const cleanEmail = normalizeEmail(email);
 
   const user = await prisma.user.findUnique({
     where: { email: cleanEmail },
@@ -318,6 +392,8 @@ module.exports = {
   signup,
   verifyOtp,
   resendOtp,
+  sendPhoneOtp,
+  verifyPhoneNumberOtp,
   login,
   getMe,
   forgotPassword,

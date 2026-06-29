@@ -100,28 +100,28 @@ export default function CategoryDetail() {
   };
 
   return (
-    <div className="container-x py-10">
+    <div className="container-x max-w-6xl py-8">
       <Link
         to="/services"
-        className="flex items-center gap-2 text-ink mb-6 hover:opacity-80"
+        className="mb-5 flex items-center gap-2 text-ink hover:opacity-80"
       >
         <FiArrowLeft /> Back to Services
       </Link>
 
-      <h1 className="text-3xl sm:text-4xl font-bold mb-8">
+      <h1 className="mb-5 text-2xl font-bold sm:text-3xl">
         {category.name}
       </h1>
 
-      <div className="grid gap-6">
+      <div className="grid gap-4">
         {packages.map((pkg) => {
           const price = getPrice(pkg);
           const originalPrice = getOriginalPrice(pkg);
           const includes = getIncludes(pkg);
 
           return (
-            <div key={pkg.id} className="bg-white rounded-3xl p-6 shadow-lg">
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="h-52 w-full md:w-72 rounded-3xl overflow-hidden flex-shrink-0 bg-bg-soft">
+            <div key={pkg.id} className="rounded-2xl bg-white p-4 shadow-lg sm:p-5">
+              <div className="flex flex-col gap-5 md:flex-row">
+                <div className="h-40 w-full flex-shrink-0 overflow-hidden rounded-2xl bg-bg-soft md:h-44 md:w-56">
                   {categoryImage ? (
                     <img
                       src={categoryImage}
@@ -136,55 +136,55 @@ export default function CategoryDetail() {
                 </div>
 
                 <div className="flex-1">
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">
+                  <h2 className="mb-2 text-xl font-bold sm:text-2xl">
                     {pkg.name}
                   </h2>
 
-                  <div className="flex items-baseline gap-3 mb-3">
-                    <span className="text-2xl sm:text-3xl font-bold text-ink">
+                  <div className="mb-2 flex items-baseline gap-3">
+                    <span className="text-2xl font-bold text-ink">
                       ₹{price}
                     </span>
 
                     {originalPrice > price && (
-                      <span className="text-xl text-muted line-through">
+                      <span className="text-base text-muted line-through">
                         ₹{originalPrice}
                       </span>
                     )}
 
                     {originalPrice > price && (
-                      <span className="text-green-600 font-bold text-xl">
+                      <span className="text-base font-bold text-green-600">
                         OFF
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="mb-3 flex items-center gap-2">
                     <div className="flex items-center gap-1">
                       <FiStar className="text-amber-400" fill="currentColor" />
-                      <span className="text-xl font-semibold">4.8</span>
+                      <span className="font-semibold">4.8</span>
                     </div>
 
-                    <span className="text-muted text-lg">
+                    <span className="text-sm text-muted">
                       Verified service
                     </span>
                   </div>
 
-                  <div className="inline-block bg-yellow-100 text-yellow-800 px-4 py-2 rounded-xl text-lg font-medium mb-4">
+                  <div className="mb-4 inline-block rounded-xl bg-yellow-100 px-3 py-1.5 text-sm font-medium text-yellow-800">
                     Popular service
                   </div>
 
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-start gap-3 text-xl">
+                  <ul className="mb-5 space-y-2">
+                    <li className="flex items-start gap-2 text-base">
                       <span className="font-bold text-ink">Time:</span>
                       <span className="text-muted">{getDuration(pkg)}</span>
                     </li>
 
-                    <li className="flex items-start gap-3 text-xl">
+                    <li className="flex items-start gap-2 text-base">
                       <span className="font-bold text-ink">Warranty:</span>
                       <span className="text-muted">Service warranty available</span>
                     </li>
 
-                    <li className="flex items-start gap-3 text-xl">
+                    <li className="flex items-start gap-2 text-base">
                       <span className="font-bold text-ink">Services:</span>
                       <span className="text-muted">
                         {includes.length} included
@@ -192,19 +192,19 @@ export default function CategoryDetail() {
                     </li>
                   </ul>
 
-                  <div className="border-t-2 border-dashed border-gray-200 my-6"></div>
+                  <div className="my-4 border-t border-dashed border-gray-200"></div>
 
-                  <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex flex-col gap-3 sm:flex-row">
                     <button
                       onClick={() => setSelectedPackage(pkg)}
-                      className="flex-1 py-5 px-8 rounded-3xl border-2 border-gray-300 text-2xl font-bold hover:bg-gray-50 transition"
+                      className="flex-1 rounded-2xl border border-gray-300 px-6 py-3 text-base font-bold transition hover:bg-gray-50"
                     >
                       View Details
                     </button>
 
                     <button
                       onClick={() => handleBook(pkg)}
-                      className="flex-1 py-5 px-8 rounded-3xl bg-[#b9f000] text-2xl font-bold hover:bg-[#9bd000] transition shadow-[0_10px_40px_-10px_rgba(185,240,0,0.55)]"
+                      className="flex-1 rounded-2xl bg-[#b9f000] px-6 py-3 text-base font-bold shadow-[0_10px_40px_-10px_rgba(185,240,0,0.55)] transition hover:bg-[#9bd000]"
                     >
                       Book
                     </button>
@@ -223,23 +223,23 @@ export default function CategoryDetail() {
       </div>
 
       {selectedPackage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white">
+            <div className="p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold">
                   {selectedPackage.name}
                 </h2>
 
                 <button
                   onClick={() => setSelectedPackage(null)}
-                  className="grid place-items-center h-10 w-10 rounded-full border border-gray-300 hover:bg-gray-100 transition"
+                  className="grid h-9 w-9 place-items-center rounded-full border border-gray-300 transition hover:bg-gray-100"
                 >
                   <FiX />
                 </button>
               </div>
 
-              <div className="h-56 w-full rounded-2xl overflow-hidden mb-6 bg-bg-soft">
+              <div className="mb-5 h-44 w-full overflow-hidden rounded-2xl bg-bg-soft">
                 {categoryImage ? (
                   <img
                     src={categoryImage}
@@ -247,68 +247,68 @@ export default function CategoryDetail() {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="h-full w-full grid place-items-center text-4xl text-muted">
+                  <div className="grid h-full w-full place-items-center text-3xl text-muted">
                     <Icon />
                   </div>
                 )}
               </div>
 
-              <div className="flex items-baseline gap-3 mb-4">
-                <span className="text-3xl font-bold text-ink">
+              <div className="mb-3 flex items-baseline gap-3">
+                <span className="text-2xl font-bold text-ink">
                   ₹{getPrice(selectedPackage)}
                 </span>
 
                 {getOriginalPrice(selectedPackage) > getPrice(selectedPackage) && (
-                  <span className="text-xl text-muted line-through">
+                  <span className="text-base text-muted line-through">
                     ₹{getOriginalPrice(selectedPackage)}
                   </span>
                 )}
               </div>
 
-              <div className="flex items-center gap-4 mb-6">
+              <div className="mb-5 flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
                   <FiStar className="text-amber-400" fill="currentColor" />
-                  <span className="text-lg font-semibold">4.8</span>
+                  <span className="font-semibold">4.8</span>
                   <span className="text-muted text-sm">Verified service</span>
                 </div>
 
-                <div className="bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-xl text-sm font-medium">
+                <div className="rounded-xl bg-yellow-100 px-3 py-1.5 text-sm font-medium text-yellow-800">
                   Popular service
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="mb-5 grid grid-cols-2 gap-3">
                 <div>
                   <span className="text-sm text-muted">Time</span>
-                  <div className="font-semibold text-lg">
+                  <div className="font-semibold">
                     {getDuration(selectedPackage)}
                   </div>
                 </div>
 
                 <div>
                   <span className="text-sm text-muted">Warranty</span>
-                  <div className="font-semibold text-lg">
+                  <div className="font-semibold">
                     Available
                   </div>
                 </div>
 
                 <div>
                   <span className="text-sm text-muted">Services Included</span>
-                  <div className="font-semibold text-lg">
+                  <div className="font-semibold">
                     {getIncludes(selectedPackage).length}
                   </div>
                 </div>
 
                 <div>
                   <span className="text-sm text-muted">Estimated Price</span>
-                  <div className="font-semibold text-lg">
+                  <div className="font-semibold">
                     ₹{getPrice(selectedPackage)}
                   </div>
                 </div>
               </div>
 
-              <div className="mb-6">
-                <h3 className="text-xl font-bold mb-3">
+              <div className="mb-5">
+                <h3 className="mb-3 text-lg font-bold">
                   Included Services
                 </h3>
 
@@ -316,7 +316,7 @@ export default function CategoryDetail() {
                   {getIncludes(selectedPackage).map((item, index) => (
                     <li
                       key={index}
-                      className="flex items-center gap-2 py-2 px-4 bg-bg-soft rounded-xl"
+                      className="flex items-center gap-2 rounded-xl bg-bg-soft px-3 py-2 text-sm"
                     >
                       <span className="h-2 w-2 rounded-full bg-brand" />
                       <span>{item}</span>
@@ -325,10 +325,10 @@ export default function CategoryDetail() {
                 </ul>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <button
                   onClick={() => setSelectedPackage(null)}
-                  className="flex-1 py-3 px-6 rounded-full border-2 border-gray-300 font-bold hover:bg-gray-50 transition"
+                  className="flex-1 rounded-full border border-gray-300 px-6 py-3 font-bold transition hover:bg-gray-50"
                 >
                   Close
                 </button>
@@ -338,7 +338,7 @@ export default function CategoryDetail() {
                     handleBook(selectedPackage);
                     setSelectedPackage(null);
                   }}
-                  className="flex-1 py-3 px-6 rounded-full bg-[#b9f000] font-bold hover:bg-[#9bd000] transition shadow-[0_10px_40px_-10px_rgba(185,240,0,0.55)]"
+                  className="flex-1 rounded-full bg-[#b9f000] px-6 py-3 font-bold shadow-[0_10px_40px_-10px_rgba(185,240,0,0.55)] transition hover:bg-[#9bd000]"
                 >
                   Book Now
                 </button>

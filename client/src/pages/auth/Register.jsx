@@ -4,6 +4,15 @@ import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
 import { FiUser, FiTool } from "react-icons/fi";
 
+const COUNTRY_CODES = [
+  { label: "Nepal", code: "+977" },
+  { label: "India", code: "+91" },
+  { label: "United States", code: "+1" },
+  { label: "United Kingdom", code: "+44" },
+  { label: "Australia", code: "+61" },
+  { label: "UAE", code: "+971" },
+];
+
 export default function Register() {
   const nav = useNavigate();
 
@@ -14,6 +23,7 @@ export default function Register() {
     password: "",
   });
 
+  const [countryCode, setCountryCode] = useState("+977");
   const [role, setRole] = useState("CUSTOMER");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -31,23 +41,25 @@ export default function Register() {
     setLoading(true);
 
     try {
+      const phoneDigits = form.phone.replace(/\D/g, "");
+      const fullPhone = form.phone.trim().startsWith("+")
+        ? form.phone.trim()
+        : `${countryCode}${phoneDigits}`;
+
       const payload = {
         name: form.name.trim(),
         email: form.email.trim(),
+        phone: fullPhone,
         password: form.password,
         role,
       };
-
-      if (form.phone.trim()) {
-        payload.phone = form.phone.trim();
-      }
 
       await api.post("/auth/signup", payload);
 
       nav("/otp", {
         state: {
           email: form.email,
-          phone: form.phone || null,
+          phone: fullPhone,
           fromSignup: true,
         },
       });
@@ -126,14 +138,30 @@ export default function Register() {
             className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
           />
 
-          <input
-            name="phone"
-            value={form.phone}
-            onChange={change}
-            maxLength={15}
-            placeholder="Mobile number (optional)"
-            className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
-          />
+          <div className="flex gap-2">
+            <select
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value)}
+              className="w-32 rounded-xl border border-line bg-white px-3 py-3 outline-none focus:border-ink"
+            >
+              {COUNTRY_CODES.map((country) => (
+                <option key={country.code} value={country.code}>
+                  {country.code} {country.label}
+                </option>
+              ))}
+            </select>
+
+            <input
+              required
+              name="phone"
+              value={form.phone}
+              onChange={change}
+              maxLength={15}
+              inputMode="tel"
+              placeholder="Mobile number"
+              className="min-w-0 flex-1 rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+            />
+          </div>
 
           <input
             required
