@@ -161,29 +161,39 @@ export default function Register() {
             />
           </div>
 
-          <input
-            required
-            name="password"
-            value={form.password}
-            onChange={change}
-            type="password"
-            placeholder="Password"
-            minLength={8}
-            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
-            title={PASSWORD_MESSAGE}
-            className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
-          />
+          <label className="grid gap-1.5 text-sm">
+            <span className="font-medium">Password</span>
+            <input
+              required
+              name="password"
+              value={form.password}
+              onChange={change}
+              type="password"
+              placeholder="Create password"
+              minLength={8}
+              pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
+              title={PASSWORD_MESSAGE}
+              className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+            />
+          </label>
 
-          <input
-            required
-            name="confirmPassword"
-            value={form.confirmPassword}
-            onChange={change}
-            type="password"
-            placeholder="Confirm password"
-            minLength={8}
-            className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
-          />
+          <label className="grid gap-1.5 text-sm">
+            <span className="font-medium">Confirm Password</span>
+            <input
+              required
+              name="confirmPassword"
+              value={form.confirmPassword}
+              onChange={change}
+              type="password"
+              placeholder="Re-enter password"
+              minLength={8}
+              className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+            />
+          </label>
+
+          {form.confirmPassword && form.password !== form.confirmPassword && (
+            <p className="text-xs text-red-600">Passwords do not match.</p>
+          )}
 
           <p className="text-xs leading-relaxed text-muted">
             {PASSWORD_MESSAGE}
