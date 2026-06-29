@@ -10,6 +10,7 @@ export default function Services() {
   const [loading, setLoading] = useState(true);
 
   const { cart, fetchServiceCategories } = useApp();
+  const cartItems = Array.isArray(cart) ? cart : [];
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -33,7 +34,7 @@ export default function Services() {
     : categories
   ).filter(category => !["Brake", "Cleaning", "Electrical", "Emergency", "Engine", "General Service", "Tyre", "Tyres", "Battery", "AC"].includes(category.name));
 
-  const cartTotal = cart.reduce((total, item) => {
+  const cartTotal = cartItems.reduce((total, item) => {
     return total + (item.basePrice || item.minPrice || item.price || 0);
   }, 0);
 
@@ -100,10 +101,10 @@ export default function Services() {
         </div>
       )}
 
-      {cart.length > 0 && (
+      {cartItems.length > 0 && (
         <div className="fixed inset-x-0 bottom-5 z-40 flex justify-center px-4">
           <Link to="/checkout" className="btn-dark px-6 py-3.5 shadow-2xl">
-            {cart.length} service{cart.length > 1 ? "s" : ""} · ₹{cartTotal} ·
+            {cartItems.length} service{cartItems.length > 1 ? "s" : ""} · ₹{cartTotal} ·
             Continue <FiArrowRight />
           </Link>
         </div>
