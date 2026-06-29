@@ -131,7 +131,7 @@ export default function Register() {
             value={form.name}
             onChange={change}
             placeholder="Full name"
-            className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+            className="rounded-xl border border-ink px-4 py-3 outline-none focus:border-ink"
           />
 
           <input
@@ -141,11 +141,11 @@ export default function Register() {
             onChange={change}
             type="email"
             placeholder="Email"
-            className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+            className="rounded-xl border border-ink px-4 py-3 outline-none focus:border-ink"
           />
 
-          <div className="flex items-center overflow-hidden rounded-xl border border-line bg-white transition focus-within:border-ink">
-            <div className="grid h-full w-16 shrink-0 place-items-center border-r border-line bg-bg-soft px-3 py-3 font-semibold text-ink">
+          <div className="flex items-center overflow-hidden rounded-xl border border-ink bg-white transition focus-within:border-ink">
+            <div className="grid h-full w-16 shrink-0 place-items-center border-r border-ink bg-bg-soft px-3 py-3 font-semibold text-ink">
               {COUNTRY_CODE}
             </div>
 
