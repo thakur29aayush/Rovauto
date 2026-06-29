@@ -129,9 +129,6 @@ export default function Checkout() {
           <div className="grid gap-3 sm:grid-cols-2">
             {[
               ["Cashfree", "UPI, cards, wallets"],
-              ["UPI", "PhonePe, GPay, Paytm"],
-              ["Credit / Debit Card", "Visa, Master, Amex"],
-              ["Net Banking", "All major banks"],
             ].map(([name, description], index) => (
               <label
                 key={name}

@@ -60,6 +60,38 @@ const vehicleBrands = [
     name: "BMW",
     models: ["X1", "X3", "X5", "X7", "Z4"],
   },
+  {
+    name: "Audi",
+    models: ["A3", "A4", "A5", "A6", "A7"],
+  },
+  {
+    name: "Nissan",
+    models: ["Magnite", "Kicks", "Sunny", "Terrano"],
+  },
+  {
+    name: "Volvo",
+    models: ["XC40", "XC60", "XC90", "S60", "S90"],
+  },
+  {
+    name: "MG",
+    models: ["Hector", "Astor", "Comet EV", "ZS EV", "Gloster"],
+  },
+  {
+    name: "Jeep",
+    models: ["Compass", "Meridian", "Wrangler", "Grand Cherokee"],
+  },
+  {
+    name: "Land Rover",
+    models: ["Range Rover", "Discovery", "Defender", "Evoque"],
+  },
+  {
+    name: "Ford",
+    models: ["Figo", "Aspire", "EcoSport", "Endeavour"],
+  },
+  {
+    name: "Skoda",
+    models: ["Kushaq", "Slavia", "Octavia", "Superb", "Kodiaq"],
+  },
 ];
 
 async function main() {

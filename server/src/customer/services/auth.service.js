@@ -8,10 +8,12 @@ const {
 } = require("./otp.service");
 const { createAuthToken } = require("./token.service");
 
-const signup = async ({ name, email, phone, password }) => {
+const signup = async ({ name, email, phone, password, role = "CUSTOMER" }) => {
   const cleanName = name?.trim();
   const cleanEmail = email?.trim()?.toLowerCase();
   const cleanPhone = phone?.trim() || null;
+  const validRoles = ["CUSTOMER", "GARAGE_OWNER"];
+  const userRole = validRoles.includes(role) ? role : "CUSTOMER";
 
   if (!cleanName || !cleanEmail || !password) {
     throw new ApiError(400, "Name, email and password are required");
@@ -44,16 +46,22 @@ const signup = async ({ name, email, phone, password }) => {
 
   const hashedPassword = await argon2.hash(password);
 
+  const userData = {
+    name: cleanName,
+    email: cleanEmail,
+    phone: cleanPhone,
+    password: hashedPassword,
+    role: userRole,
+  };
+
+  if (userRole === "CUSTOMER") {
+    userData.customerProfile = { create: {} };
+  } else if (userRole === "GARAGE_OWNER") {
+    userData.garageOwnerProfile = { create: {} };
+  }
+
   const user = await prisma.user.create({
-    data: {
-      name: cleanName,
-      email: cleanEmail,
-      phone: cleanPhone,
-      password: hashedPassword,
-      customerProfile: {
-        create: {},
-      },
-    },
+    data: userData,
   });
 
   await createSignupOtp(user.id, user.email);

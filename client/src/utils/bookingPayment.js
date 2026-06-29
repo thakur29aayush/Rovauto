@@ -49,7 +49,18 @@ export const payForBooking = async ({ booking }) => {
     bookingId: booking.id,
   });
 
-  const { cashfreeOrder, mode } = orderRes.data.data;
+  const { cashfreeOrder, mode, isDevMode } = orderRes.data.data;
+
+  // Dev mode: skip real Cashfree
+  if (isDevMode) {
+    await loadCashfreeCheckout(); // just to keep the flow similar
+    // Immediately verify
+    const verifyRes = await api.post("/payments/verify", {
+      bookingId: booking.id,
+      cashfreeOrderId: cashfreeOrder.id,
+    });
+    return verifyRes.data.data.booking;
+  }
 
   await loadCashfreeCheckout();
 

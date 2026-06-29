@@ -29,6 +29,12 @@ const signupValidation = [
     .withMessage("Password is required")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters"),
+
+  body("role")
+    .optional({ checkFalsy: true })
+    .trim()
+    .isIn(["CUSTOMER", "GARAGE_OWNER"])
+    .withMessage("Role must be either CUSTOMER or GARAGE_OWNER"),
 ];
 
 const verifyOtpValidation = [

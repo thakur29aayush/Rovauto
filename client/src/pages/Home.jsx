@@ -13,6 +13,9 @@ import {
 import { CATEGORY_UI } from "@/data/services";
 import api from "@/api/axios";
 import homepageHero from "@/assets/Rovauto_home.png";
+import acserviceimg from "@/assets/AC service.png"
+import serviceimg from "@/assets/Service And Repair.png"
+import washimg from "@/assets/car_wash.png"
 
 const TRUST = [
   { icon: FiCheckCircle, label: "Verified Garages" },
@@ -20,6 +23,60 @@ const TRUST = [
   { icon: FiTool, label: "Transparent Pricing" },
   { icon: FiNavigation, label: "Live Tracking" },
   { icon: FiClock, label: "Fast Booking" },
+];
+
+// Hardcoded popular services as per user's attached images
+const HARDCODED_POPULAR_SERVICES = [
+  {
+    id: "1",
+    name: "Express Exterior Wash",
+    description: "Foam Wash, High-pressure Rinse, Hand Dry",
+    durationMin: 30,
+    basePrice: 299,
+    category: { name: "Cleaning" },
+    customImage: washimg,
+    rating: 4.7
+  },
+  {
+    id: "2",
+    name: "Full Car Wash & Interior",
+    description: "Foam Wash, Underbody Wash, Interior Vacuum, Dashboard Polish, Window Cleaning",
+    durationMin: 120,
+    basePrice: 999,
+    category: { name: "Cleaning" },
+    customImage: washimg,
+    rating: 4.9
+  },
+  {
+    id: "3",
+    name: "Standard Car Service",
+    description: "Engine Oil Change, Oil Filter Replacement, Air Filter Cleaning, Coolant Top-up, Brake Inspection",
+    durationMin: 360,
+    basePrice: 3292,
+    category: { name: "General Service" },
+    customImage: serviceimg,
+    rating: 4.6
+  },
+  {
+    id: "4",
+    name: "Comprehensive Car Service",
+    description: "Synthetic Engine Oil, All Filters (Oil, Air, Fuel), AC Vent Cleaning, Brake Inspection, Spark Plug Check",
+    durationMin: 480,
+    basePrice: 4820,
+    category: { name: "General Service" },
+    customImage: serviceimg,
+    rating: 4.8
+  },
+  {
+    id: "5",
+    name: "Regular AC Service",
+    description: "AC Gas Top-up, Condenser Cleaning, Cooling Coil Service, Leak Test, AC Vent Sanitization",
+    durationMin: 240,
+    basePrice: 2161,
+    category: { name: "AC" },
+    customImage: acserviceimg,
+    rating: 4.5
+  }
 ];
 
 const getServicePrice = (service) => {
@@ -51,13 +108,12 @@ export default function Home() {
       try {
         setLoading(true);
 
-        const [categoryRes, serviceRes] = await Promise.all([
+        const [categoryRes] = await Promise.all([
           api.get("/services/categories"),
-          api.get("/services"),
         ]);
 
         setCategories(categoryRes.data.data || []);
-        setPopularServices((serviceRes.data.data || []).slice(0, 6));
+        setPopularServices(HARDCODED_POPULAR_SERVICES);
       } catch (err) {
         console.error("Home data load failed:", err);
       } finally {
@@ -189,7 +245,7 @@ export default function Home() {
           <div className="card-soft p-8 text-muted">Loading services...</div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
-            {categories.slice(0, 8).map((category) => {
+            {categories.filter(category => !["Brake", "Cleaning", "Electrical", "Emergency", "Engine", "General Service", "Tyre", "Tyres", "Battery", "AC"].includes(category.name)).slice(0, 8).map((category) => {
               const ui = CATEGORY_UI[category.name] || {};
               const image = ui.image;
               const isSos = ui.isSos;
@@ -291,7 +347,7 @@ export default function Home() {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {popularServices.map((service) => {
-              const image = getServiceImage(service.category?.name);
+              const image = service.customImage || getServiceImage(service.category?.name);
               const price = getServicePrice(service);
 
               return (
@@ -331,7 +387,7 @@ export default function Home() {
 
                   <div className="mt-4 flex items-center justify-between">
                     <div className="flex items-center gap-1 text-amber-500 text-sm">
-                      <FiStar fill="currentColor" /> 4.8
+                      <FiStar fill="currentColor" /> {service.rating}
                     </div>
 
                     <span className="text-sm font-semibold text-ink/80 group-hover:text-ink">
@@ -373,7 +429,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
               {[
                 ["8K+", "Garages"],
                 ["50K+", "Customers"],

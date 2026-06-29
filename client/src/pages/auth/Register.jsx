@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
+import { FiUser, FiTool } from "react-icons/fi";
 
 export default function Register() {
   const nav = useNavigate();
@@ -13,6 +14,7 @@ export default function Register() {
     password: "",
   });
 
+  const [role, setRole] = useState("CUSTOMER");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,6 +35,7 @@ export default function Register() {
         name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,
+        role,
       };
 
       if (form.phone.trim()) {
@@ -70,7 +73,36 @@ export default function Register() {
       </div>
 
       <div className="card-soft mx-auto w-full max-w-md p-7">
-        <h2 className="text-2xl font-bold">Create account</h2>
+        <div className="flex bg-bg-soft rounded-full p-1 mb-6">
+          <button
+            type="button"
+            onClick={() => setRole("CUSTOMER")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full font-medium transition ${
+              role === "CUSTOMER"
+                ? "bg-ink text-white"
+                : "text-muted hover:text-ink"
+            }`}
+          >
+            <FiUser />
+            Customer
+          </button>
+          <button
+            type="button"
+            onClick={() => setRole("GARAGE_OWNER")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full font-medium transition ${
+              role === "GARAGE_OWNER"
+                ? "bg-ink text-white"
+                : "text-muted hover:text-ink"
+            }`}
+          >
+            <FiTool />
+            Garage Partner
+          </button>
+        </div>
+
+        <h2 className="text-2xl font-bold">
+          Create account {role === "GARAGE_OWNER" ? " (Garage)" : ""}
+        </h2>
 
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 

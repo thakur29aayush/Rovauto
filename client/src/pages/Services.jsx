@@ -26,11 +26,12 @@ export default function Services() {
     loadCategories();
   }, [fetchServiceCategories]);
 
-  const filteredCategories = q
+  const filteredCategories = (q
     ? categories.filter((category) =>
         category.name.toLowerCase().includes(q.toLowerCase())
       )
-    : categories;
+    : categories
+  ).filter(category => !["Brake", "Cleaning", "Electrical", "Emergency", "Engine", "General Service", "Tyre", "Tyres", "Battery", "AC"].includes(category.name));
 
   const cartTotal = cart.reduce((total, item) => {
     return total + (item.basePrice || item.minPrice || item.price || 0);

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
-import { FiArrowRight } from "react-icons/fi";
+import { FiArrowRight, FiUser, FiTool } from "react-icons/fi";
 
 export default function Login() {
   const { state } = useLocation();
@@ -16,6 +16,7 @@ export default function Login() {
     password: "",
   });
 
+  const [role, setRole] = useState("CUSTOMER"); // Default to CUSTOMER
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -78,7 +79,36 @@ export default function Login() {
       </div>
 
       <div className="card-soft p-7 max-w-md w-full mx-auto">
-        <h2 className="text-2xl font-bold">Login to Rovauto</h2>
+        <div className="flex bg-bg-soft rounded-full p-1 mb-6">
+          <button
+            type="button"
+            onClick={() => setRole("CUSTOMER")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full font-medium transition ${
+              role === "CUSTOMER"
+                ? "bg-ink text-white"
+                : "text-muted hover:text-ink"
+            }`}
+          >
+            <FiUser />
+            Customer
+          </button>
+          <button
+            type="button"
+            onClick={() => setRole("GARAGE_OWNER")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full font-medium transition ${
+              role === "GARAGE_OWNER"
+                ? "bg-ink text-white"
+                : "text-muted hover:text-ink"
+            }`}
+          >
+            <FiTool />
+            Garage Partner
+          </button>
+        </div>
+
+        <h2 className="text-2xl font-bold">
+          Login to Rovauto {role === "GARAGE_OWNER" ? " (Garage)" : ""}
+        </h2>
 
         <p className="text-sm text-muted mt-1">
           Use email/phone and password
