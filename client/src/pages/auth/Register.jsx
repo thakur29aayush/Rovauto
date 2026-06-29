@@ -4,14 +4,7 @@ import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
 import { FiUser, FiTool } from "react-icons/fi";
 
-const COUNTRY_CODES = [
-  { label: "Nepal", code: "+977" },
-  { label: "India", code: "+91" },
-  { label: "United States", code: "+1" },
-  { label: "United Kingdom", code: "+44" },
-  { label: "Australia", code: "+61" },
-  { label: "UAE", code: "+971" },
-];
+const COUNTRY_CODE = "+91";
 
 export default function Register() {
   const nav = useNavigate();
@@ -23,7 +16,6 @@ export default function Register() {
     password: "",
   });
 
-  const [countryCode, setCountryCode] = useState("+977");
   const [role, setRole] = useState("CUSTOMER");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -44,7 +36,7 @@ export default function Register() {
       const phoneDigits = form.phone.replace(/\D/g, "");
       const fullPhone = form.phone.trim().startsWith("+")
         ? form.phone.trim()
-        : `${countryCode}${phoneDigits}`;
+        : `${COUNTRY_CODE}${phoneDigits}`;
 
       const payload = {
         name: form.name.trim(),
@@ -139,17 +131,9 @@ export default function Register() {
           />
 
           <div className="flex gap-2">
-            <select
-              value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value)}
-              className="w-32 rounded-xl border border-line bg-white px-3 py-3 outline-none focus:border-ink"
-            >
-              {COUNTRY_CODES.map((country) => (
-                <option key={country.code} value={country.code}>
-                  {country.code} {country.label}
-                </option>
-              ))}
-            </select>
+            <div className="grid w-24 place-items-center rounded-xl border border-line bg-bg-soft px-3 py-3 font-medium text-ink">
+              {COUNTRY_CODE}
+            </div>
 
             <input
               required
