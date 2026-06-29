@@ -11,7 +11,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed:services": "node src/seed/seedServices.js",
-    "seed:garages": "node src/seed/seedGarages.js"
+    "seed:garages": "node src/seed/seedGarages.js",
+    "db:delete-user": "node src/scripts/deleteUserData.js"
   },
   "repository": {
     "type": "git",
