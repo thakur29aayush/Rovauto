@@ -34,7 +34,7 @@ export default function Footer() {
         <div className="container-x py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/60">
           <p>© {new Date().getFullYear()} Rovauto. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-2"><FiMail /> hello@rovauto.in</span>
+            <span className="flex items-center gap-2"><FiMail /> rovauto.offical@gmail.com</span>
             <span className="flex items-center gap-2"><FiPhone /> {SUPPORT_PHONE_DISPLAY}</span>
           </div>
         </div>

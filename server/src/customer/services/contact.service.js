@@ -10,7 +10,7 @@ const sendContactMessage = async ({ name, email, message }) => {
 
   const result = await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL || "Rovauto <onboarding@resend.dev>",
-    to: process.env.CONTACT_INBOX || "rovauto.official@gmail.com",
+    to: process.env.CONTACT_INBOX || "rovauto.offical@gmail.com",
     replyTo: email,
     subject: `New Rovauto Contact Message from ${name}`,
     html: `

@@ -173,7 +173,7 @@ export default function Register() {
               minLength={8}
               pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
               title={PASSWORD_MESSAGE}
-              className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+              className="rounded-xl border border-ink px-4 py-3 outline-none focus:border-ink"
             />
           </label>
 
@@ -187,7 +187,7 @@ export default function Register() {
               type="password"
               placeholder="Re-enter password"
               minLength={8}
-              className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+              className="rounded-xl border border-ink px-4 py-3 outline-none focus:border-ink"
             />
           </label>
 

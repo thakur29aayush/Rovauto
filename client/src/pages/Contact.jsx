@@ -129,7 +129,7 @@ export default function Contact() {
           {
             icon: FiMail,
             t: "Email us",
-            d: "rovauto.official@gmail.com",
+            d: "rovauto.offical@gmail.com",
             sub: "Replies within 2 hours",
           },
           {
