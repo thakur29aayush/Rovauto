@@ -29,13 +29,26 @@ const sendFast2SmsQuick = async ({ to, message }) => {
     numbers: toIndianMobileNumber(to),
   };
 
-  const response = await axios.get(FAST2SMS_QUICK_URL, {
-    params,
-    headers: {
-      Accept: "application/json",
-    },
-    timeout: 10000,
-  });
+  let response;
+
+  try {
+    response = await axios.get(FAST2SMS_QUICK_URL, {
+      params,
+      headers: {
+        Accept: "application/json",
+      },
+      timeout: 10000,
+    });
+  } catch (error) {
+    const providerMessage = Array.isArray(error.response?.data?.message)
+      ? error.response.data.message.join(", ")
+      : error.response?.data?.message;
+
+    throw new ApiError(
+      error.response?.status === 400 ? 400 : 502,
+      providerMessage || "Fast2SMS could not send the OTP"
+    );
+  }
 
   if (response.data?.return === false) {
     throw new ApiError(

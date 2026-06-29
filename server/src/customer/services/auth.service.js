@@ -116,10 +116,26 @@ const signup = async ({
     },
   });
 
-  await createSignupOtp({
-    email: pendingSignup.email,
-    phone: pendingSignup.phone,
-  });
+  try {
+    await createSignupOtp({
+      email: pendingSignup.email,
+      phone: pendingSignup.phone,
+    });
+  } catch (error) {
+    await prisma.$transaction([
+      prisma.emailOtp.deleteMany({
+        where: { email: pendingSignup.email },
+      }),
+      prisma.phoneOtp.deleteMany({
+        where: { phone: pendingSignup.phone },
+      }),
+      prisma.pendingSignup.deleteMany({
+        where: { id: pendingSignup.id },
+      }),
+    ]);
+
+    throw error;
+  }
 
   return {
     email: pendingSignup.email,

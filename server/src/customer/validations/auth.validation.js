@@ -25,8 +25,8 @@ const signupValidation = [
     .trim()
     .notEmpty()
     .withMessage("Phone number is required")
-    .matches(/^\+[1-9]\d{7,14}$/)
-    .withMessage("Phone number must include country code, for example +9779812345678"),
+    .matches(/^\+91[6-9]\d{9}$/)
+    .withMessage("Phone number must be a valid Indian mobile number, for example +919812345678"),
 
   body("password")
     .notEmpty()
@@ -60,8 +60,8 @@ const verifyOtpValidation = [
     .trim()
     .notEmpty()
     .withMessage("Phone number is required")
-    .matches(/^\+[1-9]\d{7,14}$/)
-    .withMessage("Phone number must include country code, for example +9779812345678"),
+    .matches(/^\+91[6-9]\d{9}$/)
+    .withMessage("Phone number must be a valid Indian mobile number, for example +919812345678"),
 
   body("otp")
     .trim()
@@ -84,8 +84,8 @@ const resendOtpValidation = [
     .trim()
     .notEmpty()
     .withMessage("Phone number is required")
-    .matches(/^\+[1-9]\d{7,14}$/)
-    .withMessage("Phone number must include country code, for example +9779812345678"),
+    .matches(/^\+91[6-9]\d{9}$/)
+    .withMessage("Phone number must be a valid Indian mobile number, for example +919812345678"),
 ];
 
 const sendPhoneOtpValidation = [
@@ -93,8 +93,8 @@ const sendPhoneOtpValidation = [
     .trim()
     .notEmpty()
     .withMessage("Phone number is required")
-    .matches(/^\+[1-9]\d{7,14}$/)
-    .withMessage("Phone number must include country code, for example +9779812345678"),
+    .matches(/^\+91[6-9]\d{9}$/)
+    .withMessage("Phone number must be a valid Indian mobile number, for example +919812345678"),
 ];
 
 const verifyPhoneOtpValidation = [
@@ -102,8 +102,8 @@ const verifyPhoneOtpValidation = [
     .trim()
     .notEmpty()
     .withMessage("Phone number is required")
-    .matches(/^\+[1-9]\d{7,14}$/)
-    .withMessage("Phone number must include country code, for example +9779812345678"),
+    .matches(/^\+91[6-9]\d{9}$/)
+    .withMessage("Phone number must be a valid Indian mobile number, for example +919812345678"),
 
   body("otp")
     .trim()

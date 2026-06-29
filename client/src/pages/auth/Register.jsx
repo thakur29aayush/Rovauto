@@ -51,6 +51,10 @@ export default function Register() {
         ? form.phone.trim()
         : `${COUNTRY_CODE}${phoneDigits}`;
 
+      if (!/^\+91[6-9]\d{9}$/.test(fullPhone)) {
+        throw new Error("Enter a valid 10-digit Indian mobile number.");
+      }
+
       const payload = {
         name: form.name.trim(),
         email: form.email.trim(),
