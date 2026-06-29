@@ -2,10 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
-import {
-  flushPendingSignupLocation,
-  readPendingSignupLocation,
-} from "@/utils/signupLocation";
+import { saveSignupLocationToProfile } from "@/utils/signupLocation";
 
 const PENDING_OTP_KEY = "pendingSignupOtp";
 
@@ -22,7 +19,7 @@ const getPendingOtp = (state) => {
     return {
       email: state.email,
       phone: state.phone,
-      signupLocation: stored.signupLocation || readPendingSignupLocation(),
+      signupLocation: state.signupLocation || stored.signupLocation || null,
     };
   }
 
@@ -30,7 +27,7 @@ const getPendingOtp = (state) => {
     return {
       email: stored.email,
       phone: stored.phone,
-      signupLocation: stored.signupLocation || readPendingSignupLocation(),
+      signupLocation: stored.signupLocation || null,
     };
   }
 
@@ -45,7 +42,7 @@ export default function OTP() {
   const { state } = useLocation();
   const nav = useNavigate();
 
-  const { email, phone } = getPendingOtp(state);
+  const { email, phone, signupLocation } = getPendingOtp(state);
 
   const [otp, setOtp] = useState(Array(6).fill(""));
   const [timer, setTimer] = useState(60);
@@ -99,7 +96,7 @@ export default function OTP() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      flushPendingSignupLocation();
+      await saveSignupLocationToProfile(signupLocation);
 
       sessionStorage.removeItem(PENDING_OTP_KEY);
 

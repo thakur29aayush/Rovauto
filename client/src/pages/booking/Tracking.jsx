@@ -59,7 +59,7 @@ export default function Tracking() {
     if (booking?.status === "PENDING_PAYMENT") return;
     if (step >= STATUS_STEPS.length - 1) return;
 
-    const timer = setTimeout(() => setStep(step + 1), 3500);
+    const timer = setTimeout(() => setStep(step + 1), 5000);
     return () => clearTimeout(timer);
   }, [booking?.status, step]);
 

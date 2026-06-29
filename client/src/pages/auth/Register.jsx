@@ -6,7 +6,8 @@ import { FiUser, FiTool } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
 import {
-  collectSignupLocationLater,
+  requestSignupLocation,
+  saveSignupLocationToProfile,
 } from "@/utils/signupLocation";
 
 const COUNTRY_CODE = "+91";
@@ -69,7 +70,7 @@ export default function Register() {
         role,
       };
 
-      collectSignupLocationLater();
+      const signupLocation = await requestSignupLocation();
 
       await api.post("/auth/signup", payload);
 
@@ -78,6 +79,7 @@ export default function Register() {
         JSON.stringify({
           email: payload.email,
           phone: fullPhone,
+          signupLocation,
           createdAt: Date.now(),
         })
       );
@@ -86,6 +88,7 @@ export default function Register() {
         state: {
           email: payload.email,
           phone: fullPhone,
+          signupLocation,
           fromSignup: true,
         },
       });
@@ -104,7 +107,8 @@ export default function Register() {
       const data = await completeGoogleAuth(role);
 
       if (data.isNewUser) {
-        collectSignupLocationLater();
+        const signupLocation = await requestSignupLocation();
+        await saveSignupLocationToProfile(signupLocation);
       }
 
       const redirectPath =

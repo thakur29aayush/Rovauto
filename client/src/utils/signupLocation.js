@@ -1,11 +1,8 @@
 import api from "@/api/axios";
 
-const PENDING_LOCATION_KEY = "pendingSignupLocation";
-const PENDING_LOCATION_WANTED_KEY = "pendingSignupLocationWanted";
-
 const LOCATION_OPTIONS = {
   enableHighAccuracy: false,
-  timeout: 3500,
+  timeout: 8000,
   maximumAge: 5 * 60 * 1000,
 };
 
@@ -65,47 +62,6 @@ export const requestSignupLocation = async () => {
   };
 };
 
-export const markSignupLocationPending = () => {
-  localStorage.setItem(PENDING_LOCATION_WANTED_KEY, "1");
-};
-
-export const rememberSignupLocation = (signupLocation) => {
-  if (!signupLocation?.address) return;
-
-  const value = JSON.stringify(signupLocation);
-  localStorage.setItem(PENDING_LOCATION_KEY, value);
-  sessionStorage.setItem(PENDING_LOCATION_KEY, value);
-};
-
-export const readPendingSignupLocation = () => {
-  try {
-    const value =
-      localStorage.getItem(PENDING_LOCATION_KEY) ||
-      sessionStorage.getItem(PENDING_LOCATION_KEY);
-
-    return value ? JSON.parse(value) : null;
-  } catch {
-    localStorage.removeItem(PENDING_LOCATION_KEY);
-    sessionStorage.removeItem(PENDING_LOCATION_KEY);
-    return null;
-  }
-};
-
-export const clearPendingSignupLocation = () => {
-  localStorage.removeItem(PENDING_LOCATION_KEY);
-  localStorage.removeItem(PENDING_LOCATION_WANTED_KEY);
-  sessionStorage.removeItem(PENDING_LOCATION_KEY);
-};
-
-export const collectSignupLocationLater = () => {
-  markSignupLocationPending();
-
-  return requestSignupLocation().then((signupLocation) => {
-    rememberSignupLocation(signupLocation);
-    return signupLocation;
-  });
-};
-
 export const saveSignupLocationToProfile = async (signupLocation) => {
   if (!signupLocation?.address) return false;
 
@@ -121,29 +77,4 @@ export const saveSignupLocationToProfile = async (signupLocation) => {
   }
 
   return true;
-};
-
-export const flushPendingSignupLocation = async () => {
-  const token = localStorage.getItem("token");
-  const hasPendingRequest = localStorage.getItem(PENDING_LOCATION_WANTED_KEY);
-
-  if (!token || !hasPendingRequest) {
-    return false;
-  }
-
-  const signupLocation =
-    readPendingSignupLocation() || (await requestSignupLocation());
-
-  if (!signupLocation?.address) {
-    clearPendingSignupLocation();
-    return false;
-  }
-
-  const saved = await saveSignupLocationToProfile(signupLocation);
-
-  if (saved) {
-    clearPendingSignupLocation();
-  }
-
-  return saved;
 };
