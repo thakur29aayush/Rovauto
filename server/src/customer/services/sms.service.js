@@ -57,7 +57,11 @@ const sendFast2SmsQuick = async ({ to, message }) => {
     );
   }
 
-  console.log(`SMS OTP sent successfully to ${params.numbers} via Fast2SMS Quick`);
+  console.log("Fast2SMS accepted OTP request", {
+    to: params.numbers,
+    requestId: response.data?.request_id,
+    message: response.data?.message,
+  });
 
   return true;
 };
