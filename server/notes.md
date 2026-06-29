@@ -399,3 +399,7 @@ Review / Complaint
 * Background Jobs
 * Socket.IO for Real-Time Broadcast
 * Firebase Push Notifications
+
+
+##COMMANDS
+npm run db:delete-user -- --email=aayush@example.com --confirm

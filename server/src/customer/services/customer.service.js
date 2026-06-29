@@ -3,6 +3,7 @@ const ApiError = require("../../utils/apiError");
 const argon2 = require("argon2");
 const invalidateCustomerCache = require("../../utils/invalidateCustomerCache");
 const { getCache, setCache, deleteCache } = require("../../utils/cache");
+const { normalizePhone } = require("../../utils/phone");
 
 const PROFILE_CACHE_TTL = 5 * 60;
 
@@ -147,12 +148,19 @@ const updateProfile = async (userId, data) => {
     throw new ApiError(404, "User not found");
   }
 
-  if (data.phone && data.phone !== existingUser.phone) {
+  const nextPhone =
+    data.phone !== undefined && String(data.phone).trim()
+      ? normalizePhone(data.phone)
+      : data.phone === ""
+        ? null
+        : undefined;
+
+  if (nextPhone && nextPhone !== existingUser.phone) {
     const phoneExists = await prisma.user.findUnique({
-      where: { phone: data.phone },
+      where: { phone: nextPhone },
     });
 
-    if (phoneExists) {
+    if (phoneExists && phoneExists.id !== userId) {
       throw new ApiError(409, "Phone number already in use");
     }
   }
@@ -162,7 +170,10 @@ const updateProfile = async (userId, data) => {
       where: { id: userId },
       data: {
         ...(data.name !== undefined && { name: data.name }),
-        ...(data.phone !== undefined && { phone: data.phone }),
+        ...(nextPhone !== undefined && {
+          phone: nextPhone,
+          isPhoneVerified: false,
+        }),
       },
       select: {
         id: true,

@@ -52,10 +52,10 @@ const updateProfileValidation = [
     .withMessage("Name must be at least 2 characters"),
 
   body("phone")
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .trim()
-    .isLength({ min: 10, max: 15 })
-    .withMessage("Phone number must be 10 to 15 digits"),
+    .matches(/^(\+91)?[6-9]\d{9}$/)
+    .withMessage("Phone number must be a valid Indian mobile number"),
 
   body("address")
     .optional({ nullable: true, checkFalsy: true })

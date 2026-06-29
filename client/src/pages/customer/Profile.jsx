@@ -70,6 +70,7 @@ export default function Profile() {
 
       await api.patch("/customer/profile", {
         name: form.name,
+        phone: form.phone,
         address: form.address,
       });
 
@@ -153,10 +154,16 @@ export default function Profile() {
           <span className="font-medium">Phone</span>
 
           <input
+            name="phone"
             value={form.phone}
-            disabled
-            className="px-4 py-3 rounded-xl border border-line bg-bg-soft text-muted outline-none cursor-not-allowed"
+            onChange={change}
+            inputMode="tel"
+            placeholder="Enter mobile number"
+            className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
           />
+          <span className="text-xs text-muted">
+            Use a 10-digit Indian mobile number. It will be saved as +91 format.
+          </span>
         </label>
 
         <label className="grid gap-1.5 text-sm">
