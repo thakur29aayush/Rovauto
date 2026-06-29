@@ -20,6 +20,11 @@ const readJson = (key, fallback = null) => {
   }
 };
 
+const readArray = (key) => {
+  const value = readJson(key, []);
+  return Array.isArray(value) ? value : [];
+};
+
 const readNumber = (key, fallback = null) => {
   const value = Number(localStorage.getItem(key));
   return Number.isFinite(value) && value > 0 ? value : fallback;
@@ -33,7 +38,7 @@ export function AppProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem("token") || null);
 
   const [vehicle, setVehicle] = useState(() => readJson("rov_vehicle", null));
-  const [vehicles, setVehicles] = useState(() => readJson("rov_vehicles", []));
+  const [vehicles, setVehicles] = useState(() => readArray("rov_vehicles"));
   const [cart, setCart] = useState([]);
 
   const [location, setLocation] = useState({
@@ -460,13 +465,14 @@ const saveProfileCache = (data, fetchedAt) => {
   }, [vehicles]);
 
   const addVehicle = (v) => {
+    const currentVehicles = Array.isArray(vehicles) ? vehicles : [];
     const newVehicle = {
       ...v,
       id: v.id || `local-${Date.now()}`,
-      isDefault: vehicles.length === 0,
+      isDefault: currentVehicles.length === 0,
     };
 
-    const updatedVehicles = [...vehicles, newVehicle];
+    const updatedVehicles = [...currentVehicles, newVehicle];
 
     syncVehicles(updatedVehicles);
 
