@@ -27,6 +27,12 @@ export default function Dashboard() {
   const [bookings, setBookings] = useState(
     () => dashboardCache?.activeBookings || []
   );
+  const [activeBookingsCount, setActiveBookingsCount] = useState(
+    () =>
+      dashboardCache?.activeBookingsCount ??
+      dashboardCache?.activeBookings?.length ??
+      0
+  );
   const [wallet, setWallet] = useState(() => dashboardCache?.wallet || null);
   const [completedCount, setCompletedCount] = useState(
     () => dashboardCache?.completedBookingsCount || 0
@@ -71,6 +77,9 @@ export default function Dashboard() {
       ]);
 
       setBookings(dashboard?.activeBookings || []);
+      setActiveBookingsCount(
+        dashboard?.activeBookingsCount ?? dashboard?.activeBookings?.length ?? 0
+      );
       setWallet(dashboard?.wallet || null);
       setCompletedCount(dashboard?.completedBookingsCount || 0);
 
@@ -170,7 +179,7 @@ export default function Dashboard() {
           {
             icon: FiCalendar,
             label: "Active Bookings",
-            number: activeBookings.length,
+            number: activeBookingsCount,
             sub: "Current service requests",
           },
           {

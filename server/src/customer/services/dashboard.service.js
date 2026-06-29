@@ -61,7 +61,14 @@ const getCustomerDashboard = async (userId) => {
     };
   }
 
-  const [user, wallet, activeBookings, completedBookingsCount, recentBookings] =
+  const [
+    user,
+    wallet,
+    activeBookings,
+    activeBookingsCount,
+    completedBookingsCount,
+    recentBookings,
+  ] =
     await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
@@ -103,6 +110,15 @@ const getCustomerDashboard = async (userId) => {
       prisma.booking.count({
         where: {
           userId,
+          status: {
+            in: ACTIVE_STATUSES,
+          },
+        },
+      }),
+
+      prisma.booking.count({
+        where: {
+          userId,
           status: "COMPLETED",
         },
       }),
@@ -128,8 +144,9 @@ const getCustomerDashboard = async (userId) => {
     wallet:
       wallet || {
         balance: 0,
-      },
+    },
     activeBookings,
+    activeBookingsCount,
     completedBookingsCount,
     recentBookings,
   };
