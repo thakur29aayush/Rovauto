@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import api from "@/api/axios";
+import { flushPendingSignupLocation } from "@/utils/signupLocation";
 
 const AppCtx = createContext(null);
 
@@ -31,6 +32,8 @@ const readNumber = (key, fallback = null) => {
 };
 
 export function AppProvider({ children }) {
+  const locationFlushStartedRef = useRef(false);
+
   const [user, setUser] = useState(() =>
     readJson("user", readJson("rov_user", null))
   );
@@ -448,6 +451,20 @@ const saveProfileCache = (data, fetchedAt) => {
   useEffect(() => {
     setAuthLoading(false);
   }, [token]);
+
+  useEffect(() => {
+    if (!token || !user || locationFlushStartedRef.current) return;
+
+    locationFlushStartedRef.current = true;
+
+    flushPendingSignupLocation().then((saved) => {
+      if (saved) {
+        clearProfileCache();
+      }
+
+      locationFlushStartedRef.current = false;
+    });
+  }, [token, user]);
 
   useEffect(() => {
     if (user) {

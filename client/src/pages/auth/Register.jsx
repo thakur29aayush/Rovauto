@@ -6,17 +6,8 @@ import { FiUser, FiTool } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
 import {
-  requestSignupLocation,
-  saveSignupLocationToProfile,
+  collectSignupLocationLater,
 } from "@/utils/signupLocation";
-
-const collectSignupLocationLater = () => {
-  requestSignupLocation().then((signupLocation) => {
-    if (signupLocation) {
-      sessionStorage.setItem("pendingSignupLocation", JSON.stringify(signupLocation));
-    }
-  });
-};
 
 const COUNTRY_CODE = "+91";
 const PASSWORD_MESSAGE =
@@ -113,7 +104,7 @@ export default function Register() {
       const data = await completeGoogleAuth(role);
 
       if (data.isNewUser) {
-        requestSignupLocation().then(saveSignupLocationToProfile);
+        collectSignupLocationLater();
       }
 
       const redirectPath =

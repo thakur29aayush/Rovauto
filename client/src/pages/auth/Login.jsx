@@ -6,8 +6,7 @@ import { FiArrowRight, FiUser, FiTool } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
 import {
-  requestSignupLocation,
-  saveSignupLocationToProfile,
+  collectSignupLocationLater,
 } from "@/utils/signupLocation";
 
 export default function Login() {
@@ -80,7 +79,7 @@ export default function Login() {
       const data = await completeGoogleAuth(role);
 
       if (data.isNewUser) {
-        requestSignupLocation().then(saveSignupLocationToProfile);
+        collectSignupLocationLater();
       }
 
       const redirectPath =

@@ -2,19 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
-import { saveSignupLocationToProfile } from "@/utils/signupLocation";
+import {
+  flushPendingSignupLocation,
+  readPendingSignupLocation,
+} from "@/utils/signupLocation";
 
 const PENDING_OTP_KEY = "pendingSignupOtp";
-const PENDING_LOCATION_KEY = "pendingSignupLocation";
-
-const readPendingLocation = () => {
-  try {
-    return JSON.parse(sessionStorage.getItem(PENDING_LOCATION_KEY) || "null");
-  } catch {
-    sessionStorage.removeItem(PENDING_LOCATION_KEY);
-    return null;
-  }
-};
 
 const getPendingOtp = (state) => {
   let stored = {};
@@ -29,7 +22,7 @@ const getPendingOtp = (state) => {
     return {
       email: state.email,
       phone: state.phone,
-      signupLocation: stored.signupLocation || null,
+      signupLocation: stored.signupLocation || readPendingSignupLocation(),
     };
   }
 
@@ -37,7 +30,7 @@ const getPendingOtp = (state) => {
     return {
       email: stored.email,
       phone: stored.phone,
-      signupLocation: stored.signupLocation || null,
+      signupLocation: stored.signupLocation || readPendingSignupLocation(),
     };
   }
 
@@ -52,7 +45,7 @@ export default function OTP() {
   const { state } = useLocation();
   const nav = useNavigate();
 
-  const { email, phone, signupLocation } = getPendingOtp(state);
+  const { email, phone } = getPendingOtp(state);
 
   const [otp, setOtp] = useState(Array(6).fill(""));
   const [timer, setTimer] = useState(60);
@@ -106,10 +99,9 @@ export default function OTP() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      await saveSignupLocationToProfile(signupLocation || readPendingLocation());
+      flushPendingSignupLocation();
 
       sessionStorage.removeItem(PENDING_OTP_KEY);
-      sessionStorage.removeItem(PENDING_LOCATION_KEY);
 
       if (data.user.role === "GARAGE_OWNER") {
         nav("/garage");
