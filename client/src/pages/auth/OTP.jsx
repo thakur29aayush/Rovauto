@@ -3,12 +3,40 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
 
+const PENDING_OTP_KEY = "pendingSignupOtp";
+
+const getPendingOtp = (state) => {
+  if (state?.email && state?.phone) {
+    return {
+      email: state.email,
+      phone: state.phone,
+    };
+  }
+
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(PENDING_OTP_KEY) || "{}");
+
+    if (stored.email && stored.phone) {
+      return {
+        email: stored.email,
+        phone: stored.phone,
+      };
+    }
+  } catch {
+    sessionStorage.removeItem(PENDING_OTP_KEY);
+  }
+
+  return {
+    email: "",
+    phone: "",
+  };
+};
+
 export default function OTP() {
   const { state } = useLocation();
   const nav = useNavigate();
 
-  const email = state?.email;
-  const phone = state?.phone;
+  const { email, phone } = getPendingOtp(state);
 
   const [otp, setOtp] = useState(Array(6).fill(""));
   const [timer, setTimer] = useState(60);
@@ -61,6 +89,7 @@ export default function OTP() {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      sessionStorage.removeItem(PENDING_OTP_KEY);
 
       if (data.user.role === "GARAGE_OWNER") {
         nav("/garage");

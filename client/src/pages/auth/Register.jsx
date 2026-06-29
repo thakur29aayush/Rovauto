@@ -66,9 +66,18 @@ export default function Register() {
 
       await api.post("/auth/signup", payload);
 
+      sessionStorage.setItem(
+        "pendingSignupOtp",
+        JSON.stringify({
+          email: payload.email,
+          phone: fullPhone,
+          createdAt: Date.now(),
+        })
+      );
+
       nav("/otp", {
         state: {
-          email: form.email,
+          email: payload.email,
           phone: fullPhone,
           fromSignup: true,
         },
