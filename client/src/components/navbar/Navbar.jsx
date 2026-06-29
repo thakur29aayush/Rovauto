@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiMenu, FiX, FiChevronDown, FiShoppingBag, FiUser, FiTruck, FiPlus, FiLogOut } from "react-icons/fi";
 import Logo from "@/components/common/Logo";
@@ -20,6 +20,9 @@ export default function Navbar() {
   const [vehOpen, setVehOpen] = useState(false);
   const { user, vehicle, cart, logout } = useApp();
   const nav = useNavigate();
+  const { pathname } = useLocation();
+
+  const closeMobileMenu = () => setOpen(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -27,6 +30,33 @@ export default function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    setOpen(false);
+    setProfileOpen(false);
+    setVehOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) {
+      document.body.style.overflow = "";
+      return undefined;
+    }
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        closeMobileMenu();
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
 
   return (
     <motion.header
@@ -117,18 +147,18 @@ export default function Navbar() {
           )}
         </div>
 
-        <button className="lg:hidden grid place-items-center h-10 w-10 rounded-full border border-line bg-white" onClick={() => setOpen(true)}>
+        <button type="button" className="lg:hidden grid place-items-center h-10 w-10 rounded-full border border-line bg-white" onClick={() => setOpen(true)} aria-label="Open menu" aria-expanded={open}>
           <FiMenu />
         </button>
       </div>
 
       <AnimatePresence>
         {open && (
-          <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "tween", duration: 0.3 }}
-            className="fixed inset-0 bg-white z-50 lg:hidden overflow-y-auto">
+          <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "tween", duration: 0.18 }}
+            className="fixed inset-0 h-dvh w-screen bg-white z-50 lg:hidden overflow-y-auto overscroll-contain">
             <div className="container-x flex items-center justify-between h-16">
               <Logo />
-              <button onClick={() => setOpen(false)} className="grid place-items-center h-10 w-10 rounded-full border border-line"><FiX /></button>
+              <button type="button" onClick={closeMobileMenu} className="grid place-items-center h-10 w-10 rounded-full border border-line" aria-label="Close menu"><FiX /></button>
             </div>
             <div className="container-x pb-10">
               {user && (
@@ -151,23 +181,23 @@ export default function Navbar() {
 
               <nav className="grid gap-1 mb-6">
                 {NAV.map((n) => (
-                  <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="px-4 py-3 rounded-2xl hover:bg-bg-soft text-base font-medium">{n.label}</Link>
+                  <Link key={n.to} to={n.to} onClick={closeMobileMenu} className="px-4 py-3 rounded-2xl hover:bg-bg-soft text-base font-medium">{n.label}</Link>
                 ))}
-                {user && <Link to="/dashboard" onClick={() => setOpen(false)} className="px-4 py-3 rounded-2xl hover:bg-bg-soft text-base font-medium">Dashboard</Link>}
+                {user && <Link to="/dashboard" onClick={closeMobileMenu} className="px-4 py-3 rounded-2xl hover:bg-bg-soft text-base font-medium">Dashboard</Link>}
               </nav>
 
               <div className="grid gap-2">
-                <Link to="/booking/vehicle" onClick={() => setOpen(false)} className="btn-primary">Book Service</Link>
+                <Link to="/booking/vehicle" onClick={closeMobileMenu} className="btn-primary">Book Service</Link>
                 {!user ? (
                   <>
-                    <Link to="/login" onClick={() => setOpen(false)} className="btn-dark">Login</Link>
-                    <Link to="/register" onClick={() => setOpen(false)} className="btn-ghost">Register</Link>
+                    <Link to="/login" onClick={closeMobileMenu} className="btn-dark">Login</Link>
+                    <Link to="/register" onClick={closeMobileMenu} className="btn-ghost">Register</Link>
                   </>
                 ) : (
                   <>
-                    <Link to="/dashboard/vehicles" onClick={() => setOpen(false)} className="btn-ghost">My Vehicles</Link>
-                    <Link to="/dashboard/bookings" onClick={() => setOpen(false)} className="btn-ghost">Active Bookings</Link>
-                    <button onClick={() => { logout(); setOpen(false); nav("/"); }} className="btn-ghost text-red-600 border-red-200">Logout</button>
+                    <Link to="/dashboard/vehicles" onClick={closeMobileMenu} className="btn-ghost">My Vehicles</Link>
+                    <Link to="/dashboard/bookings" onClick={closeMobileMenu} className="btn-ghost">Active Bookings</Link>
+                    <button type="button" onClick={() => { logout(); closeMobileMenu(); nav("/"); }} className="btn-ghost text-red-600 border-red-200">Logout</button>
                   </>
                 )}
               </div>
