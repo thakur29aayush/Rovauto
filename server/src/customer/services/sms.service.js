@@ -44,6 +44,8 @@ const sendFast2SmsQuick = async ({ to, message }) => {
     );
   }
 
+  console.log(`SMS OTP sent successfully to ${params.numbers} via Fast2SMS Quick`);
+
   return true;
 };
 
@@ -86,6 +88,8 @@ const sendSms = async ({ to, message }) => {
       timeout: 10000,
     }
   );
+
+  console.log(`SMS OTP sent successfully to ${to}`);
 
   return true;
 };

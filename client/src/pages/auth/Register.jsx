@@ -5,6 +5,10 @@ import api from "@/api/axios";
 import { FiUser, FiTool } from "react-icons/fi";
 
 const COUNTRY_CODE = "+91";
+const PASSWORD_MESSAGE =
+  "Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.";
+const PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
 export default function Register() {
   const nav = useNavigate();
@@ -14,6 +18,7 @@ export default function Register() {
     email: "",
     phone: "",
     password: "",
+    confirmPassword: "",
   });
 
   const [role, setRole] = useState("CUSTOMER");
@@ -33,6 +38,14 @@ export default function Register() {
     setLoading(true);
 
     try {
+      if (!PASSWORD_REGEX.test(form.password)) {
+        throw new Error(PASSWORD_MESSAGE);
+      }
+
+      if (form.password !== form.confirmPassword) {
+        throw new Error("Passwords do not match.");
+      }
+
       const phoneDigits = form.phone.replace(/\D/g, "");
       const fullPhone = form.phone.trim().startsWith("+")
         ? form.phone.trim()
@@ -43,6 +56,7 @@ export default function Register() {
         email: form.email.trim(),
         phone: fullPhone,
         password: form.password,
+        confirmPassword: form.confirmPassword,
         role,
       };
 
@@ -155,8 +169,25 @@ export default function Register() {
             type="password"
             placeholder="Password"
             minLength={8}
+            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
+            title={PASSWORD_MESSAGE}
             className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
           />
+
+          <input
+            required
+            name="confirmPassword"
+            value={form.confirmPassword}
+            onChange={change}
+            type="password"
+            placeholder="Confirm password"
+            minLength={8}
+            className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+          />
+
+          <p className="text-xs leading-relaxed text-muted">
+            {PASSWORD_MESSAGE}
+          </p>
 
           <button disabled={loading} className="btn-primary mt-2">
             {loading ? "Creating..." : "Create Account"}

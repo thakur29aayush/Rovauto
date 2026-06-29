@@ -13,6 +13,10 @@ const {
 const { createAuthToken } = require("./token.service");
 
 const PENDING_SIGNUP_EXPIRY_MS = 15 * 60 * 1000;
+const PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+const PASSWORD_MESSAGE =
+  "Password must be at least 8 characters and include uppercase, lowercase, number, and symbol";
 
 const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
 
@@ -27,7 +31,14 @@ const toSafeUser = (user) => ({
   isOnboarded: user.isOnboarded,
 });
 
-const signup = async ({ name, email, phone, password, role = "CUSTOMER" }) => {
+const signup = async ({
+  name,
+  email,
+  phone,
+  password,
+  confirmPassword,
+  role = "CUSTOMER",
+}) => {
   const cleanName = name?.trim();
   const cleanEmail = normalizeEmail(email);
   const cleanPhone = normalizePhone(phone);
@@ -38,8 +49,12 @@ const signup = async ({ name, email, phone, password, role = "CUSTOMER" }) => {
     throw new ApiError(400, "Name, email, phone and password are required");
   }
 
-  if (password.length < 8) {
-    throw new ApiError(400, "Password must be at least 8 characters");
+  if (!PASSWORD_REGEX.test(password)) {
+    throw new ApiError(400, PASSWORD_MESSAGE);
+  }
+
+  if (password !== confirmPassword) {
+    throw new ApiError(400, "Passwords do not match");
   }
 
   await prisma.pendingSignup.deleteMany({

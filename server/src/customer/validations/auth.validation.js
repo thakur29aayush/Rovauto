@@ -1,5 +1,10 @@
 const { body } = require("express-validator");
 
+const PASSWORD_MESSAGE =
+  "Password must be at least 8 characters and include uppercase, lowercase, number, and symbol";
+const PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
 const signupValidation = [
   body("name")
     .trim()
@@ -26,8 +31,14 @@ const signupValidation = [
   body("password")
     .notEmpty()
     .withMessage("Password is required")
-    .isLength({ min: 8 })
-    .withMessage("Password must be at least 8 characters"),
+    .matches(PASSWORD_REGEX)
+    .withMessage(PASSWORD_MESSAGE),
+
+  body("confirmPassword")
+    .notEmpty()
+    .withMessage("Confirm password is required")
+    .custom((value, { req }) => value === req.body.password)
+    .withMessage("Passwords do not match"),
 
   body("role")
     .optional({ checkFalsy: true })
@@ -144,8 +155,8 @@ const resetPasswordValidation = [
   body("newPassword")
     .notEmpty()
     .withMessage("New password is required")
-    .isLength({ min: 8 })
-    .withMessage("New password must be at least 8 characters"),
+    .matches(PASSWORD_REGEX)
+    .withMessage(PASSWORD_MESSAGE),
 ];
 
 module.exports = {
