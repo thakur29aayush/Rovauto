@@ -1,5 +1,11 @@
 const admin = require("firebase-admin");
+const jwt = require("jsonwebtoken");
 const ApiError = require("../utils/apiError");
+
+const FIREBASE_CERTS_URL =
+  "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
+let cachedFirebaseCerts = null;
+let cachedFirebaseCertsExpiresAt = 0;
 
 const cleanEnv = (value) => {
   return String(value || "").trim().replace(/^"|"$/g, "");
@@ -27,6 +33,70 @@ const decodeJwtPayload = (token) => {
     return JSON.parse(Buffer.from(paddedPayload, "base64").toString("utf8"));
   } catch {
     throw new ApiError(400, "Firebase ID token payload is malformed");
+  }
+};
+
+const decodeJwtHeader = (token) => {
+  const parts = token.split(".");
+
+  if (parts.length !== 3) {
+    throw new ApiError(400, "Firebase ID token is malformed");
+  }
+
+  try {
+    const header = parts[0].replace(/-/g, "+").replace(/_/g, "/");
+    const paddedHeader = header.padEnd(
+      header.length + ((4 - (header.length % 4)) % 4),
+      "="
+    );
+
+    return JSON.parse(Buffer.from(paddedHeader, "base64").toString("utf8"));
+  } catch {
+    throw new ApiError(400, "Firebase ID token header is malformed");
+  }
+};
+
+const getFirebasePublicCerts = async () => {
+  if (cachedFirebaseCerts && Date.now() < cachedFirebaseCertsExpiresAt) {
+    return cachedFirebaseCerts;
+  }
+
+  const response = await fetch(FIREBASE_CERTS_URL);
+
+  if (!response.ok) {
+    throw new ApiError(502, "Could not fetch Firebase public certificates");
+  }
+
+  const cacheControl = response.headers.get("cache-control") || "";
+  const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
+  const maxAgeSeconds = maxAgeMatch ? Number(maxAgeMatch[1]) : 3600;
+
+  cachedFirebaseCerts = await response.json();
+  cachedFirebaseCertsExpiresAt = Date.now() + maxAgeSeconds * 1000;
+
+  return cachedFirebaseCerts;
+};
+
+const verifyFirebaseIdTokenWithPublicCerts = async (token, projectId) => {
+  const header = decodeJwtHeader(token);
+  const certs = await getFirebasePublicCerts();
+  const cert = certs[header.kid];
+
+  if (!cert) {
+    throw new ApiError(401, "Firebase ID token has an unknown key id");
+  }
+
+  try {
+    return jwt.verify(token, cert, {
+      algorithms: ["RS256"],
+      audience: projectId,
+      issuer: `https://securetoken.google.com/${projectId}`,
+    });
+  } catch (error) {
+    throw new ApiError(
+      401,
+      `Firebase ID token verification failed: ${error.message}`
+    );
   }
 };
 
@@ -96,15 +166,17 @@ const verifyFirebaseIdToken = async (idToken) => {
     console.error("Firebase ID token verification failed", {
       code: error.code,
       message: error.message,
+      stack: error.stack,
       tokenProject: decodedPayload.aud,
       tokenIssuer: decodedPayload.iss,
       backendProject: projectId,
     });
 
-    throw new ApiError(
-      401,
-      `Firebase ID token verification failed: ${error.code || error.message}`
-    );
+    if (projectId) {
+      return verifyFirebaseIdTokenWithPublicCerts(token, projectId);
+    }
+
+    throw new ApiError(401, "Firebase ID token verification failed");
   }
 };
 
