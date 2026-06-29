@@ -1,0 +1,257 @@
+﻿+-- server
+|   +-- src
+|   |   +-- validations
+|   |   |   +-- wallet.validation.js
+|   |   |   +-- vehicle.validation.js
+|   |   |   +-- sos.validation.js
+|   |   |   +-- serviceMedia.validation.js
+|   |   |   +-- service.validation.js
+|   |   |   +-- review.validation.js
+|   |   |   +-- payment.validation.js
+|   |   |   +-- location.validation.js
+|   |   |   +-- garageRequest.validation.js
+|   |   |   +-- customer.validation.js
+|   |   |   +-- contact.validation.js
+|   |   |   +-- complaint.validation.js
+|   |   |   +-- booking.validation.js
+|   |   |   +-- auth.validation.js
+|   |   +-- utils
+|   |   |   +-- walletTransaction.js
+|   |   |   +-- jwt.js
+|   |   |   +-- invalidatePublicCache.js
+|   |   |   +-- invalidateCustomerCache.js
+|   |   |   +-- hashOtp.js
+|   |   |   +-- generateOtp.js
+|   |   |   +-- distance.js
+|   |   |   +-- cloudinaryUpload.js
+|   |   |   +-- cache.js
+|   |   |   +-- bookingCode.js
+|   |   |   +-- asyncHandler.js
+|   |   |   +-- apiResponse.js
+|   |   |   +-- apiError.js
+|   |   +-- services
+|   |   |   +-- wallet.service.js
+|   |   |   +-- vehicleMeta.service.js
+|   |   |   +-- vehicle.service.js
+|   |   |   +-- token.service.js
+|   |   |   +-- support.service.js
+|   |   |   +-- sos.service.js
+|   |   |   +-- serviceMedia.service.js
+|   |   |   +-- service.service.js
+|   |   |   +-- review.service.js
+|   |   |   +-- payment.service.js
+|   |   |   +-- otp.service.js
+|   |   |   +-- notification.service.js
+|   |   |   +-- location.service.js
+|   |   |   +-- garageWallet.service.js
+|   |   |   +-- garageRequest.service.js
+|   |   |   +-- garageMedia.service.js
+|   |   |   +-- garage.service.js
+|   |   |   +-- dashboard.service.js
+|   |   |   +-- customer.service.js
+|   |   |   +-- contact.service.js
+|   |   |   +-- complaint.service.js
+|   |   |   +-- booking.service.js
+|   |   |   +-- auth.service.js
+|   |   +-- seed
+|   |   |   +-- seedVehicleMeta.js
+|   |   |   +-- seedServices.js
+|   |   |   +-- seedNotifications.js
+|   |   |   +-- seedGarages.js
+|   |   +-- routes
+|   |   |   +-- wallet.routes.js
+|   |   |   +-- vehicleMeta.routes.js
+|   |   |   +-- vehicle.routes.js
+|   |   |   +-- support.routes.js
+|   |   |   +-- sos.routes.js
+|   |   |   +-- serviceMedia.routes.js
+|   |   |   +-- service.routes.js
+|   |   |   +-- review.routes.js
+|   |   |   +-- payment.routes.js
+|   |   |   +-- notification.routes.js
+|   |   |   +-- location.routes.js
+|   |   |   +-- index.routes.js
+|   |   |   +-- garageWallet.routes.js
+|   |   |   +-- garageRequest.routes.js
+|   |   |   +-- garageMedia.routes.js
+|   |   |   +-- garage.routes.js
+|   |   |   +-- dashboard.routes.js
+|   |   |   +-- customer.routes.js
+|   |   |   +-- contact.routes.js
+|   |   |   +-- complaint.routes.js
+|   |   |   +-- booking.routes.js
+|   |   |   +-- auth.routes.js
+|   |   +-- middlewares
+|   |   |   +-- validate.middleware.js
+|   |   |   +-- upload.middleware.js
+|   |   |   +-- role.middleware.js
+|   |   |   +-- rateLimit.middleware.js
+|   |   |   +-- error.middleware.js
+|   |   |   +-- auth.middleware.js
+|   |   +-- controllers
+|   |   |   +-- wallet.controller.js
+|   |   |   +-- vehicleMeta.controller.js
+|   |   |   +-- vehicle.controller.js
+|   |   |   +-- support.controller.js
+|   |   |   +-- sos.controller.js
+|   |   |   +-- serviceMedia.controller.js
+|   |   |   +-- service.controller.js
+|   |   |   +-- review.controller.js
+|   |   |   +-- payment.controller.js
+|   |   |   +-- notification.controller.js
+|   |   |   +-- location.controller.js
+|   |   |   +-- garageWallet.controller.js
+|   |   |   +-- garageRequest.controller.js
+|   |   |   +-- garageMedia.controller.js
+|   |   |   +-- garage.controller.js
+|   |   |   +-- dashboard.controller.js
+|   |   |   +-- customer.controller.js
+|   |   |   +-- contact.controller.js
+|   |   |   +-- complaint.controller.js
+|   |   |   +-- booking.controller.js
+|   |   |   +-- auth.controller.js
+|   |   +-- constants
+|   |   |   +-- walletTransactionType.js
+|   |   |   +-- walletTransactionStatus.js
+|   |   |   +-- roles.js
+|   |   |   +-- requestType.js
+|   |   |   +-- paymentStatus.js
+|   |   |   +-- fuelTypes.js
+|   |   |   +-- complaintStatus.js
+|   |   |   +-- broadcastStatus.js
+|   |   |   +-- bookingStatus.js
+|   |   +-- config
+|   |   |   +-- redis.js
+|   |   |   +-- cashfree.js
+|   |   |   +-- prisma.js
+|   |   |   +-- env.js
+|   |   |   +-- cors.js
+|   |   |   +-- cloudinary.js
+|   |   +-- server.js
+|   |   +-- app.js
+|   +-- prisma
+|   |   +-- migrations
+|   |   |   +-- 20260626171001_add_notifications
+|   |   |   |   +-- migration.sql
+|   |   |   +-- 20260626110754_add_vehicle_meta
+|   |   |   |   +-- migration.sql
+|   |   |   +-- 20260622111035_service_first_wallet_broadcast_flow
+|   |   |   |   +-- migration.sql
+|   |   |   +-- 20260622082048_add_media_models
+|   |   |   |   +-- migration.sql
+|   |   |   +-- 20260622031409_init_customer_schema
+|   |   |   |   +-- migration.sql
+|   |   |   +-- migration_lock.toml
+|   |   +-- schema.prisma
+|   +-- README.md
+|   +-- prisma.config.ts
+|   +-- package-lock.json
+|   +-- package.json
+|   +-- notes.md
+|   +-- generate-secret.js
+|   +-- .gitignore
+|   +-- .env.example
+|   +-- .env
++-- client
+|   +-- src
+|   |   +-- pages
+|   |   |   +-- sos
+|   |   |   |   +-- SOSSuccessScreen.jsx
+|   |   |   |   +-- SOSPanicScreen.jsx
+|   |   |   |   +-- SOSLocationScreen.jsx
+|   |   |   |   +-- SOSCheckoutScreen.jsx
+|   |   |   +-- garage
+|   |   |   |   +-- Wallet.jsx
+|   |   |   |   +-- MagicLink.jsx
+|   |   |   |   +-- Leads.jsx
+|   |   |   |   +-- Jobs.jsx
+|   |   |   |   +-- Earnings.jsx
+|   |   |   |   +-- Dashboard.jsx
+|   |   |   +-- customer
+|   |   |   |   +-- ServiceHistory.jsx
+|   |   |   |   +-- Profile.jsx
+|   |   |   |   +-- Payments.jsx
+|   |   |   |   +-- Notifications.jsx
+|   |   |   |   +-- MyVehicles.jsx
+|   |   |   |   +-- Dashboard.jsx
+|   |   |   |   +-- ActiveBookings.jsx
+|   |   |   +-- booking
+|   |   |   |   +-- VehicleSelect.jsx
+|   |   |   |   +-- Tracking.jsx
+|   |   |   |   +-- ServiceSelect.jsx
+|   |   |   |   +-- GarageSelect.jsx
+|   |   |   |   +-- Checkout.jsx
+|   |   |   +-- auth
+|   |   |   |   +-- Register.jsx
+|   |   |   |   +-- OTP.jsx
+|   |   |   |   +-- Login.jsx
+|   |   |   |   +-- Forgot.jsx
+|   |   |   +-- admin
+|   |   |   |   +-- Revenue.jsx
+|   |   |   |   +-- Garages.jsx
+|   |   |   |   +-- Dashboard.jsx
+|   |   |   |   +-- Customers.jsx
+|   |   |   |   +-- Bookings.jsx
+|   |   |   +-- Warranty.jsx
+|   |   |   +-- Services.jsx
+|   |   |   +-- Partner.jsx
+|   |   |   +-- NotFound.jsx
+|   |   |   +-- HowItWorks.jsx
+|   |   |   +-- Home.jsx
+|   |   |   +-- Contact.jsx
+|   |   |   +-- CategoryDetail.jsx
+|   |   |   +-- About.jsx
+|   |   +-- layouts
+|   |   |   +-- MainLayout.jsx
+|   |   |   +-- DashboardLayout.jsx
+|   |   +-- hooks
+|   |   |   +-- useApp.jsx
+|   |   +-- data
+|   |   |   +-- vehicles.js
+|   |   |   +-- services.js
+|   |   |   +-- garages.js
+|   |   +-- components
+|   |   |   +-- navbar
+|   |   |   |   +-- Navbar.jsx
+|   |   |   +-- footer
+|   |   |   |   +-- Footer.jsx
+|   |   |   +-- common
+|   |   |   |   +-- Logo.jsx
+|   |   |   +-- FAB.jsx
+|   |   |   +-- ChatbotPopup.jsx
+|   |   +-- assets
+|   |   |   +-- Service And Repair.png
+|   |   |   +-- rovauto-logo.png.asset.json
+|   |   |   +-- Rovauto_home.png
+|   |   |   +-- Rovauto.png
+|   |   |   +-- Roadside.png
+|   |   |   +-- painting.png
+|   |   |   +-- Modification.png
+|   |   |   +-- mercedes logo.png
+|   |   |   +-- car_wash.png
+|   |   |   +-- battery.png
+|   |   |   +-- AC service.png
+|   |   +-- api
+|   |   |   +-- axios.js
+|   |   +-- main.jsx
+|   |   +-- index.css
+|   |   +-- App.jsx
+|   |   +-- .env
+|   +-- .rovauto
+|   |   +-- project.json
+|   +-- vite.config.js.timestamp-1782190611986-ef0640503c566.mjs
+|   +-- vite.config.js
+|   +-- vercel.json
+|   +-- README.md
+|   +-- package-lock.json
+|   +-- package.json
+|   +-- jsconfig.json
+|   +-- index.html
+|   +-- bunfig.toml
+|   +-- bun.lock
+|   +-- AGENTS.md
+|   +-- .gitignore
++-- project-architecture.txt
++-- 1.ps1
+
+
