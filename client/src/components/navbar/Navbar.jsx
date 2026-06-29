@@ -22,7 +22,10 @@ export default function Navbar() {
   const nav = useNavigate();
   const { pathname } = useLocation();
 
-  const closeMobileMenu = () => setOpen(false);
+  const closeMobileMenu = () => {
+    document.body.style.overflow = "";
+    setOpen(false);
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -35,6 +38,7 @@ export default function Navbar() {
     setOpen(false);
     setProfileOpen(false);
     setVehOpen(false);
+    document.body.style.overflow = "";
   }, [pathname]);
 
   useEffect(() => {
@@ -152,10 +156,9 @@ export default function Navbar() {
         </button>
       </div>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "tween", duration: 0.18 }}
-            className="fixed inset-0 h-dvh w-screen bg-white z-50 lg:hidden overflow-y-auto overscroll-contain">
+      {open && (
+        <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} transition={{ type: "tween", duration: 0.18 }}
+          className="fixed inset-0 h-dvh w-screen bg-white z-50 lg:hidden overflow-y-auto overscroll-contain">
             <div className="container-x flex items-center justify-between h-16">
               <Logo />
               <button type="button" onClick={closeMobileMenu} className="grid place-items-center h-10 w-10 rounded-full border border-line" aria-label="Close menu"><FiX /></button>
@@ -202,9 +205,8 @@ export default function Navbar() {
                 )}
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </motion.div>
+      )}
     </motion.header>
   );
 }
