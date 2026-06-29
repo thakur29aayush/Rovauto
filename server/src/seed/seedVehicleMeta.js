@@ -6,35 +6,80 @@ const vehicleBrands = [
   {
     name: "Maruti Suzuki",
     models: [
+      "Alto",
       "Swift",
       "Baleno",
       "Brezza",
       "Dzire",
+      "E-Brezza",
       "WagonR",
       "Fronx",
       "Grand Vitara",
-      "Alto",
-      "S-presso",
-      "Ignis",
+      "Invicto",
+      "Jimny",
+      "S-Presso",
+      "Eeco",
       "Ertiga",
       "XL6",
+      "Victoris",
     ],
   },
   {
     name: "Hyundai",
-    models: ["i20", "Creta", "Venue", "Verna", "Nios"],
+    models: [
+      "Aura",
+      "Creta",
+      "Exter",
+      "Grand i10 Nios",
+      "i10",
+      "i20",
+      "Venue",
+      "Verna",
+    ],
   },
   {
     name: "Tata",
-    models: ["Nexon", "Punch", "Harrier", "Altroz", "Tiago"],
+    models: [
+      "Altroz",
+      "Curvv",
+      "Gravitas",
+      "Harrier",
+      "Nexon",
+      "Punch",
+      "Safari",
+      "Sierra",
+      "Tiago",
+      "Tigor",
+    ],
   },
   {
     name: "Mahindra",
-    models: ["XUV700", "XUV 7XO", "Thar", "Scorpio N", "XUV 300", "XUV 3XO", "Bolero"],
+    models: [
+      "BE 6",
+      "Bolero",
+      "Bolero Neo",
+      "Scorpio Classic",
+      "Scorpio N",
+      "Thar",
+      "Thar Roxx",
+      "XEV 9e",
+      "XUV 3XO",
+      "XUV 7XO",
+      "XUV700",
+    ],
   },
   {
     name: "Kia",
-    models: ["Seltos", "Sonet", "Carens", "Carnival"],
+    models: [
+      "Carens",
+      "Carnival",
+      "Clavis",
+      "EV6",
+      "EV9",
+      "Seltos",
+      "Sonet",
+      "Syros",
+    ],
   },
   {
     name: "Honda",
@@ -42,7 +87,20 @@ const vehicleBrands = [
   },
   {
     name: "Toyota",
-    models: ["Innova", "Fortuner", "Glanza", "Urban Cruiser"],
+    models: [
+      "Camry",
+      "Fortuner",
+      "Glanza",
+      "Hilux",
+      "Innova",
+      "Innova Crysta",
+      "Land Cruiser",
+      "Legender",
+      "Rumion",
+      "Taisor",
+      "Urban Cruiser",
+      "Vellfire",
+    ],
   },
   {
     name: "Renault",
@@ -50,7 +108,7 @@ const vehicleBrands = [
   },
   {
     name: "Volkswagen",
-    models: ["Virtus", "Taigun", "Polo"],
+    models: ["Golf GTI", "Taigun", "Taigun R-Line", "Tayron R-Line", "Virtus"],
   },
   {
     name: "Mercedes",
@@ -66,7 +124,7 @@ const vehicleBrands = [
   },
   {
     name: "Nissan",
-    models: ["Magnite", "Kicks", "Sunny", "Terrano"],
+    models: ["Magnite", "X-Trail"],
   },
   {
     name: "Volvo",
@@ -92,10 +150,27 @@ const vehicleBrands = [
     name: "Skoda",
     models: ["Kushaq", "Slavia", "Octavia", "Superb", "Kodiaq"],
   },
+  {
+    name: "Datsun",
+    models: ["Go", "Go Plus", "Redi-Go"],
+  },
 ];
 
 async function main() {
   console.log("Seeding vehicle brands and models...");
+
+  const activeBrandNames = vehicleBrands.map((brand) => brand.name);
+
+  await prisma.vehicleBrand.updateMany({
+    where: {
+      name: {
+        notIn: activeBrandNames,
+      },
+    },
+    data: {
+      isActive: false,
+    },
+  });
 
   for (const item of vehicleBrands) {
     const brand = await prisma.vehicleBrand.upsert({
@@ -108,6 +183,18 @@ async function main() {
       create: {
         name: item.name,
         isActive: true,
+      },
+    });
+
+    await prisma.vehicleModel.updateMany({
+      where: {
+        brandId: brand.id,
+        name: {
+          notIn: item.models,
+        },
+      },
+      data: {
+        isActive: false,
       },
     });
 

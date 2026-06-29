@@ -144,6 +144,19 @@ const categories = [
 async function main() {
   console.log("Seeding service categories and services...");
 
+  const activeCategoryNames = categories.map((category) => category.name);
+
+  await prisma.serviceCategory.updateMany({
+    where: {
+      name: {
+        notIn: activeCategoryNames,
+      },
+    },
+    data: {
+      isActive: false,
+    },
+  });
+
   for (const categoryData of categories) {
     const category = await prisma.serviceCategory.upsert({
       where: { name: categoryData.name },
@@ -155,6 +168,20 @@ async function main() {
         name: categoryData.name,
         description: categoryData.description,
         isActive: true,
+      },
+    });
+
+    const activeServiceNames = categoryData.services.map((service) => service.name);
+
+    await prisma.service.updateMany({
+      where: {
+        categoryId: category.id,
+        name: {
+          notIn: activeServiceNames,
+        },
+      },
+      data: {
+        isActive: false,
       },
     });
 

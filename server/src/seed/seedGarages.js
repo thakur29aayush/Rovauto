@@ -15,46 +15,52 @@ async function main() {
   }
 
   const garages = [
-  {
-    name: "Noida Auto Care",
-    phone: "9876500001",
-    whatsappNo: "9876500001",
-    email: "noidaautocare@test.com",
-    address: "Sector 62, Noida",
-    city: "Noida",
-    area: "Sector 62",
-    latitude: 28.6289,
-    longitude: 77.3649,
-    ratingAvg: 4.8,
-    ratingCount: 412,
-  },
-  {
-    name: "RapidFix Motors",
-    phone: "9876500002",
-    whatsappNo: "9876500002",
-    email: "rapidfix@test.com",
-    address: "Sector 18, Noida",
-    city: "Noida",
-    area: "Sector 18",
-    latitude: 28.5708,
-    longitude: 77.3260,
-    ratingAvg: 4.6,
-    ratingCount: 295,
-  },
-  {
-    name: "Delhi Premium Garage",
-    phone: "9876500003",
-    whatsappNo: "9876500003",
-    email: "delhipremium@test.com",
-    address: "Lajpat Nagar, New Delhi",
-    city: "New Delhi",
-    area: "Lajpat Nagar",
-    latitude: 28.5677,
-    longitude: 77.2435,
-    ratingAvg: 4.9,
-    ratingCount: 537,
-  },
-];
+    {
+      name: "AutoCare Premium",
+      description:
+        "Top rated verified garage for same-day service. Frontend card: 1.2 km away, ETA Today 6 PM.",
+      phone: "9876500001",
+      whatsappNo: "9876500001",
+      email: "autocarepremium@test.com",
+      address: "Indirapuram, Ghaziabad",
+      city: "Ghaziabad",
+      area: "Indirapuram",
+      latitude: 28.6367,
+      longitude: 77.3691,
+      ratingAvg: 4.8,
+      ratingCount: 1284,
+    },
+    {
+      name: "Speed Motors Workshop",
+      description:
+        "Trusted partner garage for nearby bookings. Frontend card: 2.4 km away, ETA Today 7 PM.",
+      phone: "9876500002",
+      whatsappNo: "9876500002",
+      email: "speedmotors@test.com",
+      address: "Vaishali, Ghaziabad",
+      city: "Ghaziabad",
+      area: "Vaishali",
+      latitude: 28.6492,
+      longitude: 77.3397,
+      ratingAvg: 4.7,
+      ratingCount: 892,
+    },
+    {
+      name: "Prime Auto Hub",
+      description:
+        "Fast service verified garage for Noida customers. Frontend card: 3.1 km away, ETA Tomorrow 10 AM.",
+      phone: "9876500003",
+      whatsappNo: "9876500003",
+      email: "primeautohub@test.com",
+      address: "Sector 62, Noida",
+      city: "Noida",
+      area: "Sector 62",
+      latitude: 28.6289,
+      longitude: 77.3649,
+      ratingAvg: 4.6,
+      ratingCount: 654,
+    },
+  ];
 
   for (const garageData of garages) {
     let garage = await prisma.garage.findFirst({
