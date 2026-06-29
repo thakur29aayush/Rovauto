@@ -125,8 +125,7 @@ export default function OTP() {
 
         <p className="text-sm text-muted mt-1">
           Enter the 6-digit OTP sent to{" "}
-          <span className="text-ink font-medium">{email}</span> and{" "}
-          <span className="text-ink font-medium">{phone}</span>
+          <span className="text-ink font-medium">{email}</span>
         </p>
 
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}

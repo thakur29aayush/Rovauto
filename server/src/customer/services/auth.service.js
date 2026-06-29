@@ -1,5 +1,7 @@
 const argon2 = require("argon2");
+const crypto = require("crypto");
 const prisma = require("../../config/prisma");
+const { verifyFirebaseIdToken } = require("../../config/firebase");
 const ApiError = require("../../utils/apiError");
 const hashOtp = require("../../utils/hashOtp");
 const { normalizePhone } = require("../../utils/phone");
@@ -119,7 +121,6 @@ const signup = async ({
   try {
     await createSignupOtp({
       email: pendingSignup.email,
-      phone: pendingSignup.phone,
     });
   } catch (error) {
     await prisma.$transaction([
@@ -140,7 +141,7 @@ const signup = async ({
   return {
     email: pendingSignup.email,
     phone: pendingSignup.phone,
-    message: "OTP sent to email and phone.",
+    message: "OTP sent to email.",
   };
 };
 
@@ -164,7 +165,6 @@ const verifyOtp = async ({ email, phone, otp }) => {
 
   await verifySignupOtp({
     email: cleanEmail,
-    phone: cleanPhone,
     otp,
   });
 
@@ -177,7 +177,7 @@ const verifyOtp = async ({ email, phone, otp }) => {
         password: pendingSignup.passwordHash,
         role: pendingSignup.role,
         isEmailVerified: true,
-        isPhoneVerified: true,
+        isPhoneVerified: false,
         ...(pendingSignup.role === "CUSTOMER" && {
           customerProfile: { create: {} },
         }),
@@ -217,7 +217,6 @@ const resendOtp = async ({ email, phone }) => {
 
   await createSignupOtp({
     email: pendingSignup.email,
-    phone: pendingSignup.phone,
   });
 
   return {
@@ -304,8 +303,8 @@ const login = async ({ identifier, password }) => {
     throw new ApiError(401, "Invalid credentials");
   }
 
-  if (!user.isEmailVerified || !user.isPhoneVerified) {
-    throw new ApiError(403, "Please verify your email and phone before login");
+  if (!user.isEmailVerified) {
+    throw new ApiError(403, "Please verify your email before login");
   }
 
   const safeUser = toSafeUser(user);
@@ -342,6 +341,69 @@ const getMe = async (userId) => {
   }
 
   return user;
+};
+
+const googleAuth = async ({ idToken, role = "CUSTOMER" }) => {
+  const decodedToken = await verifyFirebaseIdToken(idToken);
+  const cleanEmail = normalizeEmail(decodedToken.email);
+  const cleanName =
+    decodedToken.name?.trim() ||
+    decodedToken.email?.split("@")[0] ||
+    "Rovauto User";
+  const validRoles = ["CUSTOMER", "GARAGE_OWNER"];
+  const userRole = validRoles.includes(role) ? role : "CUSTOMER";
+
+  if (!cleanEmail || !decodedToken.email_verified) {
+    throw new ApiError(400, "Google account email must be verified");
+  }
+
+  let user = await prisma.user.findUnique({
+    where: { email: cleanEmail },
+  });
+
+  if (user) {
+    if (!user.isActive) {
+      throw new ApiError(403, "Account is disabled");
+    }
+
+    if (!user.isEmailVerified) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { isEmailVerified: true },
+      });
+    }
+  } else {
+    const randomPassword = await argon2.hash(crypto.randomBytes(32).toString("hex"));
+
+    user = await prisma.user.create({
+      data: {
+        name: cleanName,
+        email: cleanEmail,
+        password: randomPassword,
+        role: userRole,
+        isEmailVerified: true,
+        isPhoneVerified: false,
+        ...(userRole === "CUSTOMER" && {
+          customerProfile: { create: {} },
+        }),
+      },
+    });
+
+    await prisma.pendingSignup.deleteMany({
+      where: { email: cleanEmail },
+    });
+    await prisma.emailOtp.deleteMany({
+      where: { email: cleanEmail },
+    });
+  }
+
+  const safeUser = toSafeUser(user);
+  const token = createAuthToken(safeUser);
+
+  return {
+    user: safeUser,
+    token,
+  };
 };
 
 const forgotPassword = async ({ email }) => {
@@ -426,6 +488,7 @@ module.exports = {
   sendPhoneOtp,
   verifyPhoneNumberOtp,
   login,
+  googleAuth,
   getMe,
   forgotPassword,
   resetPassword,

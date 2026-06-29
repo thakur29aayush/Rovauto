@@ -7,7 +7,7 @@ const signup = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(new ApiResponse(201, "OTP sent to email and phone.", result));
+    .json(new ApiResponse(201, "OTP sent to email.", result));
 });
 
 const verifyOtp = asyncHandler(async (req, res) => {
@@ -50,6 +50,14 @@ const login = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Login successful", result));
 });
 
+const googleAuth = asyncHandler(async (req, res) => {
+  const result = await authService.googleAuth(req.body);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Google authentication successful", result));
+});
+
 const me = asyncHandler(async (req, res) => {
   const user = await authService.getMe(req.user.id);
 
@@ -81,6 +89,7 @@ module.exports = {
   sendPhoneOtp,
   verifyPhoneOtp,
   login,
+  googleAuth,
   me,
   forgotPassword,
   resetPassword,

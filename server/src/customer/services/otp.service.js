@@ -5,7 +5,6 @@ const ApiError = require("../../utils/apiError");
 const generateOtp = require("../../utils/generateOtp");
 const hashOtp = require("../../utils/hashOtp");
 const { normalizePhone } = require("../../utils/phone");
-const { sendSms } = require("./sms.service");
 
 const OTP_EXPIRY_MS = 5 * 60 * 1000;
 const OTP_RESEND_COOLDOWN_MS = 60 * 1000;
@@ -27,10 +26,11 @@ const assertOtpCooldown = (latestOtp) => {
 };
 
 const sendEmailOtp = async ({ to, otp, subject = "Rovauto verification OTP" }) => {
-  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
+  if (process.env.EMAIL_OTP_DELIVERY !== "email") {
     console.log("=================================");
-    console.log("DEV EMAIL OTP:", otp);
-    console.log("Email:", to);
+    console.log("ROVAUTO EMAIL OTP:", otp);
+    console.log("To:", to);
+    console.log("Subject:", subject);
     console.log("=================================");
     return true;
   }
@@ -79,47 +79,15 @@ const createEmailOtp = async ({ email, otp, skipCooldown = false }) => {
 };
 
 const createPhoneOtp = async ({ phone, otp, skipCooldown = false }) => {
-  const cleanPhone = normalizePhone(phone);
-  const latestOtp = await prisma.phoneOtp.findFirst({
-    where: { phone: cleanPhone },
-    orderBy: { createdAt: "desc" },
-  });
-
-  if (!skipCooldown) {
-    assertOtpCooldown(latestOtp);
-  }
-
-  await prisma.phoneOtp.deleteMany({
-    where: { phone: cleanPhone },
-  });
-
-  await prisma.phoneOtp.create({
-    data: {
-      phone: cleanPhone,
-      otpHash: hashOtp(otp),
-      expiresAt: new Date(Date.now() + OTP_EXPIRY_MS),
-    },
-  });
-
-  await sendSms({
-    to: cleanPhone,
-    message: `Your Rovauto OTP is ${otp}. It expires in 5 minutes.`,
-  });
-
-  return cleanPhone;
+  throw new ApiError(503, "SMS OTP is temporarily disabled");
 };
 
-const createSignupOtp = async ({ email, phone, skipCooldown = false }) => {
+const createSignupOtp = async ({ email, skipCooldown = false }) => {
   const otp = generateOtp();
-
-  const [cleanEmail, cleanPhone] = await Promise.all([
-    createEmailOtp({ email, otp, skipCooldown }),
-    createPhoneOtp({ phone, otp, skipCooldown }),
-  ]);
+  const cleanEmail = await createEmailOtp({ email, otp, skipCooldown });
 
   return {
     email: cleanEmail,
-    phone: cleanPhone,
   };
 };
 
@@ -213,49 +181,32 @@ const getLatestOtpOrThrow = async ({ model, identifierField, identifier }) => {
   return record;
 };
 
-const verifySignupOtp = async ({ email, phone, otp }) => {
+const verifySignupOtp = async ({ email, otp }) => {
   const cleanEmail = normalizeEmail(email);
-  const cleanPhone = normalizePhone(phone);
   const submittedOtp = String(otp || "").trim();
 
   if (!/^\d{6}$/.test(submittedOtp)) {
     throw new ApiError(400, "OTP must be 6 digits");
   }
 
-  const [emailOtp, phoneOtp] = await Promise.all([
-    getLatestOtpOrThrow({
-      model: "emailOtp",
-      identifierField: "email",
-      identifier: cleanEmail,
-    }),
-    getLatestOtpOrThrow({
-      model: "phoneOtp",
-      identifierField: "phone",
-      identifier: cleanPhone,
-    }),
-  ]);
+  const emailOtp = await getLatestOtpOrThrow({
+    model: "emailOtp",
+    identifierField: "email",
+    identifier: cleanEmail,
+  });
 
   const submittedHash = hashOtp(submittedOtp);
 
-  if (emailOtp.otpHash !== submittedHash || phoneOtp.otpHash !== submittedHash) {
-    await Promise.all([
-      prisma.emailOtp.update({
-        where: { id: emailOtp.id },
-        data: { attempts: { increment: 1 } },
-      }),
-      prisma.phoneOtp.update({
-        where: { id: phoneOtp.id },
-        data: { attempts: { increment: 1 } },
-      }),
-    ]);
+  if (emailOtp.otpHash !== submittedHash) {
+    await prisma.emailOtp.update({
+      where: { id: emailOtp.id },
+      data: { attempts: { increment: 1 } },
+    });
 
     throw new ApiError(400, "Invalid or expired OTP");
   }
 
-  await prisma.$transaction([
-    prisma.emailOtp.delete({ where: { id: emailOtp.id } }),
-    prisma.phoneOtp.delete({ where: { id: phoneOtp.id } }),
-  ]);
+  await prisma.emailOtp.delete({ where: { id: emailOtp.id } });
 
   return true;
 };

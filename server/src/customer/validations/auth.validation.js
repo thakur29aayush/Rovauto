@@ -126,6 +126,19 @@ const loginValidation = [
     .withMessage("Password is required"),
 ];
 
+const googleAuthValidation = [
+  body("idToken")
+    .trim()
+    .notEmpty()
+    .withMessage("Firebase ID token is required"),
+
+  body("role")
+    .optional({ checkFalsy: true })
+    .trim()
+    .isIn(["CUSTOMER", "GARAGE_OWNER"])
+    .withMessage("Role must be either CUSTOMER or GARAGE_OWNER"),
+];
+
 const forgotPasswordValidation = [
   body("email")
     .trim()
@@ -166,6 +179,7 @@ module.exports = {
   sendPhoneOtpValidation,
   verifyPhoneOtpValidation,
   loginValidation,
+  googleAuthValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
 };

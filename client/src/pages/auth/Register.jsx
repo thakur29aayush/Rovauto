@@ -3,6 +3,8 @@ import { useState } from "react";
 import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
 import { FiUser, FiTool } from "react-icons/fi";
+import { FcGoogle } from "react-icons/fc";
+import completeGoogleAuth from "@/utils/googleAuth";
 
 const COUNTRY_CODE = "+91";
 const PASSWORD_MESSAGE =
@@ -89,6 +91,32 @@ export default function Register() {
     }
   };
 
+  const handleGoogleAuth = async () => {
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await completeGoogleAuth(role);
+      const redirectPath =
+        data.user.role === "GARAGE_OWNER"
+          ? "/garage"
+          : data.user.isOnboarded
+            ? "/dashboard"
+            : "/booking/vehicle";
+
+      window.location.href = redirectPath;
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          err.message ||
+          "Google signup failed"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container-x grid min-h-[80vh] items-center gap-12 py-16 lg:grid-cols-2">
       <div className="hidden lg:block">
@@ -138,6 +166,22 @@ export default function Register() {
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
         <form onSubmit={submit} className="mt-6 grid gap-3">
+          <button
+            type="button"
+            onClick={handleGoogleAuth}
+            disabled={loading}
+            className="flex items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 py-3 font-medium transition hover:border-ink disabled:opacity-60"
+          >
+            <FcGoogle className="text-xl" />
+            Continue with Google
+          </button>
+
+          <div className="flex items-center gap-3 text-xs text-muted">
+            <span className="h-px flex-1 bg-line" />
+            or create with phone OTP
+            <span className="h-px flex-1 bg-line" />
+          </div>
+
           <input
             required
             name="name"

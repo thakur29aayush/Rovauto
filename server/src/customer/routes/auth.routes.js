@@ -11,6 +11,7 @@ const {
   sendPhoneOtpValidation,
   verifyPhoneOtpValidation,
   loginValidation,
+  googleAuthValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
 } = require("../validations/auth.validation");
@@ -29,6 +30,7 @@ router.post("/resend-otp", otpRateLimit, resendOtpValidation, validate, authCont
 router.post("/send-otp", otpRateLimit, sendPhoneOtpValidation, validate, authController.sendPhoneOtp);
 router.post("/verify-phone-otp", otpRateLimit, verifyPhoneOtpValidation, validate, authController.verifyPhoneOtp);
 router.post("/login", loginValidation, validate, authController.login);
+router.post("/google", googleAuthValidation, validate, authController.googleAuth);
 router.get("/me", protect, authController.me);
 router.post(
   "/forgot-password",

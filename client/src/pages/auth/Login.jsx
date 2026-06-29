@@ -3,6 +3,8 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
 import { FiArrowRight, FiUser, FiTool } from "react-icons/fi";
+import { FcGoogle } from "react-icons/fc";
+import completeGoogleAuth from "@/utils/googleAuth";
 
 export default function Login() {
   const { state } = useLocation();
@@ -60,6 +62,30 @@ export default function Login() {
           err.response?.data?.error ||
           err.message ||
           "Login failed"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await completeGoogleAuth(role);
+      const redirectPath =
+        data.user.role === "GARAGE_OWNER"
+          ? "/garage"
+          : from || "/dashboard";
+
+      window.location.href = redirectPath;
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          err.message ||
+          "Google login failed"
       );
     } finally {
       setLoading(false);
@@ -127,6 +153,22 @@ export default function Login() {
         )}
 
         <form onSubmit={submit} className="mt-6 grid gap-3">
+          <button
+            type="button"
+            onClick={handleGoogleAuth}
+            disabled={loading}
+            className="flex items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 py-3 font-medium transition hover:border-ink disabled:opacity-60"
+          >
+            <FcGoogle className="text-xl" />
+            Continue with Google
+          </button>
+
+          <div className="flex items-center gap-3 text-xs text-muted">
+            <span className="h-px flex-1 bg-line" />
+            or
+            <span className="h-px flex-1 bg-line" />
+          </div>
+
           <input
             required
             name="identifier"
