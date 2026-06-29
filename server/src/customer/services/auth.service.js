@@ -360,6 +360,7 @@ const googleAuth = async ({ idToken, role = "CUSTOMER" }) => {
   let user = await prisma.user.findUnique({
     where: { email: cleanEmail },
   });
+  let isNewUser = false;
 
   if (user) {
     if (!user.isActive) {
@@ -373,6 +374,7 @@ const googleAuth = async ({ idToken, role = "CUSTOMER" }) => {
       });
     }
   } else {
+    isNewUser = true;
     const randomPassword = await argon2.hash(crypto.randomBytes(32).toString("hex"));
 
     user = await prisma.user.create({
@@ -403,6 +405,7 @@ const googleAuth = async ({ idToken, role = "CUSTOMER" }) => {
   return {
     user: safeUser,
     token,
+    isNewUser,
   };
 };
 

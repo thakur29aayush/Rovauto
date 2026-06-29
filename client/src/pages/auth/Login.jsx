@@ -5,6 +5,10 @@ import api from "@/api/axios";
 import { FiArrowRight, FiUser, FiTool } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
+import {
+  requestSignupLocation,
+  saveSignupLocationToProfile,
+} from "@/utils/signupLocation";
 
 export default function Login() {
   const { state } = useLocation();
@@ -74,6 +78,12 @@ export default function Login() {
 
     try {
       const data = await completeGoogleAuth(role);
+
+      if (data.isNewUser) {
+        const signupLocation = await requestSignupLocation();
+        await saveSignupLocationToProfile(signupLocation);
+      }
+
       const redirectPath =
         data.user.role === "GARAGE_OWNER"
           ? "/garage"

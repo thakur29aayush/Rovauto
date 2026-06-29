@@ -2,33 +2,39 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
+import { saveSignupLocationToProfile } from "@/utils/signupLocation";
 
 const PENDING_OTP_KEY = "pendingSignupOtp";
 
 const getPendingOtp = (state) => {
+  let stored = {};
+
+  try {
+    stored = JSON.parse(sessionStorage.getItem(PENDING_OTP_KEY) || "{}");
+  } catch {
+    sessionStorage.removeItem(PENDING_OTP_KEY);
+  }
+
   if (state?.email && state?.phone) {
     return {
       email: state.email,
       phone: state.phone,
+      signupLocation: stored.signupLocation || null,
     };
   }
 
-  try {
-    const stored = JSON.parse(sessionStorage.getItem(PENDING_OTP_KEY) || "{}");
-
-    if (stored.email && stored.phone) {
-      return {
-        email: stored.email,
-        phone: stored.phone,
-      };
-    }
-  } catch {
-    sessionStorage.removeItem(PENDING_OTP_KEY);
+  if (stored.email && stored.phone) {
+    return {
+      email: stored.email,
+      phone: stored.phone,
+      signupLocation: stored.signupLocation || null,
+    };
   }
 
   return {
     email: "",
     phone: "",
+    signupLocation: null,
   };
 };
 
@@ -36,7 +42,7 @@ export default function OTP() {
   const { state } = useLocation();
   const nav = useNavigate();
 
-  const { email, phone } = getPendingOtp(state);
+  const { email, phone, signupLocation } = getPendingOtp(state);
 
   const [otp, setOtp] = useState(Array(6).fill(""));
   const [timer, setTimer] = useState(60);
@@ -89,6 +95,9 @@ export default function OTP() {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+
+      await saveSignupLocationToProfile(signupLocation);
+
       sessionStorage.removeItem(PENDING_OTP_KEY);
 
       if (data.user.role === "GARAGE_OWNER") {

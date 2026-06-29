@@ -5,6 +5,10 @@ import api from "@/api/axios";
 import { FiUser, FiTool } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
+import {
+  requestSignupLocation,
+  saveSignupLocationToProfile,
+} from "@/utils/signupLocation";
 
 const COUNTRY_CODE = "+91";
 const PASSWORD_MESSAGE =
@@ -66,6 +70,8 @@ export default function Register() {
         role,
       };
 
+      const signupLocation = await requestSignupLocation();
+
       await api.post("/auth/signup", payload);
 
       sessionStorage.setItem(
@@ -73,6 +79,7 @@ export default function Register() {
         JSON.stringify({
           email: payload.email,
           phone: fullPhone,
+          signupLocation,
           createdAt: Date.now(),
         })
       );
@@ -97,6 +104,12 @@ export default function Register() {
 
     try {
       const data = await completeGoogleAuth(role);
+
+      if (data.isNewUser) {
+        const signupLocation = await requestSignupLocation();
+        await saveSignupLocationToProfile(signupLocation);
+      }
+
       const redirectPath =
         data.user.role === "GARAGE_OWNER"
           ? "/garage"
