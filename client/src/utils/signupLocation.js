@@ -1,9 +1,9 @@
 import api from "@/api/axios";
 
 const LOCATION_OPTIONS = {
-  enableHighAccuracy: true,
-  timeout: 10000,
-  maximumAge: 60000,
+  enableHighAccuracy: false,
+  timeout: 3500,
+  maximumAge: 5 * 60 * 1000,
 };
 
 const getCurrentPosition = () => {

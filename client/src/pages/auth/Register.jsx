@@ -10,6 +10,14 @@ import {
   saveSignupLocationToProfile,
 } from "@/utils/signupLocation";
 
+const collectSignupLocationLater = () => {
+  requestSignupLocation().then((signupLocation) => {
+    if (signupLocation) {
+      sessionStorage.setItem("pendingSignupLocation", JSON.stringify(signupLocation));
+    }
+  });
+};
+
 const COUNTRY_CODE = "+91";
 const PASSWORD_MESSAGE =
   "Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.";
@@ -70,7 +78,7 @@ export default function Register() {
         role,
       };
 
-      const signupLocation = await requestSignupLocation();
+      collectSignupLocationLater();
 
       await api.post("/auth/signup", payload);
 
@@ -79,7 +87,6 @@ export default function Register() {
         JSON.stringify({
           email: payload.email,
           phone: fullPhone,
-          signupLocation,
           createdAt: Date.now(),
         })
       );
@@ -106,8 +113,7 @@ export default function Register() {
       const data = await completeGoogleAuth(role);
 
       if (data.isNewUser) {
-        const signupLocation = await requestSignupLocation();
-        await saveSignupLocationToProfile(signupLocation);
+        requestSignupLocation().then(saveSignupLocationToProfile);
       }
 
       const redirectPath =

@@ -80,8 +80,7 @@ export default function Login() {
       const data = await completeGoogleAuth(role);
 
       if (data.isNewUser) {
-        const signupLocation = await requestSignupLocation();
-        await saveSignupLocationToProfile(signupLocation);
+        requestSignupLocation().then(saveSignupLocationToProfile);
       }
 
       const redirectPath =
