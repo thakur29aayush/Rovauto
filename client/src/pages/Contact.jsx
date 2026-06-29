@@ -28,6 +28,8 @@ const FAQS = [
   ],
 ];
 
+const SUPPORT_PHONE_DISPLAY = "+91 98993 19913";
+
 export default function Contact() {
   const { user, fetchProfile } = useApp();
 
@@ -121,7 +123,7 @@ export default function Contact() {
           {
             icon: FiPhone,
             t: "Call us",
-            d: "+91 90000 00000",
+            d: SUPPORT_PHONE_DISPLAY,
             sub: "Mon–Sun, 8 AM–10 PM",
           },
           {

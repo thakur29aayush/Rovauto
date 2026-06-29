@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import Logo from "@/components/common/Logo";
 import { FiInstagram, FiTwitter, FiYoutube, FiFacebook, FiMail, FiPhone } from "react-icons/fi";
 
+const SUPPORT_PHONE_DISPLAY = "+91 98993 19913";
+
 export default function Footer() {
   return (
     <footer className="bg-ink text-white mt-20">
@@ -33,7 +35,7 @@ export default function Footer() {
           <p>© {new Date().getFullYear()} Rovauto. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-2"><FiMail /> hello@rovauto.in</span>
-            <span className="flex items-center gap-2"><FiPhone /> +91 90000 00000</span>
+            <span className="flex items-center gap-2"><FiPhone /> {SUPPORT_PHONE_DISPLAY}</span>
           </div>
         </div>
       </div>

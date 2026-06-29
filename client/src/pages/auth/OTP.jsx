@@ -112,7 +112,7 @@ export default function OTP() {
                 onChange={(e) => setDigit(i, e.target.value)}
                 maxLength={1}
                 inputMode="numeric"
-                className="h-14 w-12 text-center text-xl font-bold rounded-2xl border border-line focus:border-ink outline-none"
+                className="h-14 w-12 text-center text-xl font-bold rounded-2xl border border-ink outline-none"
               />
             ))}
           </div>

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { FiCheckCircle } from "react-icons/fi";
 
+const SUPPORT_PHONE_DISPLAY = "+91 98993 19913";
+
 export default function Partner() {
   const [sent, setSent] = useState(false);
   return (
@@ -28,7 +30,7 @@ export default function Partner() {
             {[
               ["Garage Name", "text", "Speed Motors Workshop"],
               ["Owner Name", "text", "Mr. Sharma"],
-              ["Phone", "tel", "+91 90000 00000"],
+              ["Phone", "tel", SUPPORT_PHONE_DISPLAY],
               ["City / Area", "text", "Indirapuram, Ghaziabad"],
             ].map(([l, t, p]) => (
               <label key={l} className="grid gap-1.5 text-sm">

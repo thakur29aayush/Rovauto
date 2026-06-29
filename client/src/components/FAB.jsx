@@ -2,6 +2,9 @@ import { useState } from "react";
 import { FiX, FiMessageCircle, FiPhone, FiMessageSquare } from "react-icons/fi";
 import ChatbotPopup from "./ChatbotPopup";
 
+const SUPPORT_PHONE = "9899319913";
+const SUPPORT_PHONE_WITH_COUNTRY = `+91${SUPPORT_PHONE}`;
+
 export default function FAB() {
   const [isOpen, setIsOpen] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -12,12 +15,12 @@ export default function FAB() {
   };
 
   const handleCall = () => {
-    window.location.href = "tel:+919000000000";
+    window.location.href = `tel:${SUPPORT_PHONE_WITH_COUNTRY}`;
     setIsOpen(false);
   };
 
   const handleWhatsApp = () => {
-    window.location.href = "https://wa.me/919000000000";
+    window.location.href = `https://wa.me/91${SUPPORT_PHONE}`;
     setIsOpen(false);
   };
 

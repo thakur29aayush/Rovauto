@@ -144,8 +144,8 @@ export default function Register() {
             className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
           />
 
-          <div className="flex gap-2">
-            <div className="grid w-24 place-items-center rounded-xl border border-line bg-bg-soft px-3 py-3 font-medium text-ink">
+          <div className="flex items-center overflow-hidden rounded-xl border border-line bg-white transition focus-within:border-ink">
+            <div className="grid h-full w-16 shrink-0 place-items-center border-r border-line bg-bg-soft px-3 py-3 font-semibold text-ink">
               {COUNTRY_CODE}
             </div>
 
@@ -157,7 +157,7 @@ export default function Register() {
               maxLength={15}
               inputMode="tel"
               placeholder="Mobile number"
-              className="min-w-0 flex-1 rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+              className="min-w-0 flex-1 border-0 px-4 py-3 outline-none"
             />
           </div>
 
