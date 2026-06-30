@@ -403,3 +403,9 @@ Review / Complaint
 
 ##COMMANDS
 npm run db:delete-user -- --email=aayush@example.com --confirm
+npm run db:delete-active-bookings -- --email=aayush@example.com --confirm
+npm run db:delete-payments -- --email=aayush@example.com --confirm
+npm run db:delete-service-history -- --email=aayush@example.com --confirm
+
+npm run db:nuke-users -- --confirm --i-understand-delete-all-users (codebase)
+npm --prefix server run db:nuke-users -- --confirm --i-understand-delete-all-users (server)
