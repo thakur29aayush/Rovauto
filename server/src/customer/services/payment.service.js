@@ -9,6 +9,7 @@ const {
 const ApiError = require("../../utils/apiError");
 const garageRequestService = require("../../services/garageRequest.service");
 const invalidateCustomerCache = require("../../utils/invalidateCustomerCache");
+const bookingLifecycleService = require("../../services/bookingLifecycle.service");
 
 const bookingInclude = {
   user: {
@@ -309,6 +310,7 @@ const verifyPayment = async (userId, { bookingId, cashfreeOrderId }) => {
       },
       data: {
         status: "SEARCHING_GARAGE",
+        searchExpiresAt: bookingLifecycleService.getSearchExpiresAt(),
       },
       include: bookingInclude,
     });

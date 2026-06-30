@@ -1,5 +1,13 @@
-const { body, param } = require("express-validator");
+const { body, param, query } = require("express-validator");
 
+
+const geocodeLocationValidation = [
+  query("address").optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 300 }),
+  query("city").optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 120 }),
+  query("state").optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 120 }),
+  query("country").optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 120 }),
+  query("countrycodes").optional({ nullable: true, checkFalsy: true }).trim().isLength({ min: 2, max: 8 }),
+];
 const locationIdValidation = [
   param("id").isUUID().withMessage("Invalid location ID"),
 ];
@@ -64,4 +72,5 @@ module.exports = {
   locationIdValidation,
   createLocationValidation,
   updateLocationValidation,
+  geocodeLocationValidation,
 };

@@ -4,6 +4,9 @@ const generateBookingCode = require("../../utils/bookingCode");
 const invalidateCustomerCache = require("../../utils/invalidateCustomerCache");
 const { getCache, setCache, deletePattern } = require("../../utils/cache");
 const { addGarageWhatsappLink, createWhatsappLink } = require("../../utils/whatsapp");
+const { getServicePriceRange } = require("../../utils/pricing");
+const bookingLifecycleService = require("../../services/bookingLifecycle.service");
+const cityServicePriceRangeService = require("../../admin/services/cityServicePriceRange.service");
 
 const BOOKINGS_CACHE_TTL = 60;
 
@@ -149,9 +152,9 @@ const createBooking = async (userId, data) => {
     throw new ApiError(404, "One or more services are invalid");
   }
 
-  const totalServiceAmount = services.reduce((sum, service) => {
-    return sum + getServiceEstimatedPrice(service);
-  }, 0);
+  const serviceRangeTotal = sumServiceRanges(services);
+  const totalServiceAmount = serviceRangeTotal.min;
+  const totalServiceMaxAmount = serviceRangeTotal.max;
 
   const handlingFee = calculateHandlingFee(totalServiceAmount);
 
@@ -228,24 +231,31 @@ const createBooking = async (userId, data) => {
 
         requestType: "NORMAL",
         status: payableAmount > 0 ? "PENDING_PAYMENT" : "SEARCHING_GARAGE",
+        searchExpiresAt: payableAmount > 0 ? null : bookingLifecycleService.getSearchExpiresAt(),
 
         customerLatitude: Number(location.latitude),
         customerLongitude: Number(location.longitude),
-        customerAddress: location.address || null,
+        customerAddress: location.address || location.city || null,
 
         customerNote: customerNote || null,
 
         handlingFee,
         totalServiceAmount,
+        totalServiceMaxAmount,
         walletAmountUsed,
         payableAmount,
 
         services: {
-          create: services.map((service) => ({
-            serviceId: service.id,
-            quantity: 1,
-            estimatedPrice: getServiceEstimatedPrice(service),
-          })),
+          create: services.map((service) => {
+            const range = getBookingServiceRange(service);
+            return {
+              serviceId: service.id,
+              quantity: 1,
+              estimatedPrice: range.min,
+              estimatedMinPrice: range.min,
+              estimatedMaxPrice: range.max,
+            };
+          }),
         },
 
         payment: {
@@ -353,6 +363,27 @@ const getBookingSuccess = async (userId, bookingId) => {
   };
 };
 
+
+const acceptDelivery = async (userId, bookingId) => {
+  const booking = await bookingLifecycleService.acceptDeliveredBookingByCustomer({ userId, bookingId });
+  await invalidateBookingCaches(userId);
+  return booking;
+};
+
+const getServiceHistory = async (userId) => {
+  await bookingLifecycleService.expireStaleGarageSearchesForUser(userId);
+  return prisma.booking.findMany({
+    where: {
+      userId,
+      status: "COMPLETED",
+      customerAcceptedAt: { not: null },
+    },
+    include: bookingInclude,
+    orderBy: {
+      customerAcceptedAt: "desc",
+    },
+  });
+};
 const cancelBooking = async (userId, bookingId) => {
   const booking = await prisma.booking.findFirst({
     where: {
@@ -412,5 +443,7 @@ module.exports = {
   getMyBookings,
   getBookingById,
   getBookingSuccess,
+  acceptDelivery,
+  getServiceHistory,
   cancelBooking,
 };

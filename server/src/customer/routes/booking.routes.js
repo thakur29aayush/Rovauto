@@ -7,6 +7,7 @@ const validate = require("../../middlewares/validate.middleware");
 const {
   bookingIdValidation,
   createBookingValidation,
+  acceptDeliveryValidation,
 } = require("../validations/booking.validation");
 
 const router = express.Router();
@@ -30,6 +31,8 @@ router.post(
  * GET /api/bookings
  * Get logged-in customer's bookings.
  */
+router.get("/service-history", bookingController.getServiceHistory);
+
 router.get("/", bookingController.getMyBookings);
 
 /**
@@ -54,6 +57,13 @@ router.get(
   bookingController.getBookingById
 );
 
+
+router.post(
+  "/:id/accept-delivery",
+  acceptDeliveryValidation,
+  validate,
+  bookingController.acceptDelivery
+);
 /**
  * PATCH /api/bookings/:id/cancel
  * Cancel booking.

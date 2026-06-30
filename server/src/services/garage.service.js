@@ -3,6 +3,7 @@ const ApiError = require("../utils/apiError");
 const calculateDistanceKm = require("../utils/distance");
 const { getCache, setCache } = require("../utils/cache");
 const { addGarageWhatsappLink } = require("../utils/whatsapp");
+const { addServicePriceRange } = require("../utils/pricing");
 
 const GARAGE_LIST_TTL = 5 * 60;
 const GARAGE_DETAIL_TTL = 5 * 60;
@@ -127,7 +128,19 @@ const addThumbnail = (garage) => ({
   thumbnail: garage.images.find((image) => image.isThumbnail === true) || null,
 });
 
-const serializeGarage = (garage) => addGarageWhatsappLink(addThumbnail(garage));
+const serializeGarageService = (garageService) => {
+  const { price, duration, ...rest } = garageService;
+  return {
+    ...rest,
+    service: garageService.service ? addServicePriceRange(garageService.service) : garageService.service,
+  };
+};
+
+const serializeGarage = (garage) =>
+  addGarageWhatsappLink({
+    ...addThumbnail(garage),
+    services: garage.services ? garage.services.map(serializeGarageService) : garage.services,
+  });
 
 const getGarages = async (query = {}) => {
   const {
@@ -405,9 +418,11 @@ const getGarageServices = async (garageId) => {
     },
   });
 
-  await setCache(cacheKey, services, GARAGE_DETAIL_TTL);
+  const result = services.map(serializeGarageService);
 
-  return services;
+  await setCache(cacheKey, result, GARAGE_DETAIL_TTL);
+
+  return result;
 };
 
 module.exports = {

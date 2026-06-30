@@ -1,0 +1,107 @@
+const axios = require("axios");
+const { createWhatsappLink, normalizeWhatsappNumber } = require("../utils/whatsapp");
+
+const isWhatsappConfigured = () => Boolean(process.env.WHATSAPP_PROVIDER_URL && process.env.WHATSAPP_PROVIDER_TOKEN);
+
+const getFrontendBaseUrl = () => (process.env.FRONTEND_URL || process.env.CLIENT_URL || "https://rovauto.vercel.app").replace(/\/+$/, "");
+
+const getGarageAcceptUrl = (requestId) => {
+  const acceptPath = process.env.GARAGE_REQUEST_ACCEPT_PATH || "/garage/requests";
+  return `${getFrontendBaseUrl()}${acceptPath}/${requestId}`;
+};
+
+const getMapsLink = (latitude, longitude) => {
+  if (latitude === null || latitude === undefined || longitude === null || longitude === undefined) return null;
+  return `https://www.google.com/maps?q=${latitude},${longitude}`;
+};
+
+const sendWhatsappMessage = async ({ to, message }) => {
+  const phone = normalizeWhatsappNumber(to);
+  if (!phone || !message) return { sent: false, reason: "missing_phone_or_message" };
+
+  if (!isWhatsappConfigured()) {
+    if (process.env.NODE_ENV !== "test") {
+      console.log(`[whatsapp:log] to=${phone} ${message}`);
+    }
+    return { sent: false, logged: true, whatsappLink: createWhatsappLink(phone, message) };
+  }
+
+  const payload = {
+    to: phone,
+    recipient: phone,
+    phone,
+    message,
+    text: message,
+    from: process.env.WHATSAPP_SENDER_ID || undefined,
+  };
+
+  const response = await axios.post(process.env.WHATSAPP_PROVIDER_URL, payload, {
+    headers: {
+      Authorization: `Bearer ${process.env.WHATSAPP_PROVIDER_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  return { sent: true, providerResponse: response.data };
+};
+
+const formatVehicleDetails = (vehicle) => {
+  if (!vehicle) return "Vehicle details unavailable";
+  return [vehicle.brand, vehicle.model, vehicle.registrationNumber || vehicle.numberPlate, vehicle.fuelType]
+    .filter(Boolean)
+    .join(" | ") || "Vehicle details unavailable";
+};
+
+const formatServiceList = (services = []) => {
+  return services
+    .map((item) => item.service?.name || item.name)
+    .filter(Boolean)
+    .join(", ") || "Selected services";
+};
+
+const sendGarageBookingRequestWhatsapp = async ({ garage, request, booking }) => {
+  const acceptUrl = getGarageAcceptUrl(request.id);
+  const message = [
+    "New Rovauto booking request",
+    `Services: ${formatServiceList(booking.services)}`,
+    `Vehicle: ${formatVehicleDetails(booking.vehicle)}`,
+    booking.customerAddress ? `Customer area: ${booking.customerAddress}` : null,
+    `Accept here: ${acceptUrl}`,
+  ].filter(Boolean).join("\n");
+
+  return sendWhatsappMessage({ to: garage.whatsappNo || garage.phone, message });
+};
+
+const sendGarageCustomerLocationWhatsapp = async ({ garage, booking }) => {
+  const mapsLink = getMapsLink(booking.customerLatitude, booking.customerLongitude);
+  const message = [
+    `Rovauto booking ${booking.bookingCode} accepted.`,
+    `Customer: ${booking.user?.name || "Customer"}`,
+    `Vehicle: ${formatVehicleDetails(booking.vehicle)}`,
+    mapsLink ? `Customer location: ${mapsLink}` : null,
+  ].filter(Boolean).join("\n");
+
+  return sendWhatsappMessage({ to: garage.whatsappNo || garage.phone, message });
+};
+
+const sendCustomerGarageDetailsWhatsapp = async ({ customer, garage, booking }) => {
+  const mapsLink = getMapsLink(garage.latitude, garage.longitude);
+  const message = [
+    `Rovauto booking ${booking.bookingCode} confirmed.`,
+    `Garage: ${garage.name}`,
+    `Phone: ${garage.phone}`,
+    garage.address ? `Address: ${garage.address}` : null,
+    mapsLink ? `Garage location: ${mapsLink}` : null,
+  ].filter(Boolean).join("\n");
+
+  return sendWhatsappMessage({ to: customer.phone, message });
+};
+
+module.exports = {
+  getGarageAcceptUrl,
+  getMapsLink,
+  sendCustomerGarageDetailsWhatsapp,
+  sendGarageBookingRequestWhatsapp,
+  sendGarageCustomerLocationWhatsapp,
+  sendWhatsappMessage,
+};

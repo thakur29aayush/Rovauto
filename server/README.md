@@ -1,4 +1,4 @@
-﻿# Rovauto Server
+# Rovauto Server
 
 Express + Prisma backend for Rovauto.
 
@@ -138,6 +138,108 @@ npm run db:nuke-users -- --confirm --i-understand-delete-all-users
 
 Maintenance scripts are intentionally dry-run first. The nuke command preserves garages and service catalog data, clears garage owner links, writes a JSON backup, and deletes user-linked data only after both confirmation flags are provided.
 
+
+## Current Garage Booking Lifecycle
+
+The backend currently supports the complete garage request lifecycle:
+
+```text
+Cashfree payment verified
+ -> booking SEARCHING_GARAGE
+ -> active verified garages within GARAGE_BROADCAST_RADIUS_KM are notified/logged
+ -> search expires after GARAGE_SEARCH_TIMEOUT_SECONDS if no garage accepts
+ -> garage accepts request and wallet platform fee is deducted
+ -> customer receives in-app accepted notification with handover OTP
+ -> garage verifies OTP before vehicle handover
+ -> booking IN_PROGRESS
+ -> garage marks delivered
+ -> customer accepts delivery
+ -> booking COMPLETED and visible in service history
+```
+
+Customer notification behavior:
+
+- Accepted: `{garage.name} has accepted your service request` plus handover OTP in app notification metadata/message.
+- Search timeout: no accepted garage within the configured search window, customer is told to try again.
+- Delivered: customer is notified to review and accept delivery.
+
+Garage request endpoints:
+
+```text
+GET /api/v1/garage/requests
+POST /api/v1/garage/requests/:requestId/accept
+POST /api/v1/garage/requests/:requestId/verify-handover-otp
+POST /api/v1/garage/requests/:requestId/mark-delivered
+POST /api/v1/garage/requests/:requestId/reject
+```
+
+Customer completion endpoints:
+
+```text
+POST /api/v1/bookings/:id/accept-delivery
+GET /api/v1/bookings/service-history
+```
+
+## Geocoding API
+
+Manual customer addresses can be converted to coordinates through OpenStreetMap Nominatim:
+
+```text
+GET /api/v1/locations/geocode?address=Baneshwor&city=Kathmandu
+```
+
+Response contains `latitude`, `longitude`, `displayName`, provider metadata, and OpenStreetMap attribution. The frontend should send returned coordinates during booking checkout so the backend can calculate the 15km garage radius.
+
+Required env:
+
+```env
+GEOCODER_PROVIDER="nominatim"
+NOMINATIM_USER_AGENT="Rovauto/1.0 (your-email@example.com)"
+NOMINATIM_TIMEOUT_MS=8000
+```
+
+## Admin Price Range API
+
+Admin can define city/service/vehicle/fuel price ranges. Booking estimates use the best matching admin price range when `location.city` is supplied; otherwise the fallback is current/base price plus `SERVICE_PRICE_RANGE_DELTA`.
+
+```text
+GET /api/v1/admin/city-service-price-ranges
+POST /api/v1/admin/city-service-price-ranges
+GET /api/v1/admin/city-service-price-ranges/:id
+PATCH /api/v1/admin/city-service-price-ranges/:id
+DELETE /api/v1/admin/city-service-price-ranges/:id
+```
+
+Payload fields:
+
+```json
+{
+  "city": "kathmandu",
+  "serviceId": "service-uuid",
+  "vehicleBrand": "Hyundai",
+  "vehicleModel": "i20",
+  "fuelType": "PETROL",
+  "minPrice": 1000,
+  "maxPrice": 1500,
+  "isActive": true
+}
+```
+
+## Current Garage Env Additions
+
+```env
+GARAGE_BROADCAST_RADIUS_KM=15
+GARAGE_SEARCH_TIMEOUT_SECONDS=120
+HANDOVER_OTP_TTL_MINUTES=30
+GARAGE_REQUEST_ACCEPT_PATH="/garage/requests"
+SERVICE_PRICE_RANGE_DELTA=500
+WHATSAPP_PROVIDER_URL=""
+WHATSAPP_PROVIDER_TOKEN=""
+WHATSAPP_SENDER_ID=""
+GEOCODER_PROVIDER="nominatim"
+NOMINATIM_USER_AGENT="Rovauto/1.0 (your-email@example.com)"
+NOMINATIM_TIMEOUT_MS=8000
+```
 ## API Modules
 
 Mounted under `/api/v1`:

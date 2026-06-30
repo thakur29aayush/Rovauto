@@ -1,4 +1,4 @@
-﻿# Rovauto
+# Rovauto
 
 ![Frontend](https://img.shields.io/badge/Frontend-React-blue)
 ![State](https://img.shields.io/badge/State-Redux%20Toolkit-764ABC)
@@ -306,30 +306,62 @@ Mounted under `/api/v1`:
 
 ---
 
-## Current Customer Flow
+## Current Customer And Garage Flow
 
-1. Register or log in.
-2. If no saved address/location exists, complete location onboarding.
-3. Add/select a vehicle.
-4. Pick services.
-5. Checkout creates a backend booking.
-6. Cashfree payment order is created.
-7. Successful payment verification moves the booking to garage search.
-8. If payment is created but not completed, the user can retry from Active Bookings, Payments, or Tracking.
-9. Tracking is blocked until payment is complete.
-
----
-
-## Current Garage Flow
-
-The intended garage workflow is:
+The current backend flow is API-ready for customer booking, garage acceptance, wallet deduction, handover OTP, delivery acceptance, and service history.
 
 ```text
-Lead Received -> Accept/Reject -> Active Job -> Status Updates -> Completed Job -> Earnings/Wallet
+Customer selects vehicle/services/location
+ -> Backend resolves manual address to lat/lng when /locations/geocode is used
+ -> Backend calculates estimated service price range
+ -> Customer pays Rovauto handling/platform fee through Cashfree
+ -> Payment verification starts garage search
+ -> Nearby active verified garages within GARAGE_BROADCAST_RADIUS_KM receive request notification/log
+ -> Garage opens accept link and accepts on website
+ -> Garage wallet platform fee is deducted
+ -> Customer gets in-app accepted notification with handover OTP
+ -> Garage verifies OTP before vehicle handover
+ -> Booking moves to IN_PROGRESS
+ -> Garage marks delivered
+ -> Customer accepts delivery
+ -> Booking moves to COMPLETED and appears in service history
 ```
 
-Garage pages currently cover dashboard, leads, jobs, wallet, earnings, and magic-link entry points. The flow is ready for deeper operational features such as inspection notes, before/after media, extra-service approval, and payout management.
+Important backend controls:
 
+```env
+GARAGE_BROADCAST_RADIUS_KM=15
+GARAGE_SEARCH_TIMEOUT_SECONDS=120
+HANDOVER_OTP_TTL_MINUTES=30
+SERVICE_PRICE_RANGE_DELTA=500
+```
+
+If no garage accepts within the search window, the booking and pending garage requests expire and the customer receives an in-app notification asking them to try again.
+
+Manual address flow uses OpenStreetMap Nominatim through the backend:
+
+```text
+GET /api/v1/locations/geocode?address=Baneshwor&city=Kathmandu
+```
+
+The frontend should send the returned `latitude` and `longitude` during checkout. Distance is calculated by the backend using the Haversine formula between customer coordinates and stored garage coordinates.
+
+Key backend routes:
+
+```text
+POST /api/v1/garage/applications
+GET/POST/PATCH/DELETE /api/v1/admin/city-service-price-ranges
+POST /api/v1/garage/wallet/recharge/order
+POST /api/v1/garage/wallet/recharge/verify
+GET /api/v1/garage/requests
+POST /api/v1/garage/requests/:requestId/accept
+POST /api/v1/garage/requests/:requestId/verify-handover-otp
+POST /api/v1/garage/requests/:requestId/mark-delivered
+POST /api/v1/bookings/:id/accept-delivery
+GET /api/v1/bookings/service-history
+```
+
+WhatsApp provider envs can stay empty during testing. When empty, the backend logs the outgoing WhatsApp-style message and accept link instead of calling a real provider.
 ---
 
 ## Auth And State Notes

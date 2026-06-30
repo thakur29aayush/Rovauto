@@ -68,6 +68,7 @@ const createSosRequest = async (userId, data) => {
 
       handlingFee: SOS_CHARGE,
       totalServiceAmount: SOS_ESTIMATED_AMOUNT,
+      totalServiceMaxAmount: SOS_ESTIMATED_AMOUNT + 500,
       walletAmountUsed: 0,
       payableAmount: 0,
 
@@ -76,6 +77,8 @@ const createSosRequest = async (userId, data) => {
           serviceId: sosService.id,
           quantity: 1,
           estimatedPrice: SOS_ESTIMATED_AMOUNT,
+          estimatedMinPrice: SOS_ESTIMATED_AMOUNT,
+          estimatedMaxPrice: SOS_ESTIMATED_AMOUNT + 500,
         },
       },
 

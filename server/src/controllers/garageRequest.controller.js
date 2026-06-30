@@ -3,6 +3,7 @@ const ApiResponse = require("../utils/apiResponse");
 const ApiError = require("../utils/apiError");
 const garageRequestService = require("../services/garageRequest.service");
 const prisma = require("../config/prisma");
+const bookingLifecycleService = require("../services/bookingLifecycle.service");
 
 const getGarageIdForOwner = async (userId) => {
   const garage = await prisma.garage.findFirst({
@@ -49,6 +50,31 @@ const acceptGarageRequest = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Garage request accepted successfully", request));
 });
 
+
+const verifyHandoverOtp = asyncHandler(async (req, res) => {
+  const garageId = await getGarageIdForOwner(req.user.id);
+  const result = await bookingLifecycleService.verifyBookingHandoverOtp({
+    garageId,
+    requestId: req.params.requestId,
+    otp: req.body.otp,
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Handover OTP verified successfully", result));
+});
+
+const markDelivered = asyncHandler(async (req, res) => {
+  const garageId = await getGarageIdForOwner(req.user.id);
+  const result = await bookingLifecycleService.markBookingDeliveredByGarage({
+    garageId,
+    requestId: req.params.requestId,
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Booking marked delivered successfully", result));
+});
 const rejectGarageRequest = asyncHandler(async (req, res) => {
   const garageId = await getGarageIdForOwner(req.user.id);
 
@@ -66,5 +92,7 @@ const rejectGarageRequest = asyncHandler(async (req, res) => {
 module.exports = {
   getGarageRequests,
   acceptGarageRequest,
+  verifyHandoverOtp,
+  markDelivered,
   rejectGarageRequest,
 };

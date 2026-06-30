@@ -9,41 +9,60 @@ const WALLET_TRANSACTION_TYPE = require("../constants/walletTransactionType");
 const WALLET_TRANSACTION_STATUS = require("../constants/walletTransactionStatus");
 const { calculatePlatformFee } = require("../garage/constants");
 const { addGarageWhatsappLink } = require("../utils/whatsapp");
+const {
+  getGarageAcceptUrl,
+  getMapsLink,
+  sendCustomerGarageDetailsWhatsapp,
+  sendGarageBookingRequestWhatsapp,
+  sendGarageCustomerLocationWhatsapp,
+} = require("./garageWhatsapp.service");
+const bookingLifecycleService = require("./bookingLifecycle.service");
 
 const SOS_CHARGE = 50;
+const DEFAULT_GARAGE_BROADCAST_RADIUS_KM = 15;
+
+const getGarageBroadcastRadiusKm = () => {
+  const radius = Number(
+    process.env.GARAGE_BROADCAST_RADIUS_KM || DEFAULT_GARAGE_BROADCAST_RADIUS_KM
+  );
+  return Number.isFinite(radius) && radius > 0
+    ? radius
+    : DEFAULT_GARAGE_BROADCAST_RADIUS_KM;
+};
 
 const serializeGarageRequest = (request) => ({
   ...request,
+  acceptUrl: getGarageAcceptUrl(request.id),
   garage: addGarageWhatsappLink(request.garage),
 });
 
 const serializeGarageRequests = (requests) => requests.map(serializeGarageRequest);
 
+const bookingForWhatsappInclude = {
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+    },
+  },
+  vehicle: true,
+  services: {
+    include: {
+      service: {
+        include: {
+          category: true,
+        },
+      },
+    },
+  },
+};
 
 const requestInclude = {
   booking: {
     include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-        },
-      },
-      vehicle: true,
-      services: {
-        include: {
-          service: {
-            include: {
-              category: true,
-              media: {
-                orderBy: [{ isThumbnail: "desc" }, { order: "asc" }],
-              },
-            },
-          },
-        },
-      },
+      ...bookingForWhatsappInclude,
       payment: true,
     },
   },
@@ -53,26 +72,20 @@ const requestInclude = {
 const broadcastBookingToNearbyGarages = async (bookingId, options = {}) => {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    include: {
-      services: true,
-    },
+    include: bookingForWhatsappInclude,
   });
 
-  if (!booking) {
-    throw new ApiError(404, "Booking not found");
-  }
-
+  if (!booking) throw new ApiError(404, "Booking not found");
   if (!booking.customerLatitude || !booking.customerLongitude) {
     throw new ApiError(400, "Booking location is missing");
   }
 
   const serviceIds = booking.services.map((item) => item.serviceId);
-
   const nearbyGarages = await garageService.findNearbyEligibleGarages({
     latitude: booking.customerLatitude,
     longitude: booking.customerLongitude,
     serviceIds,
-    maxDistance: options.maxDistance || 10,
+    maxDistance: options.maxDistance || getGarageBroadcastRadiusKm(),
     onlyVerified: true,
     requireOpenNow: false,
     requireWalletBalance: false,
@@ -81,12 +94,8 @@ const broadcastBookingToNearbyGarages = async (bookingId, options = {}) => {
   if (nearbyGarages.length === 0) {
     await prisma.booking.update({
       where: { id: bookingId },
-      data: {
-        status: BOOKING_STATUS.EXPIRED,
-        expiredAt: new Date(),
-      },
+      data: { status: BOOKING_STATUS.EXPIRED, expiredAt: new Date() },
     });
-
     throw new ApiError(404, "No nearby eligible garages found");
   }
 
@@ -102,85 +111,82 @@ const broadcastBookingToNearbyGarages = async (bookingId, options = {}) => {
   const requests = await prisma.garageBroadcastRequest.findMany({
     where: { bookingId },
     include: requestInclude,
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: { createdAt: "desc" },
   });
+
+  await Promise.allSettled(
+    requests.map((request) =>
+      sendGarageBookingRequestWhatsapp({ garage: request.garage, request, booking })
+    )
+  );
+
+  const expiryTimer = setTimeout(
+    () => bookingLifecycleService.expireBookingSearch(bookingId).catch(() => {}),
+    bookingLifecycleService.getGarageSearchTimeoutMs()
+  );
+  if (typeof expiryTimer.unref === "function") expiryTimer.unref();
 
   return serializeGarageRequests(requests);
 };
 
 const getGarageRequests = async (garageId, query = {}) => {
   const { status = BROADCAST_STATUS.SENT } = query;
-
   const requests = await prisma.garageBroadcastRequest.findMany({
-    where: {
-      garageId,
-      ...(status && { status }),
-    },
+    where: { garageId, ...(status && { status }) },
     include: requestInclude,
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: { createdAt: "desc" },
   });
-
   return serializeGarageRequests(requests);
 };
 
 const acceptGarageRequest = async (garageId, requestId, note) => {
+  await bookingLifecycleService.expireBookingSearch(
+    (
+      await prisma.garageBroadcastRequest.findUnique({
+        where: { id: requestId },
+        select: { bookingId: true },
+      })
+    )?.bookingId
+  );
+
   const request = await prisma.garageBroadcastRequest.findFirst({
-    where: {
-      id: requestId,
-      garageId,
-    },
+    where: { id: requestId, garageId },
     include: {
       booking: true,
-      garage: {
-        include: {
-          wallet: true,
-        },
-      },
+      garage: { include: { wallet: true } },
     },
   });
 
-  if (!request) {
-    throw new ApiError(404, "Garage request not found");
+  if (!request) throw new ApiError(404, "Garage request not found");
+  if (request.status !== BROADCAST_STATUS.SENT) throw new ApiError(400, "This request is no longer available");
+  if (request.booking.searchExpiresAt && request.booking.searchExpiresAt < new Date()) {
+    throw new ApiError(400, "Garage search expired. Customer must try again.");
   }
 
-  if (request.status !== BROADCAST_STATUS.SENT) {
-    throw new ApiError(400, "This request is no longer available");
-  }
-
-  if (
-    ![
-      BOOKING_STATUS.SEARCHING_GARAGE,
-      BOOKING_STATUS.GARAGE_ASSIGNED,
-    ].includes(request.booking.status)
-  ) {
+  if (![BOOKING_STATUS.SEARCHING_GARAGE, BOOKING_STATUS.GARAGE_ASSIGNED].includes(request.booking.status)) {
     throw new ApiError(400, "Booking is no longer accepting garages");
   }
 
-  const updatedRequest = await prisma.$transaction(async (tx) => {
-    const freshBooking = await tx.booking.findUnique({
-      where: { id: request.bookingId },
-    });
-
-    if (!freshBooking) {
-      throw new ApiError(404, "Booking not found");
-    }
-
+  const result = await prisma.$transaction(async (tx) => {
+    const freshBooking = await tx.booking.findUnique({ where: { id: request.bookingId } });
+    if (!freshBooking) throw new ApiError(404, "Booking not found");
     if (freshBooking.garageId && freshBooking.garageId !== garageId) {
       throw new ApiError(400, "Another garage already accepted this booking");
     }
-
-    if (
-      ![
-        BOOKING_STATUS.SEARCHING_GARAGE,
-        BOOKING_STATUS.GARAGE_ASSIGNED,
-      ].includes(freshBooking.status)
-    ) {
+    if (![BOOKING_STATUS.SEARCHING_GARAGE, BOOKING_STATUS.GARAGE_ASSIGNED].includes(freshBooking.status)) {
       throw new ApiError(400, "Booking is no longer available");
     }
+    if (freshBooking.searchExpiresAt && freshBooking.searchExpiresAt < new Date()) {
+      throw new ApiError(400, "Garage search expired. Customer must try again.");
+    }
+
+    const garageAcceptFee = calculatePlatformFee(freshBooking.totalServiceAmount, freshBooking.requestType);
+    const garageWallet = await tx.garageWallet.findUnique({ where: { garageId } });
+    if (!garageWallet || garageWallet.balance < garageAcceptFee) {
+      throw new ApiError(400, `Insufficient garage wallet balance. Recharge at least Rs. ${garageAcceptFee} to accept this booking.`);
+    }
+
+    const handoverOtp = bookingLifecycleService.createHandoverOtp();
 
     await tx.booking.update({
       where: { id: request.bookingId },
@@ -189,55 +195,26 @@ const acceptGarageRequest = async (garageId, requestId, note) => {
         status: BOOKING_STATUS.CONFIRMED,
         garageNote: note || null,
         acceptedAt: new Date(),
+        handoverOtpHash: handoverOtp.otpHash,
+        handoverOtpExpiresAt: handoverOtp.expiresAt,
       },
     });
 
     await tx.garageBroadcastRequest.updateMany({
-      where: {
-        bookingId: request.bookingId,
-        id: {
-          not: requestId,
-        },
-        status: BROADCAST_STATUS.SENT,
-      },
-      data: {
-        status: BROADCAST_STATUS.EXPIRED,
-        expiredAt: new Date(),
-      },
+      where: { bookingId: request.bookingId, id: { not: requestId }, status: BROADCAST_STATUS.SENT },
+      data: { status: BROADCAST_STATUS.EXPIRED, expiredAt: new Date() },
     });
 
     await tx.garageBroadcastRequest.update({
       where: { id: requestId },
-      data: {
-        status: BROADCAST_STATUS.ACCEPTED,
-        acceptedAt: new Date(),
-        garageResponseNote: note || null,
-      },
+      data: { status: BROADCAST_STATUS.ACCEPTED, acceptedAt: new Date(), garageResponseNote: note || null },
     });
 
     if (request.booking.requestType === REQUEST_TYPE.SOS) {
-      const wallet = await tx.wallet.findUnique({
-        where: {
-          userId: request.booking.userId,
-        },
-      });
-
-      if (!wallet || wallet.balance < SOS_CHARGE) {
-        throw new ApiError(
-          400,
-          "Customer has insufficient wallet balance for SOS"
-        );
-      }
-
+      const wallet = await tx.wallet.findUnique({ where: { userId: request.booking.userId } });
+      if (!wallet || wallet.balance < SOS_CHARGE) throw new ApiError(400, "Customer has insufficient wallet balance for SOS");
       const balanceAfter = wallet.balance - SOS_CHARGE;
-
-      await tx.wallet.update({
-        where: { id: wallet.id },
-        data: {
-          balance: balanceAfter,
-        },
-      });
-
+      await tx.wallet.update({ where: { id: wallet.id }, data: { balance: balanceAfter } });
       await tx.walletTransaction.create({
         data: {
           walletId: wallet.id,
@@ -250,31 +227,9 @@ const acceptGarageRequest = async (garageId, requestId, note) => {
         },
       });
     }
-    const garageAcceptFee = calculatePlatformFee(
-      freshBooking.totalServiceAmount,
-      freshBooking.requestType
-    );
-
-    const garageWallet = await tx.garageWallet.findUnique({
-      where: { garageId },
-    });
-
-    if (!garageWallet || garageWallet.balance < garageAcceptFee) {
-      throw new ApiError(
-        400,
-        `Insufficient garage wallet balance. Recharge at least Rs. ${garageAcceptFee} to accept this booking.`
-      );
-    }
 
     const garageBalanceAfter = garageWallet.balance - garageAcceptFee;
-
-    await tx.garageWallet.update({
-      where: { id: garageWallet.id },
-      data: {
-        balance: garageBalanceAfter,
-      },
-    });
-
+    await tx.garageWallet.update({ where: { id: garageWallet.id }, data: { balance: garageBalanceAfter } });
     await tx.garageWalletTransaction.create({
       data: {
         garageWalletId: garageWallet.id,
@@ -287,38 +242,45 @@ const acceptGarageRequest = async (garageId, requestId, note) => {
       },
     });
 
-    return tx.garageBroadcastRequest.findUnique({
+    const acceptedRequest = await tx.garageBroadcastRequest.findUnique({
       where: { id: requestId },
       include: requestInclude,
     });
+
+    return { request: acceptedRequest, handoverOtp };
   });
 
-  return updatedRequest;
+  await Promise.allSettled([
+    bookingLifecycleService.notifyGarageAccepted({
+      booking: result.request.booking,
+      garage: result.request.garage,
+      otp: result.handoverOtp.otp,
+    }),
+    sendCustomerGarageDetailsWhatsapp({
+      customer: result.request.booking.user,
+      garage: result.request.garage,
+      booking: result.request.booking,
+    }),
+    sendGarageCustomerLocationWhatsapp({
+      garage: result.request.garage,
+      booking: result.request.booking,
+    }),
+  ]);
+
+  return {
+    ...serializeGarageRequest(result.request),
+    customerLocationLink: getMapsLink(result.request.booking.customerLatitude, result.request.booking.customerLongitude),
+  };
 };
 
 const rejectGarageRequest = async (garageId, requestId, note) => {
-  const request = await prisma.garageBroadcastRequest.findFirst({
-    where: {
-      id: requestId,
-      garageId,
-    },
-  });
-
-  if (!request) {
-    throw new ApiError(404, "Garage request not found");
-  }
-
-  if (request.status !== BROADCAST_STATUS.SENT) {
-    throw new ApiError(400, "This request cannot be rejected now");
-  }
+  const request = await prisma.garageBroadcastRequest.findFirst({ where: { id: requestId, garageId } });
+  if (!request) throw new ApiError(404, "Garage request not found");
+  if (request.status !== BROADCAST_STATUS.SENT) throw new ApiError(400, "This request cannot be rejected now");
 
   const updatedRequest = await prisma.garageBroadcastRequest.update({
     where: { id: requestId },
-    data: {
-      status: BROADCAST_STATUS.REJECTED,
-      rejectedAt: new Date(),
-      garageResponseNote: note || null,
-    },
+    data: { status: BROADCAST_STATUS.REJECTED, rejectedAt: new Date(), garageResponseNote: note || null },
     include: requestInclude,
   });
 

@@ -215,21 +215,22 @@ model ServiceCategory {
 }
 
 model Service {
-  id             String           @id @default(uuid())
-  categoryId     String
-  name           String
-  description    String?
-  isActive       Boolean          @default(true)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  basePrice      Int?
-  durationMin    Int?
-  maxPrice       Int?
-  minPrice       Int?
-  bookingItems   BookingService[]
-  garageServices GarageService[]
-  category       ServiceCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  media          ServiceMedia[]
+  id              String                  @id @default(uuid())
+  categoryId      String
+  name            String
+  description     String?
+  isActive        Boolean                 @default(true)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  basePrice       Int?
+  durationMin     Int?
+  maxPrice        Int?
+  minPrice        Int?
+  bookingItems    BookingService[]
+  garageServices  GarageService[]
+  cityPriceRanges CityServicePriceRange[]
+  category        ServiceCategory         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  media           ServiceMedia[]
 
   @@index([categoryId])
   @@index([isActive])
@@ -272,38 +273,61 @@ model GarageService {
   @@index([isActive])
 }
 
+model CityServicePriceRange {
+  id           String    @id @default(uuid())
+  city         String
+  serviceId    String
+  vehicleBrand String?
+  vehicleModel String?
+  fuelType     FuelType?
+  minPrice     Int
+  maxPrice     Int
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  service      Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([city])
+  @@index([serviceId])
+  @@index([vehicleBrand])
+  @@index([vehicleModel])
+  @@index([fuelType])
+  @@index([isActive])
+}
+
 model Booking {
-  id                 String                   @id @default(uuid())
-  userId             String
-  vehicleId          String
-  garageId           String?
-  bookingCode        String                   @unique
-  scheduledDate      DateTime?
-  startTime          String?
-  endTime            String?
-  status             BookingStatus            @default(PENDING_PAYMENT)
-  customerNote       String?
-  garageNote         String?
-  handlingFee        Int                      @default(99)
-  createdAt          DateTime                 @default(now())
-  updatedAt          DateTime                 @updatedAt
-  acceptedAt         DateTime?
-  customerAddress    String?
-  customerLatitude   Float?
-  customerLongitude  Float?
-  expiredAt          DateTime?
-  payableAmount      Int                      @default(99)
-  requestType        RequestType              @default(NORMAL)
-  totalServiceAmount Int                      @default(0)
-  walletAmountUsed   Int                      @default(0)
-  garage             Garage?                  @relation(fields: [garageId], references: [id])
-  user               User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicle            Vehicle                  @relation(fields: [vehicleId], references: [id])
-  services           BookingService[]
-  complaints         Complaint[]
-  broadcasts         GarageBroadcastRequest[]
-  payment            Payment?
-  review             Review?
+  id                    String                   @id @default(uuid())
+  userId                String
+  vehicleId             String
+  garageId              String?
+  bookingCode           String                   @unique
+  scheduledDate         DateTime?
+  startTime             String?
+  endTime               String?
+  status                BookingStatus            @default(PENDING_PAYMENT)
+  customerNote          String?
+  garageNote            String?
+  handlingFee           Int                      @default(99)
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  acceptedAt            DateTime?
+  customerAddress       String?
+  customerLatitude      Float?
+  customerLongitude     Float?
+  expiredAt             DateTime?
+  payableAmount         Int                      @default(99)
+  requestType           RequestType              @default(NORMAL)
+  totalServiceAmount    Int                      @default(0)
+  totalServiceMaxAmount Int                      @default(0)
+  walletAmountUsed      Int                      @default(0)
+  garage                Garage?                  @relation(fields: [garageId], references: [id])
+  user                  User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle               Vehicle                  @relation(fields: [vehicleId], references: [id])
+  services              BookingService[]
+  complaints            Complaint[]
+  broadcasts            GarageBroadcastRequest[]
+  payment               Payment?
+  review                Review?
 
   @@index([userId])
   @@index([garageId])
@@ -313,16 +337,18 @@ model Booking {
 }
 
 model BookingService {
-  id             String   @id @default(uuid())
-  bookingId      String
-  serviceId      String
-  quantity       Int      @default(1)
-  estimatedPrice Int?
-  finalPrice     Int?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  booking        Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  service        Service  @relation(fields: [serviceId], references: [id])
+  id                String   @id @default(uuid())
+  bookingId         String
+  serviceId         String
+  quantity          Int      @default(1)
+  estimatedPrice    Int?
+  estimatedMinPrice Int?
+  estimatedMaxPrice Int?
+  finalPrice        Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  booking           Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  service           Service  @relation(fields: [serviceId], references: [id])
 
   @@unique([bookingId, serviceId])
   @@index([bookingId])
@@ -521,23 +547,23 @@ model Notification {
 }
 
 model GarageApplication {
-  id                String                  @id @default(uuid())
-  ownerName         String
-  email             String
-  phone             String
-  garageName        String
-  description       String?
-  address           String
-  city              String
-  area              String
-  latitude          Float?
-  longitude         Float?
-  status            GarageApplicationStatus @default(PENDING)
-  adminNote         String?
-  reviewedAt        DateTime?
-  approvedGarageId  String?                 @unique
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
+  id               String                  @id @default(uuid())
+  ownerName        String
+  email            String
+  phone            String
+  garageName       String
+  description      String?
+  address          String
+  city             String
+  area             String
+  latitude         Float?
+  longitude        Float?
+  status           GarageApplicationStatus @default(PENDING)
+  adminNote        String?
+  reviewedAt       DateTime?
+  approvedGarageId String?                 @unique
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
 
   @@index([email])
   @@index([phone])
@@ -551,6 +577,7 @@ enum GarageApplicationStatus {
   APPROVED
   DENIED
 }
+
 enum Role {
   CUSTOMER
   GARAGE_OWNER

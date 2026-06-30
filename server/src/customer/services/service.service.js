@@ -1,6 +1,7 @@
 const prisma = require("../../config/prisma");
 const ApiError = require("../../utils/apiError");
 const { getCache, setCache } = require("../../utils/cache");
+const { addServicePriceRange } = require("../../utils/pricing");
 
 const getServiceCategories = async () => {
   const cacheKey = "services:categories";
@@ -24,9 +25,14 @@ const getServiceCategories = async () => {
     orderBy: { name: "asc" },
   });
 
-  await setCache(cacheKey, categories, 30 * 60);
+  const result = categories.map((category) => ({
+    ...category,
+    services: category.services.map(addServicePriceRange),
+  }));
 
-  return categories;
+  await setCache(cacheKey, result, 30 * 60);
+
+  return result;
 };
 
 const getServices = async (query = {}) => {
@@ -85,9 +91,11 @@ const getServices = async (query = {}) => {
     orderBy: { name: "asc" },
   });
 
-  await setCache(cacheKey, services, 30 * 60);
+  const result = services.map(addServicePriceRange);
 
-  return services;
+  await setCache(cacheKey, result, 30 * 60);
+
+  return result;
 };
 
 const getServiceById = async (serviceId) => {
@@ -135,7 +143,7 @@ const getServiceById = async (serviceId) => {
   }
 
   const result = {
-    ...service,
+    ...addServicePriceRange(service),
     thumbnail: service.media.find((item) => item.isThumbnail) || null,
   };
 

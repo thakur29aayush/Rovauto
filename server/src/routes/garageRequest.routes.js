@@ -8,6 +8,8 @@ const validate = require("../middlewares/validate.middleware");
 const {
   acceptGarageRequestSchema,
   rejectGarageRequestSchema,
+  verifyHandoverOtpSchema,
+  markDeliveredSchema,
 } = require("../validations/garageRequest.validation");
 
 const router = express.Router();
@@ -24,6 +26,20 @@ router.post(
   garageRequestController.acceptGarageRequest
 );
 
+
+router.post(
+  "/:requestId/verify-handover-otp",
+  verifyHandoverOtpSchema,
+  validate,
+  garageRequestController.verifyHandoverOtp
+);
+
+router.post(
+  "/:requestId/mark-delivered",
+  markDeliveredSchema,
+  validate,
+  garageRequestController.markDelivered
+);
 router.post(
   "/:requestId/reject",
   rejectGarageRequestSchema,

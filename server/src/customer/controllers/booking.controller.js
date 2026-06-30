@@ -37,6 +37,22 @@ const getBookingSuccess = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Booking success fetched successfully", booking));
 });
 
+
+const acceptDelivery = asyncHandler(async (req, res) => {
+  const booking = await bookingService.acceptDelivery(req.user.id, req.params.id);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Delivery accepted successfully", booking));
+});
+
+const getServiceHistory = asyncHandler(async (req, res) => {
+  const bookings = await bookingService.getServiceHistory(req.user.id);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Service history fetched successfully", bookings));
+});
 const cancelBooking = asyncHandler(async (req, res) => {
   const booking = await bookingService.cancelBooking(req.user.id, req.params.id);
 
@@ -50,5 +66,7 @@ module.exports = {
   getMyBookings,
   getBookingById,
   getBookingSuccess,
+  acceptDelivery,
+  getServiceHistory,
   cancelBooking,
 };

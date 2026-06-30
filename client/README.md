@@ -1,4 +1,4 @@
-﻿# Rovauto Client
+# Rovauto Client
 
 React + Vite frontend for the Rovauto customer, garage, and admin experiences.
 
@@ -96,6 +96,39 @@ Do not store passwords, OTPs, or sensitive wallet transaction history in Redux/l
 
 The backend sets an httpOnly auth cookie and also returns a token. The frontend currently stores the token in localStorage and sends it as a bearer token for cross-domain compatibility between Vercel and Render. A cookie-only production setup can be revisited after stable custom-domain configuration.
 
+
+## Current Backend APIs To Wire In Frontend
+
+The latest backend flow is API-ready. Frontend pages should call these routes when implementing manual address, garage request handling, OTP handover, delivery acceptance, and service history.
+
+Customer-facing routes:
+
+```text
+GET /api/v1/locations/geocode?address=Baneshwor&city=Kathmandu
+POST /api/v1/bookings/checkout
+POST /api/v1/bookings/:id/accept-delivery
+GET /api/v1/bookings/service-history
+```
+
+Garage-facing routes:
+
+```text
+GET /api/v1/garage/requests
+POST /api/v1/garage/requests/:requestId/accept
+POST /api/v1/garage/requests/:requestId/verify-handover-otp
+POST /api/v1/garage/requests/:requestId/mark-delivered
+POST /api/v1/garage/wallet/recharge/order
+POST /api/v1/garage/wallet/recharge/verify
+```
+
+Admin-facing routes:
+
+```text
+GET/POST/PATCH/DELETE /api/v1/admin/city-service-price-ranges
+GET/POST /api/v1/admin/garage-applications
+```
+
+Manual address UX should call `/locations/geocode`, then send the returned `latitude` and `longitude` in checkout. Garage accept links may come from backend logs while WhatsApp provider envs are empty.
 ## Location Notes
 
 - A customer with a saved `CustomerLocation` or profile address should not see location onboarding again.

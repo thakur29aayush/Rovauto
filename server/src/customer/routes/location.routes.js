@@ -8,11 +8,19 @@ const {
   locationIdValidation,
   createLocationValidation,
   updateLocationValidation,
+  geocodeLocationValidation,
 } = require("../validations/location.validation");
 
 const router = express.Router();
 
 router.use(protect);
+
+router.get(
+  "/geocode",
+  geocodeLocationValidation,
+  validate,
+  locationController.geocodeLocation
+);
 
 router
   .route("/")

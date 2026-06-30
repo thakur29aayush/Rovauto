@@ -4,6 +4,8 @@ const bookingIdValidation = [
   param("id").isUUID().withMessage("Invalid booking ID"),
 ];
 
+const acceptDeliveryValidation = bookingIdValidation;
+
 const createBookingValidation = [
   body("vehicleId").isUUID().withMessage("Valid vehicle ID is required"),
 
@@ -48,6 +50,10 @@ const createBookingValidation = [
     .optional({ nullable: true, checkFalsy: true })
     .trim(),
 
+  body("location.city")
+    .optional({ nullable: true, checkFalsy: true })
+    .trim(),
+
   body("useWalletCoins")
     .optional({ nullable: true })
     .isInt({ min: 0 })
@@ -57,4 +63,5 @@ const createBookingValidation = [
 module.exports = {
   bookingIdValidation,
   createBookingValidation,
+  acceptDeliveryValidation,
 };

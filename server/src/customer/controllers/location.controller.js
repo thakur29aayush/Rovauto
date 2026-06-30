@@ -1,7 +1,16 @@
 const asyncHandler = require("../../utils/asyncHandler");
 const ApiResponse = require("../../utils/apiResponse");
 const locationService = require("../services/location.service");
+const geocodingService = require("../services/geocoding.service");
 
+
+const geocodeLocation = asyncHandler(async (req, res) => {
+  const result = await geocodingService.geocodeAddress(req.query);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Address geocoded successfully", result));
+});
 const createLocation = asyncHandler(async (req, res) => {
   const location = await locationService.createLocation(req.user.id, req.body);
 
@@ -61,6 +70,7 @@ const setDefaultLocation = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  geocodeLocation,
   createLocation,
   getMyLocations,
   getLocationById,
