@@ -35,7 +35,9 @@ export function AppProvider({ children }) {
     readJson("user", readJson("rov_user", null))
   );
 
-  const [token, setToken] = useState(() => (user ? "cookie" : null));
+  const [token, setToken] = useState(
+    () => localStorage.getItem("token") || (user ? "cookie" : null)
+  );
 
   const [vehicle, setVehicle] = useState(() => readJson("rov_vehicle", null));
   const [vehicles, setVehicles] = useState(() => readArray("rov_vehicles"));
@@ -252,12 +254,16 @@ const saveProfileCache = (data, fetchedAt) => {
     return me;
   };
 
-  const login = (userData) => {
-    localStorage.removeItem("token");
+  const login = (userData, authToken) => {
+    if (authToken) {
+      localStorage.setItem("token", authToken);
+      setToken(authToken);
+    }
+
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("rov_user", JSON.stringify(userData));
 
-    setToken("cookie");
+    if (!authToken) setToken("cookie");
     setUser(userData);
 
     clearDashboardCache();
@@ -282,7 +288,7 @@ const saveProfileCache = (data, fetchedAt) => {
       const res = await api.get("/auth/me");
       const me = res.data.data;
 
-      setToken("cookie");
+      setToken(localStorage.getItem("token") || "cookie");
       return syncUserData(me);
     } catch {
       clearLocalSession();

@@ -10,13 +10,11 @@ const authCookieOptions = {
 };
 
 const sendAuthResponse = (res, statusCode, message, result) => {
-  const { token, ...safeResult } = result;
-
-  res.cookie("accessToken", token, authCookieOptions);
+  res.cookie("accessToken", result.token, authCookieOptions);
 
   return res
     .status(statusCode)
-    .json(new ApiResponse(statusCode, message, safeResult));
+    .json(new ApiResponse(statusCode, message, result));
 };
 
 const signup = asyncHandler(async (req, res) => {

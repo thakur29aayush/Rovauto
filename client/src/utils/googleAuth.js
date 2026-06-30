@@ -13,10 +13,11 @@ const completeGoogleAuth = async (role = "CUSTOMER") => {
 
   const data = res.data?.data;
 
-  if (!data?.user) {
+  if (!data?.token || !data?.user) {
     throw new Error("Invalid Google authentication response");
   }
 
+  localStorage.setItem("token", data.token);
   localStorage.setItem("user", JSON.stringify(data.user));
 
   return data;

@@ -47,10 +47,11 @@ export default function Login() {
 
       const data = res.data?.data;
 
-      if (!data?.user) {
+      if (!data?.token || !data?.user) {
         throw new Error("Invalid login response");
       }
 
+      localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
       const redirectPath =

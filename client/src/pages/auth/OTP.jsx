@@ -93,6 +93,7 @@ export default function OTP() {
 
       const data = res.data.data;
 
+      localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
       await saveSignupLocationToProfile(signupLocation);
