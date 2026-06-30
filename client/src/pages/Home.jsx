@@ -99,30 +99,13 @@ const getServiceImage = (categoryName) => {
 };
 
 export default function Home() {
-  const [categories, setCategories] = useState([]);
-  const [popularServices, setPopularServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadHomeData = async () => {
-      try {
-        setLoading(true);
-
-        const [categoryRes] = await Promise.all([
-          api.get("/services/categories"),
-        ]);
-
-        setCategories(categoryRes.data.data || []);
-        setPopularServices(HARDCODED_POPULAR_SERVICES);
-      } catch (err) {
-        console.error("Home data load failed:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadHomeData();
-  }, []);
+  // Use hardcoded categories from CATEGORY_UI
+  const categories = Object.keys(CATEGORY_UI).map((name, index) => ({
+    id: String(index + 1),
+    name,
+  }));
+  const [popularServices] = useState(HARDCODED_POPULAR_SERVICES);
+  const [loading] = useState(false);
 
   return (
     <div>
@@ -245,7 +228,7 @@ export default function Home() {
           <div className="card-soft p-8 text-muted">Loading services...</div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
-            {categories.filter(category => !["Brake", "Cleaning", "Electrical", "Emergency", "Engine", "General Service", "Tyre", "Tyres", "Battery", "AC"].includes(category.name)).slice(0, 8).map((category) => {
+            {categories.slice(0, 8).map((category) => {
               const ui = CATEGORY_UI[category.name] || {};
               const image = ui.image;
               const isSos = ui.isSos;

@@ -102,10 +102,15 @@ export default function OTP() {
 
       if (data.user.role === "GARAGE_OWNER") {
         nav("/garage");
-      } else if (!data.user.isOnboarded) {
-        nav("/booking/vehicle");
       } else {
-        nav("/dashboard");
+        const userAddress = data.user.customerProfile?.address || data.user.address;
+        if (!userAddress) {
+          nav("/booking/address", { state: { from: routeLocation.state?.from || { pathname: "/dashboard" } } });
+        } else if (!data.user.isOnboarded) {
+          nav("/booking/vehicle");
+        } else {
+          nav("/dashboard");
+        }
       }
     } catch (err) {
       setError(err.response?.data?.message || "OTP verification failed");

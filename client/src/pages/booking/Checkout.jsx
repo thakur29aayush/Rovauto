@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
 import api from "@/api/axios";
 import { isPaymentAuthError, payForBooking } from "@/utils/bookingPayment";
-import { FiCheckCircle, FiLock, FiTrash2, FiTruck } from "react-icons/fi";
+import { FiCheckCircle, FiLock, FiTrash2, FiTruck, FiEdit } from "react-icons/fi";
 
 const DEFAULT_LOCATION = {
   latitude: 28.6369,
@@ -24,12 +24,19 @@ const calculateHandlingFee = (totalServiceAmount) => {
 };
 
 export default function Checkout() {
-  const { cart, vehicle, location, user, clearCart, clearBookingCaches } =
+  const { cart, vehicle, location, setLocation, user, clearCart, clearBookingCaches } =
     useApp();
   const nav = useNavigate();
   const routeLocation = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    address: location?.address || "",
+    area: location?.area || "",
+    city: location?.city || "",
+    pincode: location?.pincode || "",
+  });
 
   const subTotal = cart.reduce((sum, item) => sum + getServicePrice(item), 0);
   const displaySubTotal = subTotal || 0;
@@ -44,6 +51,36 @@ export default function Checkout() {
       [location?.area, location?.city, location?.pincode].filter(Boolean).join(", ") ||
       DEFAULT_LOCATION.address,
   });
+
+  const handleAddressChange = (e) => {
+    setAddressForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const saveAddress = async () => {
+    // Update app location state
+    setLocation({
+      address: addressForm.address,
+      area: addressForm.area,
+      city: addressForm.city,
+      pincode: addressForm.pincode,
+    });
+
+    // Also update user profile
+    try {
+      const fullAddress = [addressForm.address, addressForm.area, addressForm.city, addressForm.pincode]
+        .filter(Boolean).join(", ");
+      await api.patch("/customer/profile", {
+        address: fullAddress,
+      });
+    } catch (err) {
+      console.error("Failed to save address to profile:", err);
+    }
+
+    setEditingAddress(false);
+  };
 
   const pay = async () => {
     if (!vehicle?.id) {
@@ -65,7 +102,11 @@ export default function Checkout() {
       const bookingRes = await api.post("/bookings/checkout", {
         vehicleId: vehicle.id,
         serviceIds: cart.map((item) => item.id),
-        location: buildLocationPayload(),
+        location: {
+          latitude: location?.latitude || DEFAULT_LOCATION.latitude,
+          longitude: location?.longitude || DEFAULT_LOCATION.longitude,
+          address: [addressForm.address, addressForm.area, addressForm.city, addressForm.pincode].filter(Boolean).join(", "),
+        },
       });
 
       const booking = bookingRes.data.data;
@@ -125,6 +166,98 @@ export default function Checkout() {
         )}
 
         <div className="card-soft mt-8 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Delivery Address</h3>
+            {!editingAddress && (
+              <button
+                type="button"
+                onClick={() => setEditingAddress(true)}
+                className="flex items-center gap-1 text-sm font-medium text-ink"
+              >
+                <FiEdit /> Edit
+              </button>
+            )}
+          </div>
+
+          {editingAddress ? (
+            <div className="grid gap-4">
+              <label className="grid gap-1.5 text-sm">
+                <span className="font-semibold">Full Address</span>
+                <input
+                  required
+                  name="address"
+                  value={addressForm.address}
+                  onChange={handleAddressChange}
+                  placeholder="House number, Street, Landmark"
+                  className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+                />
+              </label>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="grid gap-1.5 text-sm">
+                  <span className="font-semibold">Area</span>
+                  <input
+                    required
+                    name="area"
+                    value={addressForm.area}
+                    onChange={handleAddressChange}
+                    placeholder="Locality"
+                    className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+                  />
+                </label>
+
+                <label className="grid gap-1.5 text-sm">
+                  <span className="font-semibold">City</span>
+                  <input
+                    required
+                    name="city"
+                    value={addressForm.city}
+                    onChange={handleAddressChange}
+                    placeholder="City"
+                    className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+                  />
+                </label>
+              </div>
+
+              <label className="grid gap-1.5 text-sm">
+                <span className="font-semibold">Pincode</span>
+                <input
+                  required
+                  name="pincode"
+                  value={addressForm.pincode}
+                  onChange={handleAddressChange}
+                  placeholder="6-digit pincode"
+                  inputMode="numeric"
+                  maxLength={6}
+                  className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+                />
+              </label>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingAddress(false)}
+                  className="flex-1 rounded-xl border border-line px-4 py-3 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={saveAddress}
+                  className="flex-1 btn-primary"
+                >
+                  Save Address
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-muted">
+              {[addressForm.address, addressForm.area, addressForm.city, addressForm.pincode].filter(Boolean).join(", ") || "No address set"}
+            </div>
+          )}
+        </div>
+
+        <div className="card-soft mt-6 p-6">
           <h3 className="mb-4 text-lg font-semibold">Payment Method</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             {[

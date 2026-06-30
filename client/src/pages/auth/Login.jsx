@@ -54,10 +54,17 @@ export default function Login() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      const redirectPath =
-        data.user.role === "GARAGE_OWNER"
-          ? "/garage"
-          : from || "/dashboard";
+      let redirectPath;
+      if (data.user.role === "GARAGE_OWNER") {
+        redirectPath = "/garage";
+      } else {
+        const userAddress = data.user.customerProfile?.address || data.user.address;
+        if (!userAddress) {
+          redirectPath = "/booking/address";
+        } else {
+          redirectPath = from || "/dashboard";
+        }
+      }
 
       window.location.href = redirectPath;
     } catch (err) {
@@ -84,10 +91,17 @@ export default function Login() {
         await saveSignupLocationToProfile(signupLocation);
       }
 
-      const redirectPath =
-        data.user.role === "GARAGE_OWNER"
-          ? "/garage"
-          : from || "/dashboard";
+      let redirectPath;
+      if (data.user.role === "GARAGE_OWNER") {
+        redirectPath = "/garage";
+      } else {
+        const userAddress = data.user.customerProfile?.address || data.user.address;
+        if (!userAddress) {
+          redirectPath = "/booking/address";
+        } else {
+          redirectPath = from || "/dashboard";
+        }
+      }
 
       window.location.href = redirectPath;
     } catch (err) {

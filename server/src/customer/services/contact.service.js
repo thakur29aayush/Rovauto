@@ -1,7 +1,10 @@
 const { Resend } = require("resend");
 const ApiError = require("../../utils/apiError");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend;
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY);
+}
 
 const sendContactMessage = async ({ name, email, message }) => {
   if (!process.env.RESEND_API_KEY) {

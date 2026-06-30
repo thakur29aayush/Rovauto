@@ -13,6 +13,17 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function AddressCheck({ children }) {
+  const { user, location } = useApp();
+  const userAddress = user?.customerProfile?.address || user?.address;
+
+  if (user?.role === "CUSTOMER" && !userAddress && !location?.address) {
+    return <Navigate to="/booking/address" replace />;
+  }
+
+  return children;
+}
+
 function VehicleCheck({ children }) {
   const { user, vehicles } = useApp();
   const vehicleList = Array.isArray(vehicles) ? vehicles : [];
@@ -44,6 +55,7 @@ const OTP = lazy(() => import("@/pages/auth/OTP"));
 const Forgot = lazy(() => import("@/pages/auth/Forgot"));
 
 const VehicleSelect = lazy(() => import("@/pages/booking/VehicleSelect"));
+const AddressForm = lazy(() => import("@/pages/booking/AddressForm"));
 const ServiceSelect = lazy(() => import("@/pages/booking/ServiceSelect"));
 const GarageSelect = lazy(() => import("@/pages/booking/GarageSelect"));
 const Checkout = lazy(() => import("@/pages/booking/Checkout"));
@@ -124,11 +136,12 @@ function AppRoutes() {
           <Route path="/otp" element={<OTP />} />
           <Route path="/forgot" element={<Forgot />} />
 
-          <Route path="/booking/vehicle" element={<ProtectedRoute><VehicleSelect /></ProtectedRoute>} />
-          <Route path="/booking/services" element={<ProtectedRoute><VehicleCheck><ServiceSelect /></VehicleCheck></ProtectedRoute>} />
-          <Route path="/booking/garage" element={<ProtectedRoute><VehicleCheck><GarageSelect /></VehicleCheck></ProtectedRoute>} />
-          <Route path="/checkout" element={<ProtectedRoute><VehicleCheck><Checkout /></VehicleCheck></ProtectedRoute>} />
-          <Route path="/tracking" element={<ProtectedRoute><VehicleCheck><Tracking /></VehicleCheck></ProtectedRoute>} />
+          <Route path="/booking/address" element={<ProtectedRoute><AddressForm /></ProtectedRoute>} />
+          <Route path="/booking/vehicle" element={<ProtectedRoute><AddressCheck><VehicleSelect /></AddressCheck></ProtectedRoute>} />
+          <Route path="/booking/services" element={<ProtectedRoute><AddressCheck><VehicleCheck><ServiceSelect /></VehicleCheck></AddressCheck></ProtectedRoute>} />
+          <Route path="/booking/garage" element={<ProtectedRoute><AddressCheck><VehicleCheck><GarageSelect /></VehicleCheck></AddressCheck></ProtectedRoute>} />
+          <Route path="/checkout" element={<ProtectedRoute><AddressCheck><VehicleCheck><Checkout /></VehicleCheck></AddressCheck></ProtectedRoute>} />
+          <Route path="/tracking" element={<ProtectedRoute><AddressCheck><VehicleCheck><Tracking /></VehicleCheck></AddressCheck></ProtectedRoute>} />
 
           <Route path="/garage/magic/:id" element={<MagicLink />} />
         </Route>
