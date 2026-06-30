@@ -7,9 +7,18 @@ const BROADCAST_STATUS = require("../constants/broadcastStatus");
 const REQUEST_TYPE = require("../constants/requestType");
 const WALLET_TRANSACTION_TYPE = require("../constants/walletTransactionType");
 const WALLET_TRANSACTION_STATUS = require("../constants/walletTransactionStatus");
+const { calculatePlatformFee } = require("../garage/constants");
+const { addGarageWhatsappLink } = require("../utils/whatsapp");
 
-const GARAGE_ACCEPT_FEE = 30;
 const SOS_CHARGE = 50;
+
+const serializeGarageRequest = (request) => ({
+  ...request,
+  garage: addGarageWhatsappLink(request.garage),
+});
+
+const serializeGarageRequests = (requests) => requests.map(serializeGarageRequest);
+
 
 const requestInclude = {
   booking: {
@@ -90,19 +99,21 @@ const broadcastBookingToNearbyGarages = async (bookingId, options = {}) => {
     skipDuplicates: true,
   });
 
-  return prisma.garageBroadcastRequest.findMany({
+  const requests = await prisma.garageBroadcastRequest.findMany({
     where: { bookingId },
     include: requestInclude,
     orderBy: {
       createdAt: "desc",
     },
   });
+
+  return serializeGarageRequests(requests);
 };
 
 const getGarageRequests = async (garageId, query = {}) => {
   const { status = BROADCAST_STATUS.SENT } = query;
 
-  return prisma.garageBroadcastRequest.findMany({
+  const requests = await prisma.garageBroadcastRequest.findMany({
     where: {
       garageId,
       ...(status && { status }),
@@ -112,6 +123,8 @@ const getGarageRequests = async (garageId, query = {}) => {
       createdAt: "desc",
     },
   });
+
+  return serializeGarageRequests(requests);
 };
 
 const acceptGarageRequest = async (garageId, requestId, note) => {
@@ -237,32 +250,42 @@ const acceptGarageRequest = async (garageId, requestId, note) => {
         },
       });
     }
+    const garageAcceptFee = calculatePlatformFee(
+      freshBooking.totalServiceAmount,
+      freshBooking.requestType
+    );
 
-    if (
-      request.garage.wallet &&
-      request.garage.wallet.balance >= GARAGE_ACCEPT_FEE
-    ) {
-      const balanceAfter = request.garage.wallet.balance - GARAGE_ACCEPT_FEE;
+    const garageWallet = await tx.garageWallet.findUnique({
+      where: { garageId },
+    });
 
-      await tx.garageWallet.update({
-        where: { id: request.garage.wallet.id },
-        data: {
-          balance: balanceAfter,
-        },
-      });
-
-      await tx.garageWalletTransaction.create({
-        data: {
-          garageWalletId: request.garage.wallet.id,
-          garageId,
-          type: WALLET_TRANSACTION_TYPE.GARAGE_ACCEPT_FEE,
-          status: WALLET_TRANSACTION_STATUS.SUCCESS,
-          amount: GARAGE_ACCEPT_FEE,
-          balanceAfter,
-          description: "Garage request acceptance platform fee",
-        },
-      });
+    if (!garageWallet || garageWallet.balance < garageAcceptFee) {
+      throw new ApiError(
+        400,
+        `Insufficient garage wallet balance. Recharge at least Rs. ${garageAcceptFee} to accept this booking.`
+      );
     }
+
+    const garageBalanceAfter = garageWallet.balance - garageAcceptFee;
+
+    await tx.garageWallet.update({
+      where: { id: garageWallet.id },
+      data: {
+        balance: garageBalanceAfter,
+      },
+    });
+
+    await tx.garageWalletTransaction.create({
+      data: {
+        garageWalletId: garageWallet.id,
+        garageId,
+        type: WALLET_TRANSACTION_TYPE.GARAGE_ACCEPT_FEE,
+        status: WALLET_TRANSACTION_STATUS.SUCCESS,
+        amount: garageAcceptFee,
+        balanceAfter: garageBalanceAfter,
+        description: "Garage request acceptance platform fee",
+      },
+    });
 
     return tx.garageBroadcastRequest.findUnique({
       where: { id: requestId },
@@ -289,7 +312,7 @@ const rejectGarageRequest = async (garageId, requestId, note) => {
     throw new ApiError(400, "This request cannot be rejected now");
   }
 
-  return prisma.garageBroadcastRequest.update({
+  const updatedRequest = await prisma.garageBroadcastRequest.update({
     where: { id: requestId },
     data: {
       status: BROADCAST_STATUS.REJECTED,
@@ -298,6 +321,8 @@ const rejectGarageRequest = async (garageId, requestId, note) => {
     },
     include: requestInclude,
   });
+
+  return serializeGarageRequest(updatedRequest);
 };
 
 module.exports = {

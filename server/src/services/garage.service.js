@@ -2,6 +2,7 @@ const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
 const calculateDistanceKm = require("../utils/distance");
 const { getCache, setCache } = require("../utils/cache");
+const { addGarageWhatsappLink } = require("../utils/whatsapp");
 
 const GARAGE_LIST_TTL = 5 * 60;
 const GARAGE_DETAIL_TTL = 5 * 60;
@@ -126,6 +127,8 @@ const addThumbnail = (garage) => ({
   thumbnail: garage.images.find((image) => image.isThumbnail === true) || null,
 });
 
+const serializeGarage = (garage) => addGarageWhatsappLink(addThumbnail(garage));
+
 const getGarages = async (query = {}) => {
   const {
     search,
@@ -224,7 +227,7 @@ const getGarages = async (query = {}) => {
     garages = garages.filter(isGarageOpenNow);
   }
 
-  const result = garages.map(addThumbnail);
+  const result = garages.map(serializeGarage);
 
   await setCache(cacheKey, result, GARAGE_LIST_TTL);
 
@@ -328,7 +331,7 @@ const findNearbyEligibleGarages = async ({
 
   return garages
     .map((garage) => ({
-      ...addThumbnail(garage),
+      ...serializeGarage(garage),
       distanceKm: calculateDistanceKm(
         latitude,
         longitude,
@@ -358,7 +361,7 @@ const getGarageById = async (garageId) => {
     throw new ApiError(404, "Garage not found");
   }
 
-  const result = addThumbnail(garage);
+  const result = serializeGarage(garage);
 
   await setCache(cacheKey, result, GARAGE_DETAIL_TTL);
 

@@ -1,0 +1,47 @@
+const prisma = require("../../config/prisma");
+const ApiError = require("../../utils/apiError");
+const { GARAGE_MINIMUM_ACTIVATION_RECHARGE } = require("../constants");
+
+const getGarageForOwner = async (userId, options = {}) => {
+  const garage = await prisma.garage.findFirst({
+    where: {
+      ownerId: userId,
+      ...(options.requireActive ? { isActive: true } : {}),
+    },
+    include: options.include,
+  });
+
+  if (!garage) {
+    throw new ApiError(404, "Garage not found for this owner");
+  }
+
+  return garage;
+};
+
+const activateGarageIfEligible = async (tx, garageId) => {
+  const garage = await tx.garage.findUnique({
+    where: { id: garageId },
+    include: { wallet: true },
+  });
+
+  if (!garage) {
+    throw new ApiError(404, "Garage not found");
+  }
+
+  if (!garage.isVerified || !garage.wallet || garage.wallet.balance < GARAGE_MINIMUM_ACTIVATION_RECHARGE) {
+    return garage;
+  }
+
+  if (garage.isActive) return garage;
+
+  return tx.garage.update({
+    where: { id: garageId },
+    data: { isActive: true },
+    include: { wallet: true },
+  });
+};
+
+module.exports = {
+  activateGarageIfEligible,
+  getGarageForOwner,
+};

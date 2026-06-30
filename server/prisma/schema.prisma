@@ -137,6 +137,7 @@ model CustomerLocation {
 }
 
 model Garage {
+  applicationId      String?                   @unique
   id                 String                    @id @default(uuid())
   name               String
   description        String?
@@ -519,6 +520,37 @@ model Notification {
   @@index([createdAt])
 }
 
+model GarageApplication {
+  id                String                  @id @default(uuid())
+  ownerName         String
+  email             String
+  phone             String
+  garageName        String
+  description       String?
+  address           String
+  city              String
+  area              String
+  latitude          Float?
+  longitude         Float?
+  status            GarageApplicationStatus @default(PENDING)
+  adminNote         String?
+  reviewedAt        DateTime?
+  approvedGarageId  String?                 @unique
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  @@index([email])
+  @@index([phone])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum GarageApplicationStatus {
+  PENDING
+  CHANGES_REQUESTED
+  APPROVED
+  DENIED
+}
 enum Role {
   CUSTOMER
   GARAGE_OWNER

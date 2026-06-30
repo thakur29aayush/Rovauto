@@ -188,13 +188,13 @@ Cashfree
 
 Platform Fee
 
-| Estimated Bill   | Platform Fee |
-| ---------------- | -----------: |
-| ₹300 – ₹999      |          ₹30 |
-| ₹1,000 – ₹4,999  |          ₹99 |
-| ₹5,000 – ₹19,999 |         ₹249 |
-| ₹20,000+         |         ₹500 |
-| SOS              |          ₹50 |
+| Estimated Bill      | Platform Fee |
+| ------------------- | -----------: |
+| ₹300 – ₹999      |      ₹30/30 |
+| ₹1,000 – ₹4,999  |      ₹99/99 |
+| ₹5,000 – ₹19,999 |    ₹249/249 |
+| ₹20,000+           |    ₹500/500 |
+| SOS                 |      ₹50/50 |
 
 Final garage payment happens offline.
 
@@ -399,7 +399,6 @@ Review / Complaint
 * Background Jobs
 * Socket.IO for Real-Time Broadcast
 * Firebase Push Notifications
-
 
 ##COMMANDS
 npm run db:delete-user -- --email=aayush@example.com --confirm

@@ -3,6 +3,7 @@ const ApiError = require("../../utils/apiError");
 const generateBookingCode = require("../../utils/bookingCode");
 const invalidateCustomerCache = require("../../utils/invalidateCustomerCache");
 const { getCache, setCache, deletePattern } = require("../../utils/cache");
+const { addGarageWhatsappLink, createWhatsappLink } = require("../../utils/whatsapp");
 
 const BOOKINGS_CACHE_TTL = 60;
 
@@ -343,10 +344,11 @@ const getBookingSuccess = async (userId, bookingId) => {
   }
 
   return {
-    booking,
-    whatsappLink: booking.garage.whatsappNo
-      ? `https://wa.me/${booking.garage.whatsappNo}`
-      : null,
+    booking: {
+      ...booking,
+      garage: addGarageWhatsappLink(booking.garage),
+    },
+    whatsappLink: createWhatsappLink(booking.garage.whatsappNo || booking.garage.phone),
     directionsLink: `https://www.google.com/maps?q=${booking.garage.latitude},${booking.garage.longitude}`,
   };
 };
