@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AppProvider, useApp } from "@/hooks/useApp";
+import { hasSavedUserLocation } from "@/utils/signupLocation";
 import MainLayout from "@/layouts/MainLayout";
 import DashboardLayout from "@/layouts/DashboardLayout";
 
@@ -15,9 +16,8 @@ function ProtectedRoute({ children }) {
 
 function AddressCheck({ children }) {
   const { user, location } = useApp();
-  const userAddress = user?.customerProfile?.address || user?.address;
 
-  if (user?.role === "CUSTOMER" && !userAddress && !location?.address) {
+  if (user?.role === "CUSTOMER" && !hasSavedUserLocation(user) && !location?.address) {
     return <Navigate to="/booking/address" replace />;
   }
 

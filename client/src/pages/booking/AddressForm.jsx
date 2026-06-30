@@ -103,6 +103,19 @@ export default function AddressForm() {
         address: fullAddress,
       });
 
+      if (
+        Number.isFinite(Number(form.latitude)) &&
+        Number.isFinite(Number(form.longitude))
+      ) {
+        await api.post("/locations", {
+          latitude: Number(form.latitude),
+          longitude: Number(form.longitude),
+          address: fullAddress,
+          source: form.latitude && form.longitude ? "GPS" : "MANUAL",
+          isDefault: true,
+        });
+      }
+
       // Update app location state
       setLocation({
         address: form.address,

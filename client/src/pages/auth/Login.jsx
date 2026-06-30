@@ -6,6 +6,8 @@ import { FiArrowRight, FiUser, FiTool } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
 import {
+  fetchAuthenticatedUser,
+  hasSavedUserLocation,
   requestSignupLocation,
   saveSignupLocationToProfile,
 } from "@/utils/signupLocation";
@@ -52,14 +54,14 @@ export default function Login() {
       }
 
       localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      const freshUser = (await fetchAuthenticatedUser()) || data.user;
+      localStorage.setItem("user", JSON.stringify(freshUser));
 
       let redirectPath;
-      if (data.user.role === "GARAGE_OWNER") {
+      if (freshUser.role === "GARAGE_OWNER") {
         redirectPath = "/garage";
       } else {
-        const userAddress = data.user.customerProfile?.address || data.user.address;
-        if (!userAddress) {
+        if (!hasSavedUserLocation(freshUser)) {
           redirectPath = "/booking/address";
         } else {
           redirectPath = from || "/dashboard";
@@ -85,18 +87,20 @@ export default function Login() {
 
     try {
       const data = await completeGoogleAuth(role);
+      let freshUser = (await fetchAuthenticatedUser()) || data.user;
 
-      if (data.isNewUser) {
+      if (freshUser.role === "CUSTOMER" && data.isNewUser) {
         const signupLocation = await requestSignupLocation();
-        await saveSignupLocationToProfile(signupLocation);
+        if (await saveSignupLocationToProfile(signupLocation)) {
+          freshUser = (await fetchAuthenticatedUser()) || freshUser;
+        }
       }
 
       let redirectPath;
-      if (data.user.role === "GARAGE_OWNER") {
+      if (freshUser.role === "GARAGE_OWNER") {
         redirectPath = "/garage";
       } else {
-        const userAddress = data.user.customerProfile?.address || data.user.address;
-        if (!userAddress) {
+        if (!hasSavedUserLocation(freshUser)) {
           redirectPath = "/booking/address";
         } else {
           redirectPath = from || "/dashboard";

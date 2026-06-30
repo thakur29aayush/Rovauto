@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
-import { saveSignupLocationToProfile } from "@/utils/signupLocation";
+import {
+  fetchAuthenticatedUser,
+  hasSavedUserLocation,
+  saveSignupLocationToProfile,
+} from "@/utils/signupLocation";
 
 const PENDING_OTP_KEY = "pendingSignupOtp";
 
@@ -39,7 +43,8 @@ const getPendingOtp = (state) => {
 };
 
 export default function OTP() {
-  const { state } = useLocation();
+  const routeLocation = useLocation();
+  const { state } = routeLocation;
   const nav = useNavigate();
 
   const { email, phone, signupLocation } = getPendingOtp(state);
@@ -97,16 +102,17 @@ export default function OTP() {
       localStorage.setItem("user", JSON.stringify(data.user));
 
       await saveSignupLocationToProfile(signupLocation);
+      const freshUser = (await fetchAuthenticatedUser()) || data.user;
+      localStorage.setItem("user", JSON.stringify(freshUser));
 
       sessionStorage.removeItem(PENDING_OTP_KEY);
 
-      if (data.user.role === "GARAGE_OWNER") {
+      if (freshUser.role === "GARAGE_OWNER") {
         nav("/garage");
       } else {
-        const userAddress = data.user.customerProfile?.address || data.user.address;
-        if (!userAddress) {
+        if (!hasSavedUserLocation(freshUser)) {
           nav("/booking/address", { state: { from: routeLocation.state?.from || { pathname: "/dashboard" } } });
-        } else if (!data.user.isOnboarded) {
+        } else if (!freshUser.isOnboarded) {
           nav("/booking/vehicle");
         } else {
           nav("/dashboard");

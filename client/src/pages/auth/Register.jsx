@@ -6,6 +6,8 @@ import { FiUser, FiTool } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
 import {
+  fetchAuthenticatedUser,
+  hasSavedUserLocation,
   requestSignupLocation,
   saveSignupLocationToProfile,
 } from "@/utils/signupLocation";
@@ -70,7 +72,8 @@ export default function Register() {
         role,
       };
 
-      const signupLocation = await requestSignupLocation();
+      const signupLocation =
+        role === "CUSTOMER" ? await requestSignupLocation() : null;
 
       await api.post("/auth/signup", payload);
 
@@ -105,18 +108,21 @@ export default function Register() {
 
     try {
       const data = await completeGoogleAuth(role);
+      let freshUser = (await fetchAuthenticatedUser()) || data.user;
 
-      if (data.isNewUser) {
+      if (freshUser.role === "CUSTOMER" && data.isNewUser) {
         const signupLocation = await requestSignupLocation();
-        await saveSignupLocationToProfile(signupLocation);
+        if (await saveSignupLocationToProfile(signupLocation)) {
+          freshUser = (await fetchAuthenticatedUser()) || freshUser;
+        }
       }
 
       const redirectPath =
-        data.user.role === "GARAGE_OWNER"
+        freshUser.role === "GARAGE_OWNER"
           ? "/garage"
-          : data.user.isOnboarded
+          : hasSavedUserLocation(freshUser)
             ? "/dashboard"
-            : "/booking/vehicle";
+            : "/booking/address";
 
       window.location.href = redirectPath;
     } catch (err) {

@@ -62,6 +62,18 @@ export const requestSignupLocation = async () => {
   };
 };
 
+export const hasSavedUserLocation = (user) => {
+  const locations = Array.isArray(user?.locations) ? user.locations : [];
+  const profileAddress = user?.customerProfile?.address || user?.address;
+
+  return locations.length > 0 || Boolean(profileAddress);
+};
+
+export const fetchAuthenticatedUser = async () => {
+  const res = await api.get("/auth/me");
+  return res.data?.data || null;
+};
+
 export const saveSignupLocationToProfile = async (signupLocation) => {
   if (!signupLocation?.address) return false;
 
@@ -69,6 +81,19 @@ export const saveSignupLocationToProfile = async (signupLocation) => {
     await api.patch("/customer/profile", {
       address: signupLocation.address,
     });
+
+    if (
+      Number.isFinite(Number(signupLocation.latitude)) &&
+      Number.isFinite(Number(signupLocation.longitude))
+    ) {
+      await api.post("/locations", {
+        latitude: Number(signupLocation.latitude),
+        longitude: Number(signupLocation.longitude),
+        address: signupLocation.address,
+        source: "GPS",
+        isDefault: true,
+      });
+    }
 
     localStorage.removeItem("rov_profile");
     localStorage.removeItem("rov_profile_time");
