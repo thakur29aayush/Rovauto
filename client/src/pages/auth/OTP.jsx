@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
 import {
-  fetchAuthenticatedUser,
   hasSavedUserLocation,
   saveSignupLocationToProfile,
 } from "@/utils/signupLocation";
@@ -101,8 +100,27 @@ export default function OTP() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      await saveSignupLocationToProfile(signupLocation);
-      const freshUser = (await fetchAuthenticatedUser()) || data.user;
+      let freshUser = data.user;
+      if (await saveSignupLocationToProfile(signupLocation)) {
+        freshUser = {
+          ...freshUser,
+          customerProfile: {
+            ...(freshUser.customerProfile || {}),
+            address: signupLocation.address,
+          },
+          locations: signupLocation.latitude && signupLocation.longitude
+            ? [
+                {
+                  latitude: signupLocation.latitude,
+                  longitude: signupLocation.longitude,
+                  address: signupLocation.address,
+                  isDefault: true,
+                },
+                ...(freshUser.locations || []),
+              ]
+            : freshUser.locations || [],
+        };
+      }
       localStorage.setItem("user", JSON.stringify(freshUser));
 
       sessionStorage.removeItem(PENDING_OTP_KEY);

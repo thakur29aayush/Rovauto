@@ -33,6 +33,37 @@ const toSafeUser = (user) => ({
   isOnboarded: user.isOnboarded,
 });
 
+const getAuthUserById = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      isEmailVerified: true,
+      isPhoneVerified: true,
+      isOnboarded: true,
+      isActive: true,
+      customerProfile: true,
+      vehicles: {
+        orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+      },
+      locations: {
+        orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+      },
+      createdAt: true,
+    },
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return user;
+};
+
 const signup = async ({
   name,
   email,
@@ -193,9 +224,10 @@ const verifyOtp = async ({ email, phone, otp }) => {
 
   const safeUser = toSafeUser(user);
   const token = createAuthToken(safeUser);
+  const authUser = await getAuthUserById(user.id);
 
   return {
-    user: safeUser,
+    user: authUser,
     token,
   };
 };
@@ -300,38 +332,16 @@ const login = async ({ identifier, password }) => {
 
   const safeUser = toSafeUser(user);
   const token = createAuthToken(safeUser);
+  const authUser = await getAuthUserById(user.id);
 
   return {
-    user: safeUser,
+    user: authUser,
     token,
   };
 };
 
 const getMe = async (userId) => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      role: true,
-      isEmailVerified: true,
-      isPhoneVerified: true,
-      isOnboarded: true,
-      isActive: true,
-      customerProfile: true,
-      vehicles: true,
-      locations: true,
-      createdAt: true,
-    },
-  });
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
-
-  return user;
+  return getAuthUserById(userId);
 };
 
 const googleAuth = async ({ idToken, role = "CUSTOMER" }) => {
@@ -392,9 +402,10 @@ const googleAuth = async ({ idToken, role = "CUSTOMER" }) => {
 
   const safeUser = toSafeUser(user);
   const token = createAuthToken(safeUser);
+  const authUser = await getAuthUserById(user.id);
 
   return {
-    user: safeUser,
+    user: authUser,
     token,
     isNewUser,
   };

@@ -1,5 +1,16 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import api from "@/api/axios";
+import {
+  clearCustomerState,
+  selectCustomerState,
+  setCustomerLocation,
+  setCustomerToken,
+  setCustomerUser,
+  setCustomerVehicle,
+  setCustomerVehicles,
+  syncCustomerBundle,
+} from "@/store/customerSlice";
 
 const AppCtx = createContext(null);
 
@@ -31,23 +42,10 @@ const readNumber = (key, fallback = null) => {
 };
 
 export function AppProvider({ children }) {
-  const [user, setUser] = useState(() =>
-    readJson("user", readJson("rov_user", null))
-  );
-
-  const [token, setToken] = useState(
-    () => localStorage.getItem("token") || (user ? "cookie" : null)
-  );
-
-  const [vehicle, setVehicle] = useState(() => readJson("rov_vehicle", null));
-  const [vehicles, setVehicles] = useState(() => readArray("rov_vehicles"));
+  const dispatch = useDispatch();
+  const { user, token, vehicle, vehicles, location } =
+    useSelector(selectCustomerState);
   const [cart, setCart] = useState([]);
-
-  const [location, setLocation] = useState({
-    area: "Indirapuram",
-    city: "Ghaziabad",
-    pincode: "201014",
-  });
 
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -209,13 +207,11 @@ const saveProfileCache = (data, fetchedAt) => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("rov_user");
+    localStorage.removeItem("rov_location");
     localStorage.removeItem("rov_vehicle");
     localStorage.removeItem("rov_vehicles");
 
-    setToken(null);
-    setUser(null);
-    setVehicle(null);
-    setVehicles([]);
+    dispatch(clearCustomerState());
     setCart([]);
 
     clearDashboardCache();
@@ -228,12 +224,10 @@ const saveProfileCache = (data, fetchedAt) => {
   const syncVehicles = (list = []) => {
     const safeList = Array.isArray(list) ? list : [];
 
-    setVehicles(safeList);
-
     const defaultVehicle =
       safeList.find((item) => item.isDefault) || safeList[0] || null;
 
-    setVehicle(defaultVehicle);
+    dispatch(setCustomerVehicles(safeList));
 
     localStorage.setItem("rov_vehicles", JSON.stringify(safeList));
     localStorage.setItem("rov_vehicle", JSON.stringify(defaultVehicle));
@@ -244,7 +238,7 @@ const saveProfileCache = (data, fetchedAt) => {
   const syncUserData = (me) => {
     if (!me) return null;
 
-    setUser(me);
+    dispatch(syncCustomerBundle(me));
 
     localStorage.setItem("user", JSON.stringify(me));
     localStorage.setItem("rov_user", JSON.stringify(me));
@@ -257,14 +251,14 @@ const saveProfileCache = (data, fetchedAt) => {
   const login = (userData, authToken) => {
     if (authToken) {
       localStorage.setItem("token", authToken);
-      setToken(authToken);
+      dispatch(setCustomerToken(authToken));
     }
 
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("rov_user", JSON.stringify(userData));
 
-    if (!authToken) setToken("cookie");
-    setUser(userData);
+    if (!authToken) dispatch(setCustomerToken("cookie"));
+    dispatch(syncCustomerBundle(userData));
 
     clearDashboardCache();
     clearVehiclesCache();
@@ -288,7 +282,7 @@ const saveProfileCache = (data, fetchedAt) => {
       const res = await api.get("/auth/me");
       const me = res.data.data;
 
-      setToken(localStorage.getItem("token") || "cookie");
+      dispatch(setCustomerToken(localStorage.getItem("token") || "cookie"));
       return syncUserData(me);
     } catch {
       clearLocalSession();
@@ -409,7 +403,7 @@ const saveProfileCache = (data, fetchedAt) => {
   const fetchedAt = Date.now();
 
   saveProfileCache(data, fetchedAt);
-  setUser(data);
+  dispatch(syncCustomerBundle(data));
 
   localStorage.setItem("user", JSON.stringify(data));
   localStorage.setItem("rov_user", JSON.stringify(data));
@@ -453,7 +447,17 @@ const saveProfileCache = (data, fetchedAt) => {
   };
 
   useEffect(() => {
-    fetchMe();
+    if (token && user) {
+      setAuthLoading(false);
+      return;
+    }
+
+    if (token) {
+      fetchMe();
+      return;
+    }
+
+    setAuthLoading(false);
   }, []);
 
   useEffect(() => {
@@ -464,12 +468,46 @@ const saveProfileCache = (data, fetchedAt) => {
   }, [user]);
 
   useEffect(() => {
+    if (token && token !== "cookie") {
+      localStorage.setItem("token", token);
+    }
+  }, [token]);
+
+  useEffect(() => {
     localStorage.setItem("rov_vehicle", JSON.stringify(vehicle));
   }, [vehicle]);
 
   useEffect(() => {
     localStorage.setItem("rov_vehicles", JSON.stringify(vehicles));
   }, [vehicles]);
+
+  useEffect(() => {
+    localStorage.setItem("rov_location", JSON.stringify(location));
+  }, [location]);
+
+  const setUser = (value) => {
+    const nextUser = typeof value === "function" ? value(user) : value;
+    dispatch(setCustomerUser(nextUser));
+  };
+
+  const setToken = (value) => {
+    dispatch(setCustomerToken(value));
+  };
+
+  const setVehicle = (value) => {
+    const nextVehicle = typeof value === "function" ? value(vehicle) : value;
+    dispatch(setCustomerVehicle(nextVehicle));
+  };
+
+  const setVehicles = (value) => {
+    const nextVehicles = typeof value === "function" ? value(vehicles) : value;
+    dispatch(setCustomerVehicles(nextVehicles));
+  };
+
+  const setLocation = (value) => {
+    const nextLocation = typeof value === "function" ? value(location) : value;
+    dispatch(setCustomerLocation(nextLocation));
+  };
 
   const addVehicle = (v) => {
     const currentVehicles = Array.isArray(vehicles) ? vehicles : [];

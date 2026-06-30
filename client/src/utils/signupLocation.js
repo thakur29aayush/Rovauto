@@ -69,11 +69,6 @@ export const hasSavedUserLocation = (user) => {
   return locations.length > 0 || Boolean(profileAddress);
 };
 
-export const fetchAuthenticatedUser = async () => {
-  const res = await api.get("/auth/me");
-  return res.data?.data || null;
-};
-
 export const saveSignupLocationToProfile = async (signupLocation) => {
   if (!signupLocation?.address) return false;
 

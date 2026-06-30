@@ -6,7 +6,6 @@ import { FiUser, FiTool } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
 import {
-  fetchAuthenticatedUser,
   hasSavedUserLocation,
   requestSignupLocation,
   saveSignupLocationToProfile,
@@ -108,12 +107,30 @@ export default function Register() {
 
     try {
       const data = await completeGoogleAuth(role);
-      let freshUser = (await fetchAuthenticatedUser()) || data.user;
+      let freshUser = data.user;
 
       if (freshUser.role === "CUSTOMER" && data.isNewUser) {
         const signupLocation = await requestSignupLocation();
         if (await saveSignupLocationToProfile(signupLocation)) {
-          freshUser = (await fetchAuthenticatedUser()) || freshUser;
+          freshUser = {
+            ...freshUser,
+            customerProfile: {
+              ...(freshUser.customerProfile || {}),
+              address: signupLocation.address,
+            },
+            locations: signupLocation.latitude && signupLocation.longitude
+              ? [
+                  {
+                    latitude: signupLocation.latitude,
+                    longitude: signupLocation.longitude,
+                    address: signupLocation.address,
+                    isDefault: true,
+                  },
+                  ...(freshUser.locations || []),
+                ]
+              : freshUser.locations || [],
+          };
+          localStorage.setItem("user", JSON.stringify(freshUser));
         }
       }
 
