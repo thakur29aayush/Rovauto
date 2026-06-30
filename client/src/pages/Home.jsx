@@ -109,7 +109,7 @@ export default function Home() {
 
   return (
     <div>
-      <section className="relative min-h-[88vh] overflow-hidden flex items-center">
+      <section className="relative min-h-[78vh] overflow-hidden flex items-start lg:min-h-[calc(100vh-96px)]">
         <div className="absolute inset-0 -z-10">
           <img
             alt="Rovauto workshop"
@@ -121,14 +121,14 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
         </div>
 
-        <div className="container-x relative z-10 py-12 sm:py-20 lg:py-28">
+        <div className="container-x relative z-10 py-10 sm:py-14 lg:pt-12 lg:pb-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="max-w-3xl text-white"
           >
-            <span className="chip-brand mb-5 bg-white/10 text-white border-white/10 backdrop-blur">
+            <span className="chip-brand mb-4 bg-white/10 text-white border-white/10 backdrop-blur">
               <span className="h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
               New in Delhi NCR · Mumbai · Bengaluru
             </span>
@@ -141,12 +141,12 @@ export default function Home() {
               Platform
             </h1>
 
-            <p className="mt-6 text-lg text-white/85 max-w-xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)]">
+            <p className="mt-5 text-lg text-white/85 max-w-xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)]">
               Book trusted vehicle services from verified garages with
               transparent pricing, live tracking and a 30-day service warranty.
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 to="/booking/vehicle"
                 className="btn-primary text-base px-6 py-3.5 shadow-2xl"
@@ -162,7 +162,7 @@ export default function Home() {
               </Link>
             </div>
 
-            <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3">
+            <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3">
               {TRUST.map((t) => (
                 <div
                   key={t.label}
@@ -177,7 +177,7 @@ export default function Home() {
               ))}
             </div>
 
-            <div className="mt-10 flex items-center gap-4">
+            <div className="mt-7 flex items-center gap-4">
               <div className="flex -space-x-3">
                 {["A", "R", "S", "P"].map((c, i) => (
                   <span

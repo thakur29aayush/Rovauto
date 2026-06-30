@@ -1,32 +1,37 @@
-# Rovauto
+﻿# Rovauto
 
 ![Frontend](https://img.shields.io/badge/Frontend-React-blue)
+![State](https://img.shields.io/badge/State-Redux%20Toolkit-764ABC)
 ![Backend](https://img.shields.io/badge/Backend-Express-green)
 ![Database](https://img.shields.io/badge/Database-PostgreSQL-lightgrey)
 ![ORM](https://img.shields.io/badge/ORM-Prisma-2D3748)
 ![Payments](https://img.shields.io/badge/Payments-Cashfree-purple)
 
-Rovauto is a full-stack vehicle service and roadside assistance platform. It connects customers with service providers, supports vehicle management, service booking, online payments, SOS requests, wallets, complaints, reviews, notifications, and dashboard workflows.
+Rovauto is a full-stack vehicle service and roadside assistance platform. It connects customers with service providers, supports vehicle management, service booking, online payments, SOS requests, wallets, complaints, reviews, notifications, media uploads, and dashboard workflows.
 
-The current implementation is strongest on the customer side. Garage and admin pages/routes exist in the codebase, but those areas are expected to grow further.
+The customer flow is the most complete area today. Garage and admin routes/pages exist and are structured for expansion, with garage leads, jobs, wallet, earnings, media, and request handling already represented in the codebase.
 
 ---
 
 ## Current Highlights
 
-- Customer registration, login, OTP, password recovery, profile, and dashboard flows
+- Customer registration, login, OTP verification, Google auth, password recovery, profile, and dashboard flows
+- JWT auth with an httpOnly cookie set by the backend and bearer-token fallback used by the frontend
+- Redux Toolkit store for central customer auth/profile/vehicle/location state
+- Login, Google auth, and OTP verification return the safe user bundle with `customerProfile`, `vehicles`, and `locations`
+- Location onboarding appears only when the customer has no saved profile address or `CustomerLocation`
 - Vehicle add/select/default management
-- Service category browsing and booking checkout
+- Service category browsing, cart, booking checkout, and tracking
 - Cashfree order creation and payment verification
 - Pending-payment recovery from Checkout, Active Bookings, Payments, and Tracking
-- Tracking disabled until a booking is paid
-- SOS frontend and backend request flow
+- Garage request broadcasting after successful booking payment
 - Customer dashboard caching with frontend cache and optional Redis backend cache
 - Route-level frontend code splitting with `React.lazy()` and `Suspense`
 - Customer backend modules grouped under `server/src/customer`
 - PostgreSQL persistence through Prisma
-- Cloudinary-ready media upload support
-- Resend-ready email support
+- Cloudinary media upload support for garage/customer/admin media workflows
+- Resend email support and Fast2SMS-compatible OTP support
+- Database maintenance scripts for targeted cleanup and user-data backup/delete operations
 
 ---
 
@@ -36,11 +41,14 @@ The current implementation is strongest on the customer side. Garage and admin p
 
 - React 18
 - Vite
+- Redux Toolkit
+- React Redux
 - React Router DOM
 - Axios
 - Tailwind CSS
 - Framer Motion
 - React Icons
+- Firebase client auth for Google sign-in
 
 ### Backend
 
@@ -50,6 +58,7 @@ The current implementation is strongest on the customer side. Garage and admin p
 - PostgreSQL
 - JWT
 - Argon2
+- Firebase Admin for Google ID token verification
 - Express Validator
 - Multer
 - Cloudinary
@@ -63,8 +72,9 @@ The current implementation is strongest on the customer side. Garage and admin p
 
 ```text
 User -> React/Vite Client -> Axios -> Express API -> Services -> Prisma -> PostgreSQL
-                                               |
-                                               +-> Cashfree / Cloudinary / Resend / Redis
+                  |                            |
+                  |                            +-> Cashfree / Cloudinary / Resend / Redis / Firebase Admin
+                  +-> Redux Toolkit customer store
 ```
 
 The API is served under:
@@ -106,6 +116,7 @@ Codebase/
 |   |   |   |-- customer/
 |   |   |   |-- garage/
 |   |   |   |-- sos/
+|   |   |-- store/
 |   |   |-- utils/
 |   |   |-- App.jsx
 |   |   |-- index.css
@@ -125,6 +136,7 @@ Codebase/
 |   |   |-- controllers/
 |   |   |-- middlewares/
 |   |   |-- routes/
+|   |   |-- scripts/
 |   |   |-- seed/
 |   |   |-- services/
 |   |   |-- utils/
@@ -162,10 +174,21 @@ JWT_EXPIRES_IN="7d"
 RESEND_API_KEY=""
 EMAIL_FROM=""
 
+SMS_PROVIDER="fast2sms_quick"
+FAST2SMS_API_KEY=""
+
+FIREBASE_PROJECT_ID=""
+FIREBASE_CLIENT_EMAIL=""
+FIREBASE_PRIVATE_KEY=""
+
 CASHFREE_APP_ID=""
 CASHFREE_SECRET_KEY=""
 CASHFREE_ENV="sandbox"
 CASHFREE_NOTIFY_URL=""
+
+CLOUDINARY_CLOUD_NAME=""
+CLOUDINARY_API_KEY=""
+CLOUDINARY_API_SECRET=""
 
 REDIS_URL=""
 CLIENT_URL="https://your-frontend-domain.com"
@@ -230,15 +253,22 @@ http://localhost:8080
 ### Backend
 
 ```bash
-npm run dev              # Start backend with nodemon
-npm start                # Start backend with node
-npm run prisma:generate  # Generate Prisma client
-npm run prisma:migrate   # Run development migrations
-npm run prisma:deploy    # Deploy migrations
-npm run prisma:studio    # Open Prisma Studio
-npm run seed:services    # Seed service data
-npm run seed:garages     # Seed garage data
+npm run dev                         # Start backend with nodemon
+npm start                           # Start backend with node
+npm run prisma:generate             # Generate Prisma client
+npm run prisma:migrate              # Run development migrations
+npm run prisma:deploy               # Deploy migrations
+npm run prisma:studio               # Open Prisma Studio
+npm run seed:services               # Seed service data
+npm run seed:garages                # Seed garage data
+npm run db:delete-user              # Dry-run/delete matched user data by id/email/phone/name
+npm run db:delete-active-bookings   # Dry-run/delete active bookings for one email
+npm run db:delete-payments          # Dry-run/delete payment records for one email
+npm run db:delete-service-history   # Dry-run/delete completed bookings for one email
+npm run db:nuke-users               # Dry-run/delete all users after JSON backup and explicit flags
 ```
+
+Targeted cleanup commands are dry-run by default. Add `--confirm` to delete. The nuke command also requires `--i-understand-delete-all-users` and writes a JSON backup first.
 
 ### Frontend
 
@@ -279,13 +309,44 @@ Mounted under `/api/v1`:
 ## Current Customer Flow
 
 1. Register or log in.
-2. Add/select a vehicle.
-3. Pick services.
-4. Checkout creates a backend booking.
-5. Cashfree payment order is created.
-6. Successful payment verification moves the booking to garage search.
-7. If payment is created but not completed, the user can retry from Active Bookings, Payments, or Tracking.
-8. Tracking is blocked until payment is complete.
+2. If no saved address/location exists, complete location onboarding.
+3. Add/select a vehicle.
+4. Pick services.
+5. Checkout creates a backend booking.
+6. Cashfree payment order is created.
+7. Successful payment verification moves the booking to garage search.
+8. If payment is created but not completed, the user can retry from Active Bookings, Payments, or Tracking.
+9. Tracking is blocked until payment is complete.
+
+---
+
+## Current Garage Flow
+
+The intended garage workflow is:
+
+```text
+Lead Received -> Accept/Reject -> Active Job -> Status Updates -> Completed Job -> Earnings/Wallet
+```
+
+Garage pages currently cover dashboard, leads, jobs, wallet, earnings, and magic-link entry points. The flow is ready for deeper operational features such as inspection notes, before/after media, extra-service approval, and payout management.
+
+---
+
+## Auth And State Notes
+
+- Backend sets an `accessToken` cookie and also returns a token for bearer-token compatibility.
+- Frontend currently stores the token in localStorage and sends it through Axios authorization headers.
+- Redux Toolkit stores the safe customer bundle on the frontend: `user`, `customerProfile`, `vehicles`, `locations`, selected vehicle, and selected location.
+- Do not store passwords, OTPs, raw wallet transaction history, or other sensitive records in Redux/localStorage.
+- If frontend and backend move to a shared production domain setup, cookie-only auth can be revisited.
+
+---
+
+## Media Notes
+
+- Static brand/core UI assets can stay in the frontend build.
+- Dynamic garage media, complaint images, before/after job media, and admin-managed service media should use Cloudinary.
+- Optimize large image assets before production traffic.
 
 ---
 
@@ -294,9 +355,10 @@ Mounted under `/api/v1`:
 - Add Cashfree webhooks before real production payment traffic.
 - Configure all production secrets in hosting environment variables.
 - Configure production CORS with `CLIENT_URL` / `FRONTEND_URL`.
-- Compress large images before scaling traffic.
+- Prefer one PostgreSQL database for core relational business data, with separate development/staging/production databases by environment.
+- Use Redis for cache/rate-limit/session-like volatile data where needed.
 - Confirm role protection for garage/admin routes before public launch.
-- Add automated tests for auth, booking, payments, and role access.
+- Add automated tests for auth, booking, payments, wallet, media, and role access.
 - Run Prisma deploy migrations during production releases.
 
 ---

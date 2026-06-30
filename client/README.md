@@ -1,27 +1,34 @@
-# Rovauto Client
+﻿# Rovauto Client
 
 React + Vite frontend for the Rovauto customer, garage, and admin experiences.
 
 ## Current Frontend Capabilities
 
 - Public marketing and service category pages
-- Customer auth, vehicle selection, service selection, checkout, payments, active bookings, service history, notifications, and profile pages
+- Customer auth, OTP, Google sign-in, vehicle selection, location onboarding, service selection, checkout, payments, active bookings, service history, notifications, and profile pages
+- Garage dashboard, leads, jobs, wallet, earnings, and magic-link pages
+- Admin dashboard, customers, garages, bookings, and revenue pages
 - Cashfree checkout integration through backend payment APIs
 - Pending-payment recovery from Active Bookings, Payments, and Tracking
 - Tracking disabled until a booking is paid
-- Route-level code splitting with React.lazy() and Suspense
-- Axios API client with bearer-token support
-- Local cache support through app context and localStorage
+- Route-level code splitting with `React.lazy()` and `Suspense`
+- Axios API client with bearer-token support and cookie-compatible requests
+- Redux Toolkit customer store for shared auth/profile/vehicle/location state
+- Local cache support for dashboard, profile, vehicles, bookings, service history, metadata, and service categories
+- Location onboarding appears only when the signed-in customer has no saved profile address or saved location
 
 ## Tech Stack
 
 - React 18
 - Vite
+- Redux Toolkit
+- React Redux
 - React Router DOM
 - Axios
 - Tailwind CSS
 - Framer Motion
 - React Icons
+- Firebase client auth for Google sign-in
 
 ## Setup
 
@@ -54,7 +61,7 @@ src/
 |-- assets/       # Images and static assets
 |-- components/   # Shared UI components
 |-- data/         # Local display data
-|-- hooks/        # App context and shared hooks
+|-- hooks/        # App context compatibility layer and shared hooks
 |-- layouts/      # Main and dashboard layouts
 |-- pages/        # Route pages
 |   |-- admin/
@@ -63,8 +70,37 @@ src/
 |   |-- customer/
 |   |-- garage/
 |   |-- sos/
-|-- utils/        # Shared frontend utilities, including payment helper
+|-- store/        # Redux Toolkit store and customer slice
+|-- utils/        # Shared frontend utilities, including payment/auth/location helpers
 ```
+
+## State Management
+
+The app uses Redux Toolkit for the central customer bundle:
+
+```text
+user
+customerProfile
+vehicles
+selected vehicle
+locations
+selected location
+token
+```
+
+`useApp()` is still available as a compatibility layer for existing pages, but the core customer data now comes from Redux. Login, Google auth, and OTP verification receive the full safe user bundle from the backend, reducing follow-up calls to `/auth/me`, `/customer/profile`, and `/vehicles`.
+
+Do not store passwords, OTPs, or sensitive wallet transaction history in Redux/localStorage.
+
+## Auth Notes
+
+The backend sets an httpOnly auth cookie and also returns a token. The frontend currently stores the token in localStorage and sends it as a bearer token for cross-domain compatibility between Vercel and Render. A cookie-only production setup can be revisited after stable custom-domain configuration.
+
+## Location Notes
+
+- A customer with a saved `CustomerLocation` or profile address should not see location onboarding again.
+- Detected GPS location is saved to `/locations` and profile address.
+- Manually entered address is saved to the customer profile and creates a location row when coordinates are available.
 
 ## Build Output
 
@@ -77,4 +113,5 @@ npm run build
 ## Notes
 
 - `jsconfig.json` powers the `@/` path alias for editor/tooling support.
-- `bun.lock` and `bunfig.toml` are only needed if the project is intentionally run with Bun. The current npm workflow uses `package-lock.json`.
+- The npm workflow uses `package-lock.json`.
+- Large static images should be optimized before production. Dynamic garage/customer/admin media should be served from Cloudinary.
