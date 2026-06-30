@@ -16,10 +16,11 @@ const {
   resetPasswordValidation,
 } = require("../validations/auth.validation");
 const rateLimit = require("../../middlewares/rateLimit.middleware");
+const { otpSendRateLimits } = require("../../middlewares/otpRateLimit.middleware");
 
 const router = express.Router();
-const otpRateLimit = rateLimit({
-  windowMs: 60 * 1000,
+const otpVerifyRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
   max: 10,
   keyGenerator: (req) => `${req.ip}:${req.body?.phone || req.body?.email || "otp"}`,
 });
@@ -34,20 +35,21 @@ const passwordResetRateLimit = rateLimit({
   keyGenerator: (req) => `${req.ip}:${req.body?.email || "password-reset"}`,
 });
 
-router.post("/signup", otpRateLimit, signupValidation, validate, authController.signup);
-router.post("/verify-otp", otpRateLimit, verifyOtpValidation, validate, authController.verifyOtp);
-router.post("/resend-otp", otpRateLimit, resendOtpValidation, validate, authController.resendOtp);
-router.post("/send-otp", otpRateLimit, sendPhoneOtpValidation, validate, authController.sendPhoneOtp);
-router.post("/verify-phone-otp", otpRateLimit, verifyPhoneOtpValidation, validate, authController.verifyPhoneOtp);
+router.post("/signup", signupValidation, validate, otpSendRateLimits, authController.signup);
+router.post("/verify-otp", otpVerifyRateLimit, verifyOtpValidation, validate, authController.verifyOtp);
+router.post("/resend-otp", resendOtpValidation, validate, otpSendRateLimits, authController.resendOtp);
+router.post("/send-otp", sendPhoneOtpValidation, validate, otpSendRateLimits, authController.sendPhoneOtp);
+router.post("/verify-phone-otp", otpVerifyRateLimit, verifyPhoneOtpValidation, validate, authController.verifyPhoneOtp);
 router.post("/login", loginRateLimit, loginValidation, validate, authController.login);
 router.post("/google", loginRateLimit, googleAuthValidation, validate, authController.googleAuth);
 router.post("/logout", authController.logout);
 router.get("/me", protect, authController.me);
 router.post(
   "/forgot-password",
-  passwordResetRateLimit,
   forgotPasswordValidation,
   validate,
+  otpSendRateLimits,
+  passwordResetRateLimit,
   authController.forgotPassword
 );
 

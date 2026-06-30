@@ -24,6 +24,7 @@ const dashboardRoutes = require("../customer/routes/dashboard.routes");
 const authController = require("../customer/controllers/auth.controller");
 const validate = require("../middlewares/validate.middleware");
 const rateLimit = require("../middlewares/rateLimit.middleware");
+const { otpSendRateLimits } = require("../middlewares/otpRateLimit.middleware");
 const {
   sendPhoneOtpValidation,
   verifyPhoneOtpValidation,
@@ -36,7 +37,7 @@ const publicOtpRateLimit = rateLimit({
 });
 
 router.use("/auth", authRoutes);
-router.post("/send-otp", publicOtpRateLimit, sendPhoneOtpValidation, validate, authController.sendPhoneOtp);
+router.post("/send-otp", sendPhoneOtpValidation, validate, otpSendRateLimits, publicOtpRateLimit, authController.sendPhoneOtp);
 router.post("/verify-otp", publicOtpRateLimit, verifyPhoneOtpValidation, validate, authController.verifyPhoneOtp);
 router.use("/customer", customerRoutes);
 router.use("/vehicles", vehicleRoutes);

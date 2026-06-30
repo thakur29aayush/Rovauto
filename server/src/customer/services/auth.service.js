@@ -154,6 +154,10 @@ const signup = async ({
       email: pendingSignup.email,
     });
   } catch (error) {
+    if (error.statusCode === 429) {
+      throw error;
+    }
+
     await prisma.$transaction([
       prisma.emailOtp.deleteMany({
         where: { email: pendingSignup.email },
