@@ -138,7 +138,7 @@ export default function Login() {
   };
 
   return (
-    <div className="container-x py-16 grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
+    <div className="container-x grid min-h-[80vh] items-center gap-12 py-10 sm:py-16 lg:grid-cols-2">
       <div className="hidden lg:block">
         <Logo />
 
