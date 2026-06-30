@@ -256,12 +256,12 @@ export default function Home() {
                   key={category.id}
                   className="group"
                 >
-                  <div className="rounded-3xl bg-white p-5 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
-                    <div className="text-lg font-bold mb-4">
+                  <div className="flex min-h-[230px] flex-col rounded-3xl bg-white p-5 shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl sm:min-h-0">
+                    <div className="mb-4 min-h-[56px] text-lg font-bold leading-tight sm:min-h-0">
                       {category.name}
                     </div>
 
-                    <div className="h-32 w-full rounded-2xl overflow-hidden bg-bg-soft">
+                    <div className="mt-auto h-32 w-full overflow-hidden rounded-2xl bg-bg-soft">
                       {image ? (
                         <img
                           src={image}
