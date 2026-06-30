@@ -5,11 +5,7 @@ import api from "@/api/axios";
 import { FiUser, FiTool } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
-import {
-  hasSavedUserLocation,
-  requestSignupLocation,
-  saveSignupLocationToProfile,
-} from "@/utils/signupLocation";
+import { hasSavedUserLocation } from "@/utils/signupLocation";
 
 const COUNTRY_CODE = "+91";
 const PASSWORD_MESSAGE =
@@ -71,8 +67,7 @@ export default function Register() {
         role,
       };
 
-      const signupLocation =
-        role === "CUSTOMER" ? await requestSignupLocation() : null;
+      const signupLocation = null;
 
       await api.post("/auth/signup", payload);
 
@@ -109,30 +104,6 @@ export default function Register() {
       const data = await completeGoogleAuth(role);
       let freshUser = data.user;
 
-      if (freshUser.role === "CUSTOMER" && data.isNewUser) {
-        const signupLocation = await requestSignupLocation();
-        if (await saveSignupLocationToProfile(signupLocation)) {
-          freshUser = {
-            ...freshUser,
-            customerProfile: {
-              ...(freshUser.customerProfile || {}),
-              address: signupLocation.address,
-            },
-            locations: signupLocation.latitude && signupLocation.longitude
-              ? [
-                  {
-                    latitude: signupLocation.latitude,
-                    longitude: signupLocation.longitude,
-                    address: signupLocation.address,
-                    isDefault: true,
-                  },
-                  ...(freshUser.locations || []),
-                ]
-              : freshUser.locations || [],
-          };
-          localStorage.setItem("user", JSON.stringify(freshUser));
-        }
-      }
 
       const redirectPath =
         freshUser.role === "GARAGE_OWNER"

@@ -5,11 +5,7 @@ import api from "@/api/axios";
 import { FiArrowRight, FiUser, FiTool } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
-import {
-  hasSavedUserLocation,
-  requestSignupLocation,
-  saveSignupLocationToProfile,
-} from "@/utils/signupLocation";
+import { hasSavedUserLocation } from "@/utils/signupLocation";
 
 export default function Login() {
   const { state } = useLocation();
@@ -88,30 +84,6 @@ export default function Login() {
       const data = await completeGoogleAuth(role);
       let freshUser = data.user;
 
-      if (freshUser.role === "CUSTOMER" && data.isNewUser) {
-        const signupLocation = await requestSignupLocation();
-        if (await saveSignupLocationToProfile(signupLocation)) {
-          freshUser = {
-            ...freshUser,
-            customerProfile: {
-              ...(freshUser.customerProfile || {}),
-              address: signupLocation.address,
-            },
-            locations: signupLocation.latitude && signupLocation.longitude
-              ? [
-                  {
-                    latitude: signupLocation.latitude,
-                    longitude: signupLocation.longitude,
-                    address: signupLocation.address,
-                    isDefault: true,
-                  },
-                  ...(freshUser.locations || []),
-                ]
-              : freshUser.locations || [],
-          };
-          localStorage.setItem("user", JSON.stringify(freshUser));
-        }
-      }
 
       let redirectPath;
       if (freshUser.role === "GARAGE_OWNER") {
