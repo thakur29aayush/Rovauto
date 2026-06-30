@@ -1,5 +1,6 @@
 const errorMiddleware = (err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
+  const isMulterError = err.name === "MulterError";
+  const statusCode = err.statusCode || (isMulterError ? 400 : 500);
 
   return res.status(statusCode).json({
     success: false,

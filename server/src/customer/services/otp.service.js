@@ -27,11 +27,13 @@ const assertOtpCooldown = (latestOtp) => {
 
 const sendEmailOtp = async ({ to, otp, subject = "Rovauto verification OTP" }) => {
   if (process.env.EMAIL_OTP_DELIVERY !== "email") {
-    console.log("=================================");
-    console.log("ROVAUTO EMAIL OTP:", otp);
-    console.log("To:", to);
-    console.log("Subject:", subject);
-    console.log("=================================");
+    if (process.env.NODE_ENV === "development") {
+      console.log("=================================");
+      console.log("ROVAUTO EMAIL OTP:", otp);
+      console.log("To:", to);
+      console.log("Subject:", subject);
+      console.log("=================================");
+    }
     return true;
   }
 

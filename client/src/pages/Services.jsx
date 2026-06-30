@@ -72,11 +72,13 @@ export default function Services() {
               <Link
                 to={ui.isSos ? "/sos" : `/services/${category.id}`}
                 key={category.id}
-                className="cursor-pointer rounded-3xl bg-white p-5 shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl"
+                className="flex min-h-[230px] cursor-pointer flex-col rounded-3xl bg-white p-5 shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl sm:min-h-0"
               >
-                <div className="mb-4 text-xl font-bold">{category.name}</div>
+                <div className="mb-4 min-h-[56px] text-xl font-bold leading-tight sm:min-h-0">
+                  {category.name}
+                </div>
 
-                <div className="h-32 w-full overflow-hidden rounded-2xl bg-bg-soft">
+                <div className="mt-auto h-32 w-full overflow-hidden rounded-2xl bg-bg-soft">
                   {ui.image ? (
                     <img
                       src={ui.image}

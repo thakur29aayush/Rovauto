@@ -50,19 +50,10 @@ const getGarageWalletTransactions = asyncHandler(async (req, res) => {
 });
 
 const rechargeGarageWallet = asyncHandler(async (req, res) => {
-  const garageId = await getGarageIdForOwner(req.user.id);
-
-  const result = await garageWalletService.rechargeGarageWallet(
-    garageId,
-    req.body.amount,
-    {
-      description: "Garage wallet recharge",
-    }
+  throw new ApiError(
+    501,
+    "Garage wallet recharge requires verified payment processing and is temporarily disabled"
   );
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, "Garage wallet recharged successfully", result));
 });
 
 module.exports = {

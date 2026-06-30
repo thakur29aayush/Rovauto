@@ -5,7 +5,8 @@ const garageMediaService = require("../services/garageMedia.service");
 const uploadGarageMedia = asyncHandler(async (req, res) => {
   const garage = await garageMediaService.uploadGarageMedia(
     req.params.garageId,
-    req.files
+    req.files,
+    req.user
   );
 
   return res

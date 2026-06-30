@@ -14,16 +14,6 @@ export const isPaymentAuthError = (error) => {
   );
 };
 
-const requirePaymentAuth = () => {
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    const error = new Error("Please login to continue payment.");
-    error.code = PAYMENT_AUTH_REQUIRED;
-    throw error;
-  }
-};
-
 export const loadCashfreeCheckout = () =>
   new Promise((resolve, reject) => {
     if (window.Cashfree) {
@@ -43,24 +33,11 @@ export const payForBooking = async ({ booking }) => {
     throw new Error("Booking not found");
   }
 
-  requirePaymentAuth();
-
   const orderRes = await api.post("/payments/create-order", {
     bookingId: booking.id,
   });
 
-  const { cashfreeOrder, mode, isDevMode } = orderRes.data.data;
-
-  // Dev mode: skip real Cashfree
-  if (isDevMode) {
-    await loadCashfreeCheckout(); // just to keep the flow similar
-    // Immediately verify
-    const verifyRes = await api.post("/payments/verify", {
-      bookingId: booking.id,
-      cashfreeOrderId: cashfreeOrder.id,
-    });
-    return verifyRes.data.data.booking;
-  }
+  const { cashfreeOrder, mode } = orderRes.data.data;
 
   await loadCashfreeCheckout();
 

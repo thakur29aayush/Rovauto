@@ -104,20 +104,20 @@ export default function Dashboard() {
   }
 
   const heroButton =
-    "btn-primary px-8 py-3 !text-black hover:!text-black active:!text-black visited:!text-black focus:!text-black";
+    "btn-primary w-full whitespace-nowrap px-4 py-3 text-sm !text-black hover:!text-black active:!text-black visited:!text-black focus:!text-black sm:w-auto sm:px-8 sm:text-base";
 
   return (
     <div className="grid gap-6">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-ink to-ink-2 p-8 text-white">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-ink to-ink-2 p-5 text-white sm:p-8">
         <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-brand/20 blur-3xl" />
 
-        <div className="relative flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-bold">
+        <div className="relative grid gap-5 sm:flex sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0">
+            <h2 className="max-w-[13rem] text-4xl font-bold leading-tight sm:max-w-none sm:text-3xl">
               Hello {user?.name || "there"} 👋
             </h2>
 
-            <p className="mt-2 text-white/70">
+            <p className="mt-3 max-w-[18rem] text-base leading-relaxed text-white/70 sm:mt-2 sm:max-w-none">
               {hasVehicles
                 ? "Manage bookings, wallet, vehicles, and service requests."
                 : "Add your first vehicle to start booking services."}
@@ -135,13 +135,13 @@ export default function Dashboard() {
           </button>
         </div>
 
-        <div className="relative mt-6 flex flex-wrap gap-3">
+        <div className="relative mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
           {hasVehicles ? (
-            <Link to="/booking/vehicle" className={heroButton}>
+            <Link to="/booking/vehicle" className={`${heroButton} col-span-2`}>
               Book a service
             </Link>
           ) : (
-            <Link to="/booking/vehicle" className={heroButton}>
+            <Link to="/booking/vehicle" className={`${heroButton} col-span-2`}>
               Add your first vehicle
             </Link>
           )}

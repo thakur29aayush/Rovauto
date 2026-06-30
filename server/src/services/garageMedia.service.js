@@ -2,7 +2,7 @@ const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
 const { uploadToCloudinary } = require("../utils/cloudinaryUpload");
 
-const uploadGarageMedia = async (garageId, files) => {
+const uploadGarageMedia = async (garageId, files, user) => {
   const images = files.images || [];
   const videos = files.videos || [];
   const thumbnail = files.thumbnail || [];
@@ -25,6 +25,10 @@ const uploadGarageMedia = async (garageId, files) => {
 
   if (!garage) {
     throw new ApiError(404, "Garage not found");
+  }
+
+  if (user.role !== "ADMIN" && garage.ownerId !== user.id) {
+    throw new ApiError(403, "You are not allowed to upload media for this garage");
   }
 
   for (const file of [...images, ...thumbnail]) {

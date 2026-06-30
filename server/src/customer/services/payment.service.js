@@ -88,6 +88,25 @@ const getPaymentReturnBaseUrl = () => {
   return normalizedUrl;
 };
 
+const assertCashfreeOrderMatchesPayment = (cashfreeOrder, payment) => {
+  const cashfreeAmount = Number(cashfreeOrder.order_amount);
+  const localAmount = Number(payment.amount);
+  const cashfreeCurrency = String(cashfreeOrder.order_currency || "").toUpperCase();
+  const localCurrency = String(payment.currency || "INR").toUpperCase();
+
+  if (cashfreeOrder.order_id !== payment.cashfreeOrderId) {
+    throw new ApiError(400, "Cashfree order ID mismatch");
+  }
+
+  if (!Number.isFinite(cashfreeAmount) || cashfreeAmount !== localAmount) {
+    throw new ApiError(400, "Cashfree payment amount mismatch");
+  }
+
+  if (cashfreeCurrency !== localCurrency) {
+    throw new ApiError(400, "Cashfree payment currency mismatch");
+  }
+};
+
 const createPaymentOrder = async (userId, { bookingId }) => {
   if (!isCashfreeConfigured()) {
     throw new ApiError(500, "Cashfree payment gateway is not configured");
@@ -209,75 +228,6 @@ const createPaymentOrder = async (userId, { bookingId }) => {
 };
 
 const verifyPayment = async (userId, { bookingId, cashfreeOrderId }) => {
-  // Dev mode: skip real Cashfree if order starts with cf_dev_
-  const isDevOrder = cashfreeOrderId?.startsWith("cf_dev_");
-  const isDevMode = isDevOrder || process.env.NODE_ENV === "development";
-
-  if (isDevMode) {
-    const booking = await prisma.booking.findFirst({
-      where: {
-        id: bookingId,
-        userId,
-      },
-      include: {
-        payment: true,
-        services: true,
-      },
-    });
-
-    if (!booking) {
-      throw new ApiError(404, "Booking not found");
-    }
-
-    if (!booking.payment) {
-      throw new ApiError(404, "Payment order not found");
-    }
-
-    if (booking.payment.status === "PAID") {
-      throw new ApiError(400, "Payment already verified");
-    }
-
-    if (booking.payment.cashfreeOrderId !== cashfreeOrderId) {
-      throw new ApiError(400, "Invalid order ID");
-    }
-
-    const result = await prisma.$transaction(async (tx) => {
-      const payment = await tx.payment.update({
-        where: { bookingId },
-        data: {
-          status: "PAID",
-        },
-      });
-
-      const updatedBooking = await tx.booking.update({
-        where: { id: bookingId },
-        data: { status: "SEARCHING_GARAGE" },
-        include: bookingInclude,
-      });
-
-      return { payment, booking: updatedBooking };
-    });
-
-    let broadcastRequests = [];
-    try {
-      broadcastRequests = await garageRequestService.broadcastBookingToNearbyGarages(bookingId);
-    } catch (error) {
-      await prisma.booking.update({
-        where: { id: bookingId },
-        data: { status: "EXPIRED", expiredAt: new Date() },
-      });
-      await invalidateCustomerCache(userId);
-      throw error;
-    }
-
-    await invalidateCustomerCache(userId);
-    return {
-      ...result,
-      broadcastRequests,
-      message: "Dev mode: Payment verified. Request sent to nearby garages.",
-    };
-  }
-
   if (!isCashfreeConfigured()) {
     throw new ApiError(500, "Cashfree payment gateway is not configured");
   }
@@ -322,6 +272,8 @@ const verifyPayment = async (userId, { bookingId, cashfreeOrderId }) => {
     throw getCashfreeApiError(error, "Unable to verify Cashfree payment");
   }
   const orderStatus = cashfreeOrder.order_status;
+
+  assertCashfreeOrderMatchesPayment(cashfreeOrder, booking.payment);
 
   if (orderStatus !== "PAID") {
     if (["EXPIRED", "TERMINATED", "FAILED"].includes(orderStatus)) {
@@ -426,4 +378,3 @@ module.exports = {
   verifyPayment,
   getMyPayments,
 };
-

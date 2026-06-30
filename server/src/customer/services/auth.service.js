@@ -256,15 +256,6 @@ const verifyPhoneNumberOtp = async ({ phone, otp }, userId = null) => {
         isPhoneVerified: true,
       },
     });
-  } else {
-    await prisma.user.updateMany({
-      where: {
-        phone: cleanPhone,
-      },
-      data: {
-        isPhoneVerified: true,
-      },
-    });
   }
 
   return {
@@ -411,24 +402,25 @@ const googleAuth = async ({ idToken, role = "CUSTOMER" }) => {
 
 const forgotPassword = async ({ email }) => {
   const cleanEmail = normalizeEmail(email);
+  const genericResponse = {
+    message: "If an account exists, a password reset OTP will be sent.",
+  };
 
   const user = await prisma.user.findUnique({
     where: { email: cleanEmail },
   });
 
   if (!user) {
-    throw new ApiError(404, "User not found");
+    return genericResponse;
   }
 
   if (!user.isActive) {
-    throw new ApiError(403, "Account is disabled");
+    return genericResponse;
   }
 
   await createResetPasswordOtp(user.id, user.email);
 
-  return {
-    message: "Password reset OTP sent successfully",
-  };
+  return genericResponse;
 };
 
 const resetPassword = async ({ email, otp, newPassword }) => {

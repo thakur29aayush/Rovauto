@@ -35,7 +35,7 @@ export function AppProvider({ children }) {
     readJson("user", readJson("rov_user", null))
   );
 
-  const [token, setToken] = useState(() => localStorage.getItem("token") || null);
+  const [token, setToken] = useState(() => (user ? "cookie" : null));
 
   const [vehicle, setVehicle] = useState(() => readJson("rov_vehicle", null));
   const [vehicles, setVehicles] = useState(() => readArray("rov_vehicles"));
@@ -203,6 +203,26 @@ const saveProfileCache = (data, fetchedAt) => {
     clearServiceHistoryCache();
   };
 
+  const clearLocalSession = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("rov_user");
+    localStorage.removeItem("rov_vehicle");
+    localStorage.removeItem("rov_vehicles");
+
+    setToken(null);
+    setUser(null);
+    setVehicle(null);
+    setVehicles([]);
+    setCart([]);
+
+    clearDashboardCache();
+    clearVehiclesCache();
+    clearActiveBookingsCache();
+    clearServiceHistoryCache();
+    clearProfileCache();
+  };
+
   const syncVehicles = (list = []) => {
     const safeList = Array.isArray(list) ? list : [];
 
@@ -232,15 +252,12 @@ const saveProfileCache = (data, fetchedAt) => {
     return me;
   };
 
-  const login = (userData, authToken) => {
+  const login = (userData) => {
+    localStorage.removeItem("token");
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("rov_user", JSON.stringify(userData));
 
-    if (authToken) {
-      localStorage.setItem("token", authToken);
-      setToken(authToken);
-    }
-
+    setToken("cookie");
     setUser(userData);
 
     clearDashboardCache();
@@ -250,41 +267,25 @@ const saveProfileCache = (data, fetchedAt) => {
     clearProfileCache();
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("rov_user");
-    localStorage.removeItem("rov_vehicle");
-    localStorage.removeItem("rov_vehicles");
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // Local cleanup still needs to happen if the server session is already gone.
+    }
 
-    setToken(null);
-    setUser(null);
-    setVehicle(null);
-    setVehicles([]);
-    setCart([]);
-
-    clearDashboardCache();
-    clearVehiclesCache();
-    clearActiveBookingsCache();
-    clearServiceHistoryCache();
-    clearProfileCache();
+    clearLocalSession();
   };
 
   const fetchMe = async () => {
-    const savedToken = localStorage.getItem("token");
-
-    if (!savedToken) {
-      setAuthLoading(false);
-      return null;
-    }
-
     try {
       const res = await api.get("/auth/me");
       const me = res.data.data;
 
+      setToken("cookie");
       return syncUserData(me);
     } catch {
-      logout();
+      clearLocalSession();
       return null;
     } finally {
       setAuthLoading(false);
@@ -446,8 +447,8 @@ const saveProfileCache = (data, fetchedAt) => {
   };
 
   useEffect(() => {
-    setAuthLoading(false);
-  }, [token]);
+    fetchMe();
+  }, []);
 
   useEffect(() => {
     if (user) {

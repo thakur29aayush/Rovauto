@@ -116,7 +116,7 @@ export default function ActiveBookings() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold">Active Bookings</h2>
+        <h2 className="min-w-0 text-2xl font-bold sm:text-3xl">Active Bookings</h2>
 
         <button
           type="button"
@@ -141,44 +141,54 @@ export default function ActiveBookings() {
           return (
             <div
               key={booking.id}
-              className="card-soft flex flex-wrap items-center gap-4 p-5"
+              className="card-soft grid gap-4 p-5 sm:flex sm:flex-wrap sm:items-center"
             >
-              <div className="min-w-0 flex-1">
-                <div className="text-xs text-muted">#{booking.bookingCode}</div>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:contents">
+                <div className="min-w-0 sm:flex-1">
+                  <div className="break-words text-xs leading-snug text-muted">
+                    #{booking.bookingCode}
+                  </div>
 
-                <div className="font-semibold">{getServicesText(booking)}</div>
+                  <div className="mt-1 line-clamp-2 font-semibold leading-snug">
+                    {getServicesText(booking)}
+                  </div>
 
-                <div className="text-sm text-muted">{getGarageText(booking)}</div>
+                  <div className="mt-1 text-sm text-muted">{getGarageText(booking)}</div>
+                </div>
+
+                <div className="text-right font-bold sm:text-left">
+                  Rs. {getAmount(booking)}
+                </div>
               </div>
 
-              <span className="chip-brand">{formatStatus(booking.status)}</span>
-
-              <div className="font-bold">Rs. {getAmount(booking)}</div>
+              <span className="chip-brand w-fit max-w-full whitespace-nowrap">
+                {formatStatus(booking.status)}
+              </span>
 
               {isPendingPayment ? (
-                <>
+                <div className="grid grid-cols-2 gap-3 sm:contents">
                   <button
                     type="button"
                     onClick={() => payBooking(booking)}
                     disabled={payingId === booking.id}
-                    className="btn-primary disabled:cursor-not-allowed disabled:opacity-70"
+                    className="btn-primary w-full whitespace-nowrap px-4 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
                   >
                     {payingId === booking.id ? "Processing..." : "Pay Now"}
                   </button>
                   <button
                     type="button"
                     disabled
-                    className="btn-dark cursor-not-allowed opacity-50"
+                    className="btn-dark w-full cursor-not-allowed whitespace-nowrap px-4 opacity-50 sm:w-auto"
                     title="Complete payment to enable tracking"
                   >
                     Track
                   </button>
-                </>
+                </div>
               ) : (
                 <Link
                   to="/tracking"
                   state={{ bookingId: booking.id }}
-                  className="btn-dark"
+                  className="btn-dark w-full whitespace-nowrap px-4 sm:w-auto"
                 >
                   Track
                 </Link>

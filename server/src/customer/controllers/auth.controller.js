@@ -2,6 +2,23 @@ const asyncHandler = require("../../utils/asyncHandler");
 const ApiResponse = require("../../utils/apiResponse");
 const authService = require("../services/auth.service");
 
+const authCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+const sendAuthResponse = (res, statusCode, message, result) => {
+  const { token, ...safeResult } = result;
+
+  res.cookie("accessToken", token, authCookieOptions);
+
+  return res
+    .status(statusCode)
+    .json(new ApiResponse(statusCode, message, safeResult));
+};
+
 const signup = asyncHandler(async (req, res) => {
   const result = await authService.signup(req.body);
 
@@ -13,9 +30,7 @@ const signup = asyncHandler(async (req, res) => {
 const verifyOtp = asyncHandler(async (req, res) => {
   const result = await authService.verifyOtp(req.body);
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, "Account verified successfully", result));
+  return sendAuthResponse(res, 200, "Account verified successfully", result);
 });
 
 const resendOtp = asyncHandler(async (req, res) => {
@@ -45,17 +60,21 @@ const verifyPhoneOtp = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
   const result = await authService.login(req.body);
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, "Login successful", result));
+  return sendAuthResponse(res, 200, "Login successful", result);
 });
 
 const googleAuth = asyncHandler(async (req, res) => {
   const result = await authService.googleAuth(req.body);
 
+  return sendAuthResponse(res, 200, "Google authentication successful", result);
+});
+
+const logout = asyncHandler(async (req, res) => {
+  res.clearCookie("accessToken", authCookieOptions);
+
   return res
     .status(200)
-    .json(new ApiResponse(200, "Google authentication successful", result));
+    .json(new ApiResponse(200, "Logged out successfully", { loggedOut: true }));
 });
 
 const me = asyncHandler(async (req, res) => {
@@ -90,6 +109,7 @@ module.exports = {
   verifyPhoneOtp,
   login,
   googleAuth,
+  logout,
   me,
   forgotPassword,
   resetPassword,

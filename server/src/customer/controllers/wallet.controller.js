@@ -1,5 +1,6 @@
 const asyncHandler = require("../../utils/asyncHandler");
 const ApiResponse = require("../../utils/apiResponse");
+const ApiError = require("../../utils/apiError");
 const walletService = require("../services/wallet.service");
 
 const getWallet = asyncHandler(async (req, res) => {
@@ -22,13 +23,10 @@ const getWalletTransactions = asyncHandler(async (req, res) => {
 });
 
 const rechargeWallet = asyncHandler(async (req, res) => {
-  const result = await walletService.rechargeWallet(req.user.id, req.body.amount, {
-    description: "RovAuto coins wallet recharge",
-  });
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, "Wallet recharged successfully", result));
+  throw new ApiError(
+    501,
+    "Wallet recharge requires verified payment processing and is temporarily disabled"
+  );
 });
 
 module.exports = {

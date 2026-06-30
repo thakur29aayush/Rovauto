@@ -168,7 +168,7 @@ export default function Checkout() {
         </div>
       </div>
 
-      <aside className="card-soft h-fit p-6 lg:sticky lg:top-24">
+      <aside className="card-soft h-fit p-5 sm:p-6 lg:sticky lg:top-24">
         <div className="flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand">
             <FiTruck />
@@ -199,34 +199,43 @@ export default function Checkout() {
         </div>
         <div className="grid gap-2 text-sm">
           {cart.length === 0 ? (
-            <div className="flex justify-between gap-4 text-muted">
-              <span>No services selected</span>
-              <span>Rs. 0</span>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-muted">
+              <span className="min-w-0 truncate">No services selected</span>
+              <span className="whitespace-nowrap text-right">Rs. 0</span>
             </div>
           ) : (
             cart.map((item) => (
-              <div key={item.id} className="flex justify-between gap-4">
+              <div
+                key={item.id}
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3"
+              >
                 <span className="min-w-0 truncate">{item.name}</span>
-                <span className="font-semibold">Rs. {getServicePrice(item)}</span>
+                <span className="whitespace-nowrap text-right font-semibold">
+                  Rs. {getServicePrice(item)}
+                </span>
               </div>
             ))
           )}
-          <div className="flex justify-between text-muted">
-            <span>Platform fee</span>
-            <span>Rs. {fee}</span>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-muted">
+            <span className="min-w-0">Platform fee</span>
+            <span className="whitespace-nowrap text-right">Rs. {fee}</span>
           </div>
         </div>
 
         <hr className="my-4 border-line" />
 
         <div className="grid gap-2 text-sm">
-          <div className="flex justify-between">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
             <span className="text-muted">Pay at garage</span>
-            <span className="font-semibold">Rs. {payAtGarage}</span>
+            <span className="whitespace-nowrap text-right font-semibold">
+              Rs. {payAtGarage}
+            </span>
           </div>
-          <div className="flex justify-between text-base">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-base">
             <span className="font-semibold">Pay now</span>
-            <span className="text-xl font-bold">Rs. {fee}</span>
+            <span className="whitespace-nowrap text-right text-xl font-bold">
+              Rs. {fee}
+            </span>
           </div>
         </div>
 
