@@ -1,0 +1,59 @@
+const Groq = require("groq-sdk");
+const ApiError = require("./apiError");
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
+
+/**
+ * Uses Groq AI to correct/normalize an address
+ * Handles typos, incomplete addresses, and alternate names
+ */
+const correctAddress = async (address, city, state) => {
+  if (!process.env.GROQ_API_KEY) {
+    throw new ApiError(500, "Groq API not configured");
+  }
+
+  try {
+    const message = await groq.messages.create({
+      model: "mixtral-8x7b-32768",
+      max_tokens: 150,
+      messages: [
+        {
+          role: "user",
+          content: `You are an address correction assistant. Given an incomplete, misspelled, or informal address, provide the corrected full address in India.
+
+Input address: ${address}
+City: ${city}
+State: ${state}
+
+Rules:
+1. Correct common typos and spelling mistakes
+2. Expand abbreviations and informal names
+3. Include proper city and state names
+4. Return ONLY the corrected address, nothing else
+5. If you cannot determine a valid location, respond with "UNABLE_TO_CORRECT"
+
+Corrected address:`,
+        },
+      ],
+    });
+
+    const correctedAddress = message.content[0]?.text?.trim() || "";
+
+    if (correctedAddress === "UNABLE_TO_CORRECT" || !correctedAddress) {
+      throw new ApiError(404, "Could not correct this address");
+    }
+
+    return correctedAddress;
+  } catch (error) {
+    if (error.status === 404) throw error;
+    
+    console.error("Groq address correction error:", error.message);
+    throw new ApiError(500, "Address correction service unavailable");
+  }
+};
+
+module.exports = {
+  correctAddress,
+};
