@@ -10,7 +10,10 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // Check for garage token first, then fall back to customer token
+    const garageToken = localStorage.getItem("garage_token");
+    const customerToken = localStorage.getItem("token");
+    const token = garageToken || customerToken;
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
