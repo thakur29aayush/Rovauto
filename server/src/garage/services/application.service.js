@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const prisma = require("../../config/prisma");
 const ApiError = require("../../utils/apiError");
 const { sendGarageApplicationEmail } = require("./applicationEmail.service");
-const otpService = require("../../customer/services/otp.service");
+const { createResetPasswordOtp } = require("../../customer/services/otp.service");
 
 const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
 const normalizePhone = (phone) => String(phone || "").trim();
@@ -134,6 +134,7 @@ const approveApplication = async (applicationId, adminNote) => {
   });
   if (existingGarage) throw new ApiError(409, "A garage already exists for this application/email/phone");
 
+  // perform owner creation/update, garage creation and update application in a transaction
   const result = await prisma.$transaction(async (tx) => {
     const existingOwner = await tx.user.findUnique({ where: { email: application.email } });
     const owner = existingOwner
@@ -202,20 +203,24 @@ const approveApplication = async (applicationId, adminNote) => {
     };
   });
 
+  // Generate a reset OTP for the owner so they can set a password.
+  // createResetPasswordOtp returns plaintext OTP (dev/testing only) and also logs it.
+  const resetOtp = await createResetPasswordOtp(result.owner.id, result.owner.email);
+
+  // Send the approval email including the OTP (development/testing)
+  const approvalMessage = `${result.application.adminNote}\n\nYour account has been created/verified.\n\nUse this OTP to set your password via Forgot Password -> Reset Password: ${resetOtp}\n\nIf you don't see an OTP, use 'Forgot Password' on login to receive one.`;
+
   await sendGarageApplicationEmail({
-    to: application.email,
+    to: result.owner.email,
     subject: "Rovauto garage application approved",
-    message: "Your garage has been approved. Login with your email and use forgot password if you need to set your password. Recharge at least Rs. 1000 to activate your garage listing.",
+    message: approvalMessage,
   });
 
-  try {
-    await otpService.createResetPasswordOtp(result.owner.id, result.owner.email);
-    console.log(`Reset OTP created for owner ${result.owner.email} (userId=${result.owner.id})`);
-  } catch (err) {
-    console.error(`Failed to create reset OTP for owner ${result.owner.email}:`, err.message || err);
-  }
-
-  return result;
+  // Include resetOtp in the returned result for admin API responses (dev/testing)
+  return {
+    ...result,
+    resetOtp,
+  };
 };
 
 module.exports = {
