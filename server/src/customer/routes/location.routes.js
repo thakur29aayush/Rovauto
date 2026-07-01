@@ -16,11 +16,11 @@ const router = express.Router();
 
 router.use(protect);
 
-// Strict rate limit for geocoding to prevent Nominatim API abuse
-// 10 requests per minute per user
+// Increased rate limit for geocoding to allow Nominatim + Groq fallback flow
+// 20 requests per minute per user (Groq free tier: 30 RPM)
 const geocodeRateLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 10, // 10 requests per window
+  max: 20, // 20 requests per window (increased from 10)
   keyGenerator: (req) => `geocode:${req.user.id}`, // Per-user limit
 });
 
