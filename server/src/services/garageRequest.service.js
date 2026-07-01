@@ -32,6 +32,31 @@ const serializeGarageRequest = (request) => ({
 
 const serializeGarageRequests = (requests) => requests.map(serializeGarageRequest);
 
+const GARAGE_REQUEST_STATUS_FILTERS = {
+  NEW: { status: BROADCAST_STATUS.SENT },
+  SENT: { status: BROADCAST_STATUS.SENT },
+  ACCEPTED: { status: BROADCAST_STATUS.ACCEPTED },
+  REJECTED: { status: BROADCAST_STATUS.REJECTED },
+  EXPIRED: { status: BROADCAST_STATUS.EXPIRED },
+  CONFIRMED: { status: BROADCAST_STATUS.ACCEPTED, booking: { status: BOOKING_STATUS.CONFIRMED } },
+  IN_PROGRESS: { status: BROADCAST_STATUS.ACCEPTED, booking: { status: BOOKING_STATUS.IN_PROGRESS } },
+  COMPLETED: { status: BROADCAST_STATUS.ACCEPTED, booking: { status: BOOKING_STATUS.COMPLETED } },
+};
+
+const getGarageRequestWhere = (garageId, query = {}) => {
+  const status = String(query.status || "").trim().toUpperCase();
+  const statusFilter = status ? GARAGE_REQUEST_STATUS_FILTERS[status] : {};
+
+  if (status && !statusFilter) {
+    throw new ApiError(400, "Invalid garage request status filter");
+  }
+
+  return {
+    garageId,
+    ...statusFilter,
+  };
+};
+
 const bookingForWhatsappInclude = {
   user: {
     select: {
@@ -125,9 +150,8 @@ const broadcastBookingToNearbyGarages = async (bookingId, options = {}) => {
 };
 
 const getGarageRequests = async (garageId, query = {}) => {
-  const { status = BROADCAST_STATUS.SENT } = query;
   const requests = await prisma.garageBroadcastRequest.findMany({
-    where: { garageId, ...(status && { status }) },
+    where: getGarageRequestWhere(garageId, query),
     include: requestInclude,
     orderBy: { createdAt: "desc" },
   });

@@ -7,7 +7,11 @@ import { useApp } from "@/hooks/useApp";
 
 const statusFilters = ["All", "New", "Accepted", "Confirmed", "In Progress", "Completed", "Rejected", "Expired"];
 
-const toStatus = (filter) => filter === "All" ? "" : filter.replaceAll(" ", "_").toUpperCase();
+const toStatus = (filter) => {
+  if (filter === "All") return "";
+  if (filter === "New") return "SENT";
+  return filter.replaceAll(" ", "_").toUpperCase();
+};
 
 export default function GarageBookings() {
   const { bookings } = useSelector((state) => state.garage);
