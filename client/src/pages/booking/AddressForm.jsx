@@ -5,6 +5,84 @@ import api from "@/api/axios";
 import { buildFullAddress, getDefaultUserLocation, parseAddressParts } from "@/utils/address";
 import { FiCheckCircle, FiMapPin } from "react-icons/fi";
 
+// Client-side geocode cache to prevent duplicate requests
+const geocodeCache = new Map();
+const GEOCODE_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const geocodeRequestQueue = [];
+let isGeocoding = false;
+
+const getCachedGeocode = (key) => {
+  const cached = geocodeCache.get(key);
+  if (!cached) return null;
+  
+  if (Date.now() - cached.timestamp > GEOCODE_CACHE_TTL) {
+    geocodeCache.delete(key);
+    return null;
+  }
+  
+  return cached.data;
+};
+
+const setCachedGeocode = (key, data) => {
+  geocodeCache.set(key, {
+    data,
+    timestamp: Date.now(),
+  });
+};
+
+const getCacheKey = (address, city, state) => {
+  return `${address}|${city}|${state}`.toLowerCase();
+};
+
+const processGeocodeQueue = async () => {
+  if (isGeocoding || geocodeRequestQueue.length === 0) return;
+  
+  isGeocoding = true;
+  const { resolve, reject, address, city, state } = geocodeRequestQueue.shift();
+  
+  try {
+    const cacheKey = getCacheKey(address, city, state);
+    
+    // Check cache first
+    const cached = getCachedGeocode(cacheKey);
+    if (cached) {
+      resolve(cached);
+      isGeocoding = false;
+      // Process next in queue after 1 second
+      setTimeout(processGeocodeQueue, 1000);
+      return;
+    }
+
+    // Make API request
+    const response = await api.get("/locations/geocode", {
+      params: { address, city, state },
+    });
+
+    const geocodeResult = response.data?.data || response.data;
+    const result = {
+      latitude: Number(geocodeResult.latitude),
+      longitude: Number(geocodeResult.longitude),
+    };
+
+    // Cache the result
+    setCachedGeocode(cacheKey, result);
+    resolve(result);
+  } catch (err) {
+    reject(err);
+  } finally {
+    isGeocoding = false;
+    // Process next in queue after 1 second (respect rate limit)
+    setTimeout(processGeocodeQueue, 1000);
+  }
+};
+
+const queueGeocodeRequest = (address, city, state) => {
+  return new Promise((resolve, reject) => {
+    geocodeRequestQueue.push({ resolve, reject, address, city, state });
+    processGeocodeQueue();
+  });
+};
+
 export default function AddressForm() {
   const nav = useNavigate();
   const routeLocation = useLocation();
@@ -96,19 +174,16 @@ export default function AddressForm() {
     try {
       const fullAddress = buildFullAddress(form);
       
-      const response = await api.get("/locations/geocode", {
-        params: {
-          address: form.address,
-          city: form.city,
-          state: form.area,
-        },
-      });
-
-      const geocodeResult = response.data?.data || response.data;
+      // Use queued request to respect rate limits
+      const geocodeResult = await queueGeocodeRequest(
+        form.address,
+        form.city,
+        form.area
+      );
       
       return {
-        latitude: Number(geocodeResult.latitude),
-        longitude: Number(geocodeResult.longitude),
+        latitude: geocodeResult.latitude,
+        longitude: geocodeResult.longitude,
         address: fullAddress,
       };
     } catch (err) {
