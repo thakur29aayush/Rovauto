@@ -19,11 +19,6 @@ const {
 const bookingLifecycleService = require("./bookingLifecycle.service");
 
 const SOS_CHARGE = 50;
-const getGarageBroadcastRadiusKm = () => {
-  const radius = Number(process.env.GARAGE_BROADCAST_RADIUS_KM);
-  return Number.isFinite(radius) && radius > 0 ? radius : null;
-};
-
 const serializeGarageRequest = (request) => ({
   ...request,
   acceptUrl: getGarageAcceptUrl(request.id),
@@ -105,7 +100,7 @@ const broadcastBookingToNearbyGarages = async (bookingId, options = {}) => {
     latitude: booking.customerLatitude,
     longitude: booking.customerLongitude,
     serviceIds,
-    maxDistance: options.maxDistance || getGarageBroadcastRadiusKm(),
+    maxDistance: options.maxDistance || null,
     onlyVerified: true,
     requireOpenNow: false,
     requireWalletBalance: false,

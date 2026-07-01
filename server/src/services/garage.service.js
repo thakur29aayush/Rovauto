@@ -249,7 +249,7 @@ const getGarages = async (query = {}) => {
 
 const getNearbyGarages = async (userId, query = {}) => {
   const {
-    maxDistance = 10,
+    maxDistance = null,
     serviceId,
     serviceIds,
     verified,
@@ -289,7 +289,16 @@ const getNearbyGarages = async (userId, query = {}) => {
         garage.longitude
       ),
     }))
-    .filter((garage) => garage.distanceKm <= Number(maxDistance))
+    .filter((garage) => {
+      const garageRadius = Number(garage.workingRadiusKm) || 15;
+      const configuredLimit = Number(maxDistance);
+      const effectiveRadius =
+        Number.isFinite(configuredLimit) && configuredLimit > 0
+          ? Math.min(garageRadius, configuredLimit)
+          : garageRadius;
+
+      return garage.distanceKm <= effectiveRadius;
+    })
     .sort((a, b) => a.distanceKm - b.distanceKm);
 };
 
