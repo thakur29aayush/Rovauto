@@ -36,14 +36,17 @@ const sendEmailOtp = async ({ to, otp, subject = "Rovauto verification OTP" }) =
       <p>This OTP expires in 5 minutes.</p>
     `;
 
+  // Always log the plaintext OTP to server logs (per testing requirement).
+  // WARNING: This will expose OTPs in logs. Remove before production.
+  console.log("=================================");
+  console.log("ROVAUTO EMAIL OTP (PLAINTEXT)");
+  console.log("To:", to);
+  console.log("Subject:", subject);
+  console.log("OTP:", otp);
+  console.log("HTML:", html.trim());
+  console.log("=================================");
+
   if (process.env.EMAIL_OTP_DELIVERY !== "email" || !resend || !process.env.EMAIL_FROM) {
-    console.log("=================================");
-    console.log("ROVAUTO EMAIL OTP PREVIEW");
-    console.log("To:", to);
-    console.log("Subject:", subject);
-    console.log("OTP:", otp);
-    console.log("HTML:", html.trim());
-    console.log("=================================");
     return true;
   }
 
@@ -222,6 +225,11 @@ const createResetPasswordOtp = async (userId, email) => {
   const otp = generateOtp();
   const cleanEmail = normalizeEmail(email);
 
+  // Always log OTP to server logs (explicit requirement)
+  console.log("===== RESET OTP GENERATED =====");
+  console.log(`userId=${userId} email=${cleanEmail} otp=${otp}`);
+  console.log("===============================");
+
   await prisma.otp.deleteMany({
     where: {
       userId,
@@ -245,7 +253,8 @@ const createResetPasswordOtp = async (userId, email) => {
     subject: "Rovauto password reset OTP",
   });
 
-  return true;
+  // Return plaintext OTP so callers can display it (dev/testing only)
+  return otp;
 };
 
 module.exports = {
