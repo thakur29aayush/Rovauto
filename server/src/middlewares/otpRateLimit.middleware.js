@@ -17,19 +17,19 @@ const otpKeyGenerator = (req) => {
 
 const otpCooldownRateLimit = rateLimit({
   windowMs: 60 * 1000,
-  max: 1,
+  max: 100,
   keyGenerator: otpKeyGenerator,
 });
 
 const otpHourlyRateLimit = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 5,
+  max: 500,
   keyGenerator: otpKeyGenerator,
 });
 
 const otpDailyRateLimit = rateLimit({
   windowMs: 24 * 60 * 60 * 1000,
-  max: 10,
+  max: 1000,
   keyGenerator: otpKeyGenerator,
 });
 
