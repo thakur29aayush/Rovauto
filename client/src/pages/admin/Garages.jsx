@@ -115,13 +115,13 @@ export default function Garages() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mx-auto w-full max-w-[1480px] space-y-6 overflow-hidden">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <h2 className="text-2xl font-bold">Garages</h2>
           <p className="text-muted">Approve garage applications and assign services.</p>
         </div>
-        <div className="flex gap-2 rounded-xl bg-bg-soft p-1">
+        <div className="flex w-full gap-2 rounded-xl bg-bg-soft p-1 sm:w-auto">
           {[
             ["applications", "Applications"],
             ["services", "Services"],
@@ -129,7 +129,7 @@ export default function Garages() {
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold ${tab === id ? "bg-ink text-white" : "text-muted"}`}
+              className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold sm:flex-none ${tab === id ? "bg-ink text-white" : "text-muted"}`}
             >
               {label}
             </button>
@@ -147,12 +147,12 @@ export default function Garages() {
               <button
                 key={status}
                 onClick={() => setApplicationStatus(status)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold ${applicationStatus === status ? "bg-ink text-white" : "bg-bg-soft text-muted"}`}
+                className={`rounded-full px-4 py-2 text-xs font-semibold sm:text-sm ${applicationStatus === status ? "bg-ink text-white" : "bg-bg-soft text-muted"}`}
               >
                 {status.replaceAll("_", " ")}
               </button>
             ))}
-            <button onClick={loadApplications} className="btn-ghost !py-2">
+            <button onClick={loadApplications} className="btn-ghost !py-2 text-sm">
               <FiRefreshCw /> Refresh
             </button>
           </div>
@@ -161,14 +161,14 @@ export default function Garages() {
             {loading ? (
               <div className="card-soft p-5 text-muted">Loading applications...</div>
             ) : applications.length ? applications.map((application) => (
-              <div key={application.id} className="card-soft p-5">
+              <div key={application.id} className="card-soft p-4 sm:p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-2">
+                  <div className="min-w-0 space-y-2">
                     <div>
                       <h3 className="text-lg font-bold">{application.garageName}</h3>
                       <p className="text-sm text-muted">{application.ownerName} · {application.email} · {application.phone}</p>
                     </div>
-                    <p className="text-sm">{application.address}, {application.area}, {application.city}</p>
+                    <p className="break-words text-sm">{application.address}, {application.area}, {application.city}</p>
                     <p className="text-sm text-muted">
                       Radius: {application.workingRadiusKm || 15} km ·
                       Lat/Lng: {application.latitude ?? "N/A"}, {application.longitude ?? "N/A"}
@@ -179,21 +179,21 @@ export default function Garages() {
                 </div>
 
                 {application.status !== "APPROVED" && application.status !== "DENIED" && (
-                  <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
+                  <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(280px,1fr)_auto]">
                     <input
                       value={noteByApplication[application.id] || ""}
                       onChange={(e) => setNoteByApplication({ ...noteByApplication, [application.id]: e.target.value })}
                       placeholder="Optional admin note"
-                      className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+                      className="min-w-0 rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
                     />
-                    <div className="flex flex-wrap gap-2">
-                      <button onClick={() => runApplicationAction(application, "approve")} className="btn-primary">
+                    <div className="flex flex-wrap gap-2 xl:flex-nowrap">
+                      <button onClick={() => runApplicationAction(application, "approve")} className="btn-primary !px-4 !py-3 text-sm">
                         <FiCheck /> Approve
                       </button>
-                      <button onClick={() => runApplicationAction(application, "changes")} className="btn-ghost">
+                      <button onClick={() => runApplicationAction(application, "changes")} className="btn-ghost !px-4 !py-3 text-sm">
                         <FiEdit3 /> Changes
                       </button>
-                      <button onClick={() => runApplicationAction(application, "deny")} className="rounded-xl bg-red-700 px-4 py-3 font-semibold text-white">
+                      <button onClick={() => runApplicationAction(application, "deny")} className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-3 text-sm font-semibold text-white">
                         <FiX /> Deny
                       </button>
                     </div>
@@ -206,19 +206,19 @@ export default function Garages() {
           </div>
         </div>
       ) : (
-        <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
-          <div className="card-soft overflow-hidden">
+        <div className="grid min-w-0 gap-5 2xl:grid-cols-[340px_minmax(0,1fr)]">
+          <div className="card-soft min-w-0 overflow-hidden">
             <div className="border-b border-line p-4">
               <h3 className="font-bold">Select Garage</h3>
             </div>
-            <div className="max-h-[680px] overflow-y-auto">
+            <div className="max-h-[420px] overflow-y-auto 2xl:max-h-[680px]">
               {garages.map((garage) => (
                 <button
                   key={garage.id}
                   onClick={() => setSelectedGarageId(garage.id)}
                   className={`block w-full border-b border-line p-4 text-left transition ${selectedGarageId === garage.id ? "bg-ink text-white" : "hover:bg-bg-soft"}`}
                 >
-                  <div className="font-semibold">{garage.name}</div>
+                  <div className="truncate font-semibold">{garage.name}</div>
                   <div className={`text-xs ${selectedGarageId === garage.id ? "text-white/70" : "text-muted"}`}>
                     {garage.city} · {garage.services?.length || 0} services · {garage.isActive ? "Active" : "Inactive"}
                   </div>
@@ -227,22 +227,22 @@ export default function Garages() {
             </div>
           </div>
 
-          <div className="space-y-5">
+          <div className="min-w-0 space-y-5">
             <div className="card-soft p-5">
               <h3 className="text-xl font-bold">{selectedGarage?.name || "Select a garage"}</h3>
               {selectedGarage && (
-                <p className="text-sm text-muted">
+                <p className="break-words text-sm text-muted">
                   {selectedGarage.address}, {selectedGarage.city} · Wallet {money(selectedGarage.wallet?.balance)}
                 </p>
               )}
             </div>
 
-            <form onSubmit={saveGarageService} className="card-soft grid gap-3 p-5 lg:grid-cols-[1fr_160px_auto]">
+            <form onSubmit={saveGarageService} className="card-soft grid min-w-0 gap-3 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_150px_auto]">
               <select
                 required
                 value={serviceForm.serviceId}
                 onChange={(e) => setServiceForm({ ...serviceForm, serviceId: e.target.value })}
-                className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+                className="min-w-0 rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
               >
                 <option value="">Select service</option>
                 {services.map((service) => (
@@ -257,13 +257,14 @@ export default function Garages() {
                 type="number"
                 min="0"
                 placeholder="Price"
-                className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
+                className="min-w-0 rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
               />
-              <button disabled={!selectedGarageId} className="btn-primary">Save</button>
+              <button disabled={!selectedGarageId} className="btn-primary !px-5">Save</button>
             </form>
 
-            <div className="card-soft overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="card-soft min-w-0 overflow-hidden">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[620px] text-sm">
                 <thead className="bg-bg-soft text-left">
                   <tr>{["Service", "Category", "Price", ""].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr>
                 </thead>
@@ -285,6 +286,7 @@ export default function Garages() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         </div>
