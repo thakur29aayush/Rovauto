@@ -3,85 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
 import api from "@/api/axios";
 import { buildFullAddress, getDefaultUserLocation, parseAddressParts } from "@/utils/address";
+import { queueGeocodeRequest, clearGeocodeCache } from "@/utils/geocodeService";
 import { FiCheckCircle, FiMapPin } from "react-icons/fi";
-
-// Client-side geocode cache to prevent duplicate requests
-const geocodeCache = new Map();
-const GEOCODE_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-const geocodeRequestQueue = [];
-let isGeocoding = false;
-
-const getCachedGeocode = (key) => {
-  const cached = geocodeCache.get(key);
-  if (!cached) return null;
-  
-  if (Date.now() - cached.timestamp > GEOCODE_CACHE_TTL) {
-    geocodeCache.delete(key);
-    return null;
-  }
-  
-  return cached.data;
-};
-
-const setCachedGeocode = (key, data) => {
-  geocodeCache.set(key, {
-    data,
-    timestamp: Date.now(),
-  });
-};
-
-const getCacheKey = (address, city, state) => {
-  return `${address}|${city}|${state}`.toLowerCase();
-};
-
-const processGeocodeQueue = async () => {
-  if (isGeocoding || geocodeRequestQueue.length === 0) return;
-  
-  isGeocoding = true;
-  const { resolve, reject, address, city, state } = geocodeRequestQueue.shift();
-  
-  try {
-    const cacheKey = getCacheKey(address, city, state);
-    
-    // Check cache first
-    const cached = getCachedGeocode(cacheKey);
-    if (cached) {
-      resolve(cached);
-      isGeocoding = false;
-      // Process next in queue after 1 second
-      setTimeout(processGeocodeQueue, 1000);
-      return;
-    }
-
-    // Make API request
-    const response = await api.get("/locations/geocode", {
-      params: { address, city, state },
-    });
-
-    const geocodeResult = response.data?.data || response.data;
-    const result = {
-      latitude: Number(geocodeResult.latitude),
-      longitude: Number(geocodeResult.longitude),
-    };
-
-    // Cache the result
-    setCachedGeocode(cacheKey, result);
-    resolve(result);
-  } catch (err) {
-    reject(err);
-  } finally {
-    isGeocoding = false;
-    // Process next in queue after 1 second (respect rate limit)
-    setTimeout(processGeocodeQueue, 1000);
-  }
-};
-
-const queueGeocodeRequest = (address, city, state) => {
-  return new Promise((resolve, reject) => {
-    geocodeRequestQueue.push({ resolve, reject, address, city, state });
-    processGeocodeQueue();
-  });
-};
 
 export default function AddressForm() {
   const nav = useNavigate();
@@ -174,7 +97,7 @@ export default function AddressForm() {
     try {
       const fullAddress = buildFullAddress(form);
       
-      // Use queued request to respect rate limits
+      // Use queued request with rate limiting and fallback
       const geocodeResult = await queueGeocodeRequest(
         form.address,
         form.city,
@@ -189,6 +112,7 @@ export default function AddressForm() {
     } catch (err) {
       const errorMessage = 
         err.response?.data?.message || 
+        err.message ||
         "Could not find coordinates for this address. Please check and try again.";
       throw new Error(errorMessage);
     }
@@ -228,6 +152,11 @@ export default function AddressForm() {
         }
       }
 
+      // Validate coordinates
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        throw new Error("Could not determine coordinates. Please verify address.");
+      }
+
       // Save profile address
       await api.patch("/customer/profile", {
         address: fullAddress,
@@ -255,6 +184,7 @@ export default function AddressForm() {
       });
 
       clearProfileCache();
+      clearGeocodeCache(); // Clear cache after successful save
       const refreshedUser = await fetchProfile({ force: true });
 
       setUser((prev) => ({
