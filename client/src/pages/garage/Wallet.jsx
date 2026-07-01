@@ -5,6 +5,20 @@ import { setWallet } from "@/store/garageSlice";
 import { garageApi } from "@/api/garage";
 import { useApp } from "@/hooks/useApp";
 
+const loadCashfreeCheckout = () =>
+  new Promise((resolve, reject) => {
+    if (window.Cashfree) {
+      resolve(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => reject(new Error("Unable to load Cashfree checkout"));
+    document.body.appendChild(script);
+  });
+
 export default function GarageWallet() {
   const { wallet } = useSelector((state) => state.garage);
   const dispatch = useDispatch();
@@ -52,6 +66,39 @@ export default function GarageWallet() {
     }
   };
 
+  const openCashfreeCheckout = async () => {
+    if (!pendingOrder?.paymentSessionId) {
+      setError("Payment session not created. Please try again.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    try {
+      await loadCashfreeCheckout();
+
+      const cashfree = window.Cashfree({
+        mode: "sandbox",
+      });
+
+      const checkoutResult = await cashfree.checkout({
+        paymentSessionId: pendingOrder.paymentSessionId,
+        redirectTarget: "_modal",
+      });
+
+      if (checkoutResult?.error) {
+        setError(checkoutResult.error.message || "Payment cancelled or failed");
+      } else {
+        // Payment completed, verify the order
+        await verifyRecharge();
+      }
+    } catch (err) {
+      setError(err.message || "Unable to open Cashfree checkout");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const verifyRecharge = async () => {
     if (!pendingOrder?.id) return;
     setLoading(true);
@@ -60,6 +107,7 @@ export default function GarageWallet() {
       await garageApi.verifyRechargeOrder(garageToken, pendingOrder.id);
       setPendingOrder(null);
       setShowRechargeModal(false);
+      setAmount(1000);
       await loadWallet();
       await refreshGarage(garageToken);
     } catch (err) {
@@ -140,11 +188,11 @@ export default function GarageWallet() {
                 <div className="rounded-xl bg-bg-soft p-4 text-sm">
                   <p><span className="text-muted">Order ID:</span> {pendingOrder.id}</p>
                   <p><span className="text-muted">Amount:</span> Rs. {Number(pendingOrder.amount || amount).toLocaleString()}</p>
-                  {pendingOrder.paymentSessionId && <p className="break-all"><span className="text-muted">Payment Session:</span> {pendingOrder.paymentSessionId}</p>}
+                  {pendingOrder.paymentSessionId && <p className="break-all"><span className="text-muted">Payment Session:</span> {pendingOrder.paymentSessionId.substring(0, 30)}...</p>}
                 </div>
-                <button onClick={verifyRecharge} disabled={loading} className="btn-primary w-full">
+                <button onClick={openCashfreeCheckout} disabled={loading} className="btn-primary w-full">
                   <FiCheckCircle />
-                  {loading ? "Verifying..." : "Verify Payment"}
+                  {loading ? "Processing..." : "Open Payment Portal"}
                 </button>
                 <button onClick={() => setPendingOrder(null)} className="btn-ghost w-full">Create another order</button>
               </div>
