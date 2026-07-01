@@ -23,6 +23,7 @@ export default function DashboardLayout({ items, title }) {
     to === "/garage" ||
     to === "/admin";
   const isGaragePortal = pathname.startsWith("/garage");
+  const isAdminPortal = pathname.startsWith("/admin");
   const account = isGaragePortal ? garage : user;
   const accountName = isGaragePortal
     ? account?.ownerName || account?.owner?.name || account?.name
@@ -36,7 +37,7 @@ export default function DashboardLayout({ items, title }) {
     }
 
     await logout();
-    navigate("/");
+    navigate(isAdminPortal ? "/admin/login" : "/");
   };
 
   return (

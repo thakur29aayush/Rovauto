@@ -9,8 +9,13 @@ function ProtectedRoute({ children }) {
   const { user, garage } = useApp();
   const location = useLocation();
   const isGarageRoute = location.pathname.startsWith("/garage");
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
-  if (isGarageRoute) {
+  if (isAdminRoute) {
+    if (user?.role !== "ADMIN") {
+      return <Navigate to="/admin/login" state={{ from: location }} replace />;
+    }
+  } else if (isGarageRoute) {
     if (!garage) {
       return <Navigate to="/garage/login" state={{ from: location }} replace />;
     }
@@ -91,6 +96,7 @@ const GarageWallet = lazy(() => import("@/pages/garage/Wallet"));
 const MagicLink = lazy(() => import("@/pages/garage/MagicLink"));
 
 const AdminDashboard = lazy(() => import("@/pages/admin/Dashboard"));
+const AdminLogin = lazy(() => import("@/pages/admin/Login"));
 const AdminCustomers = lazy(() => import("@/pages/admin/Customers"));
 const AdminGarages = lazy(() => import("@/pages/admin/Garages"));
 const AdminBookings = lazy(() => import("@/pages/admin/Bookings"));
@@ -122,10 +128,10 @@ const garageItems = [
 
 const adminItems = [
   { to: "/admin", label: "Dashboard", icon: FiGrid },
-  { to: "/admin/customers", label: "Customers", icon: FiUsers },
   { to: "/admin/garages", label: "Garages", icon: FiHome },
+  { to: "/admin/revenue", label: "Price Ranges", icon: FiDollarSign },
+  { to: "/admin/customers", label: "Customers", icon: FiUsers },
   { to: "/admin/bookings", label: "Bookings", icon: FiCalendar },
-  { to: "/admin/revenue", label: "Revenue", icon: FiDollarSign },
 ];
 
 function AppRoutes() {
@@ -150,6 +156,7 @@ function AppRoutes() {
           <Route path="/register" element={<Register />} />
           <Route path="/otp" element={<OTP />} />
           <Route path="/forgot" element={<Forgot />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
 
           <Route path="/garage/login" element={<GarageLogin />} />
           <Route path="/garage/otp-login" element={<GarageOtpLogin />} />
@@ -187,11 +194,11 @@ function AppRoutes() {
         </Route>
 
         <Route element={<DashboardLayout items={adminItems} title="Admin Console" />}>
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/customers" element={<AdminCustomers />} />
-          <Route path="/admin/garages" element={<AdminGarages />} />
-          <Route path="/admin/bookings" element={<AdminBookings />} />
-          <Route path="/admin/revenue" element={<AdminRevenue />} />
+          <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin/customers" element={<ProtectedRoute><AdminCustomers /></ProtectedRoute>} />
+          <Route path="/admin/garages" element={<ProtectedRoute><AdminGarages /></ProtectedRoute>} />
+          <Route path="/admin/bookings" element={<ProtectedRoute><AdminBookings /></ProtectedRoute>} />
+          <Route path="/admin/revenue" element={<ProtectedRoute><AdminRevenue /></ProtectedRoute>} />
         </Route>
 
         <Route path="*" element={<NotFound />} />
