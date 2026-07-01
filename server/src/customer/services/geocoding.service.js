@@ -48,14 +48,16 @@ const geocodeAddress = async (params = {}) => {
       timeout: Number(process.env.NOMINATIM_TIMEOUT_MS || 8000),
     });
   } catch (error) {
+    console.error("Nominatim geocoding error:", error.message);
     throw new ApiError(error.response?.status || 502, "Unable to geocode address right now");
   }
 
   const place = response.data?.[0];
   
-  // If no location found, try Groq to correct the address
-  if (!place) {
+  // If no location found and Groq is configured, try to correct the address
+  if (!place && process.env.GROQ_API_KEY) {
     try {
+      console.log("Nominatim failed, attempting Groq address correction...");
       const correctedAddressText = await correctAddress(params.address, params.city, params.state);
       
       // Retry geocoding with corrected address
@@ -66,20 +68,26 @@ const geocodeAddress = async (params = {}) => {
         country: "India",
       });
 
-      const retryResponse = await axios.get(NOMINATIM_URL, {
-        params: {
-          q: correctedQuery,
-          format: "jsonv2",
-          addressdetails: 1,
-          limit: 1,
-          countrycodes: params.countrycodes || "in",
-        },
-        headers: {
-          "User-Agent": getNominatimUserAgent(),
-          Accept: "application/json",
-        },
-        timeout: Number(process.env.NOMINATIM_TIMEOUT_MS || 8000),
-      });
+      let retryResponse;
+      try {
+        retryResponse = await axios.get(NOMINATIM_URL, {
+          params: {
+            q: correctedQuery,
+            format: "jsonv2",
+            addressdetails: 1,
+            limit: 1,
+            countrycodes: params.countrycodes || "in",
+          },
+          headers: {
+            "User-Agent": getNominatimUserAgent(),
+            Accept: "application/json",
+          },
+          timeout: Number(process.env.NOMINATIM_TIMEOUT_MS || 8000),
+        });
+      } catch (retryError) {
+        console.error("Nominatim retry with corrected address failed:", retryError.message);
+        throw new ApiError(404, "No location found even after address correction");
+      }
 
       const correctedPlace = retryResponse.data?.[0];
       if (!correctedPlace) {
@@ -103,10 +111,21 @@ const geocodeAddress = async (params = {}) => {
       await setCache(cacheKey, result, GEOCODE_CACHE_TTL_SECONDS);
       return result;
     } catch (correctionError) {
-      // If Groq correction also fails, throw original error
+      // If Groq correction fails, log it but don't crash
+      console.error("Groq address correction failed:", correctionError.message);
+      
+      // Re-throw if it's an API error
       if (correctionError.status) throw correctionError;
+      
+      // Otherwise, throw original "not found" error
       throw new ApiError(404, "No location found for this address");
     }
+  }
+
+  // If no place found and Groq not configured, fail gracefully
+  if (!place) {
+    console.warn("Address not found and Groq not configured");
+    throw new ApiError(404, "No location found for this address");
   }
 
   const result = {
