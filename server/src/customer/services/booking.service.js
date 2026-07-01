@@ -58,6 +58,45 @@ const ALLOWED_BOOKING_STATUSES = [
   "EXPIRED",
 ];
 
+const getBookingCity = (location = {}) => {
+  if (location.city) return location.city;
+  const addressParts = String(location.address || "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return addressParts.length >= 2 ? addressParts[addressParts.length - 2] : null;
+};
+
+const getFallbackBookingServiceRange = (service) => {
+  const range = getServicePriceRange(service);
+  return { min: range.min, max: range.max };
+};
+
+const getBookingServiceRange = (service, priceRangeMap = new Map()) => {
+  const adminRange = priceRangeMap.get(service.id);
+  if (adminRange) {
+    return {
+      min: Number(adminRange.minPrice) || 0,
+      max: Number(adminRange.maxPrice) || Number(adminRange.minPrice) || 0,
+    };
+  }
+
+  return getFallbackBookingServiceRange(service);
+};
+
+const sumServiceRanges = (services = [], priceRangeMap = new Map()) => {
+  return services.reduce(
+    (total, service) => {
+      const range = getBookingServiceRange(service, priceRangeMap);
+      return {
+        min: total.min + range.min,
+        max: total.max + range.max,
+      };
+    },
+    { min: 0, max: 0 }
+  );
+};
+
 const calculateHandlingFee = (totalServiceAmount) => {
   if (totalServiceAmount >= 300 && totalServiceAmount < 1000) return 30;
   if (totalServiceAmount >= 1000 && totalServiceAmount < 5000) return 99;
@@ -153,11 +192,16 @@ const createBooking = async (userId, data) => {
     throw new ApiError(404, "One or more services are invalid");
   }
 
-  const serviceRangeTotal = sumServiceRanges(services);
+  const priceRangeMap = await cityServicePriceRangeService.findBestPriceRangesForBooking({
+    city: getBookingCity(location),
+    services,
+    vehicle,
+  });
+  const serviceRangeTotal = sumServiceRanges(services, priceRangeMap);
   const totalServiceAmount = serviceRangeTotal.min;
   const totalServiceMaxAmount = serviceRangeTotal.max;
 
-  const handlingFee = calculateHandlingFee(totalServiceAmount);
+  const handlingFee = calculateHandlingFee(totalServiceMaxAmount || totalServiceAmount);
 
   let walletAmountUsed = 0;
 
@@ -248,7 +292,7 @@ const createBooking = async (userId, data) => {
 
         services: {
           create: services.map((service) => {
-            const range = getBookingServiceRange(service);
+            const range = getBookingServiceRange(service, priceRangeMap);
             return {
               serviceId: service.id,
               quantity: 1,

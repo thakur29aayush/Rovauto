@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
 import api from "@/api/axios";
 import { isPaymentAuthError, payForBooking } from "@/utils/bookingPayment";
+import { formatServicePriceRange, getServiceMinPrice, getServiceMaxPrice } from "@/utils/priceRange";
 import { FiCheckCircle, FiLock, FiTrash2, FiTruck, FiEdit } from "react-icons/fi";
 
 const DEFAULT_LOCATION = {
@@ -10,9 +11,6 @@ const DEFAULT_LOCATION = {
   longitude: 77.3696,
   address: "Indirapuram, Ghaziabad, 201014",
 };
-
-const getServicePrice = (service) =>
-  service.basePrice || service.minPrice || service.price || 0;
 
 const calculateHandlingFee = (totalServiceAmount) => {
   if (totalServiceAmount >= 300 && totalServiceAmount < 1000) return 30;
@@ -38,10 +36,12 @@ export default function Checkout() {
     pincode: location?.pincode || "",
   });
 
-  const subTotal = cart.reduce((sum, item) => sum + getServicePrice(item), 0);
-  const displaySubTotal = subTotal || 0;
-  const fee = cart.length === 0 ? 0 : calculateHandlingFee(displaySubTotal);
-  const payAtGarage = displaySubTotal;
+  const subTotalMin = cart.reduce((sum, item) => sum + getServiceMinPrice(item), 0);
+  const subTotalMax = cart.reduce((sum, item) => sum + getServiceMaxPrice(item), 0);
+  const feeBaseAmount = subTotalMax || subTotalMin || 0;
+  const fee = cart.length === 0 ? 0 : calculateHandlingFee(feeBaseAmount);
+  const payAtGarageMin = subTotalMin;
+  const payAtGarageMax = subTotalMax;
 
   const buildLocationPayload = () => ({
     latitude: location?.latitude || DEFAULT_LOCATION.latitude,
@@ -344,7 +344,7 @@ export default function Checkout() {
               >
                 <span className="min-w-0 truncate">{item.name}</span>
                 <span className="whitespace-nowrap text-right font-semibold">
-                  Rs. {getServicePrice(item)}
+                  {formatServicePriceRange(item)}
                 </span>
               </div>
             ))
@@ -361,7 +361,7 @@ export default function Checkout() {
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
             <span className="text-muted">Pay at garage</span>
             <span className="whitespace-nowrap text-right font-semibold">
-              Rs. {payAtGarage}
+              Rs. {payAtGarageMin} - Rs. {payAtGarageMax}
             </span>
           </div>
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-base">

@@ -181,7 +181,10 @@ const acceptGarageRequest = async (garageId, requestId, note) => {
       throw new ApiError(400, "Garage search expired. Customer must try again.");
     }
 
-    const garageAcceptFee = calculatePlatformFee(freshBooking.totalServiceAmount, freshBooking.requestType);
+    const garageAcceptFee = calculatePlatformFee(
+      freshBooking.totalServiceMaxAmount || freshBooking.totalServiceAmount,
+      freshBooking.requestType
+    );
     const garageWallet = await tx.garageWallet.findUnique({ where: { garageId } });
     if (!garageWallet || garageWallet.balance < garageAcceptFee) {
       throw new ApiError(400, `Insufficient garage wallet balance. Recharge at least Rs. ${garageAcceptFee} to accept this booking.`);

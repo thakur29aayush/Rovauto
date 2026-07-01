@@ -4,14 +4,7 @@ import { CATEGORY_UI } from "@/data/services";
 import api from "@/api/axios";
 import { FiStar, FiArrowLeft, FiX, FiTool } from "react-icons/fi";
 import { useApp } from "@/hooks/useApp";
-
-const getPrice = (service) => {
-  return service.basePrice || service.minPrice || 0;
-};
-
-const getOriginalPrice = (service) => {
-  return service.maxPrice || service.basePrice || service.minPrice || 0;
-};
+import { formatServicePriceRange, getServiceMinPrice, getServiceMaxPrice } from "@/utils/priceRange";
 
 const getDuration = (service) => {
   if (!service.durationMin) return "Duration varies";
@@ -85,7 +78,7 @@ export default function CategoryDetail() {
   const handleBook = (service) => {
     const serviceItem = {
       ...service,
-      price: getPrice(service),
+      price: getServiceMinPrice(service),
       image: categoryImage,
       catId: category.id,
     };
@@ -114,8 +107,9 @@ export default function CategoryDetail() {
 
       <div className="grid gap-4">
         {packages.map((pkg) => {
-          const price = getPrice(pkg);
-          const originalPrice = getOriginalPrice(pkg);
+          const priceRange = formatServicePriceRange(pkg);
+          const minPrice = getServiceMinPrice(pkg);
+          const maxPrice = getServiceMaxPrice(pkg);
           const includes = getIncludes(pkg);
 
           return (
@@ -142,19 +136,11 @@ export default function CategoryDetail() {
 
                   <div className="mb-2 flex items-baseline gap-3">
                     <span className="text-2xl font-bold text-ink">
-                      ₹{price}
+                      {priceRange}
                     </span>
 
-                    {originalPrice > price && (
-                      <span className="text-base text-muted line-through">
-                        ₹{originalPrice}
-                      </span>
-                    )}
-
-                    {originalPrice > price && (
-                      <span className="text-base font-bold text-green-600">
-                        OFF
-                      </span>
+                    {maxPrice > minPrice && (
+                      <span className="text-base text-muted">estimated range</span>
                     )}
                   </div>
 
@@ -255,14 +241,8 @@ export default function CategoryDetail() {
 
               <div className="mb-3 flex items-baseline gap-3">
                 <span className="text-2xl font-bold text-ink">
-                  ₹{getPrice(selectedPackage)}
+                  {formatServicePriceRange(selectedPackage)}
                 </span>
-
-                {getOriginalPrice(selectedPackage) > getPrice(selectedPackage) && (
-                  <span className="text-base text-muted line-through">
-                    ₹{getOriginalPrice(selectedPackage)}
-                  </span>
-                )}
               </div>
 
               <div className="mb-5 flex flex-wrap items-center gap-3">

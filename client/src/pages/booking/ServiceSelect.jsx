@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CATEGORY_UI } from "@/data/services";
 import { useApp } from "@/hooks/useApp";
 import api from "@/api/axios";
+import { formatServicePriceRange, getServiceMinPrice, getServiceMaxPrice } from "@/utils/priceRange";
 import {
   FiArrowRight,
   FiCheck,
@@ -21,9 +22,8 @@ export default function ServiceSelect() {
   const selectedCategory = categories.find((c) => c.id === catId);
   const list = selectedCategory?.services || [];
 
-  const total = cart.reduce((sum, item) => {
-    return sum + (item.basePrice || item.minPrice || 0);
-  }, 0);
+  const totalMin = cart.reduce((sum, item) => sum + getServiceMinPrice(item), 0);
+  const totalMax = cart.reduce((sum, item) => sum + getServiceMaxPrice(item), 0);
 
   useEffect(() => {
     const loadServices = async () => {
@@ -110,7 +110,7 @@ export default function ServiceSelect() {
         <div className="grid gap-4">
           {list.map((service) => {
             const inCart = cart.some((item) => item.id === service.id);
-            const price = service.basePrice || service.minPrice || 0;
+            const priceRange = formatServicePriceRange(service);
             const duration = service.durationMin
               ? `${service.durationMin} min`
               : "Duration varies";
@@ -149,8 +149,8 @@ export default function ServiceSelect() {
 
                 <div className="flex items-center justify-between gap-2 text-right sm:w-40 sm:flex-col sm:items-end">
                   <div>
-                    <div className="text-xs text-muted">From</div>
-                    <div className="text-2xl font-bold">₹{price}</div>
+                    <div className="text-xs text-muted">Estimated</div>
+                    <div className="text-xl font-bold">{priceRange}</div>
                   </div>
 
                   <button
@@ -205,7 +205,7 @@ export default function ServiceSelect() {
                 >
                   <span className="truncate">{item.name}</span>
                   <span className="font-semibold">
-                    ₹{item.basePrice || item.minPrice || 0}
+                    {formatServicePriceRange(item)}
                   </span>
                 </div>
               ))}
@@ -216,7 +216,7 @@ export default function ServiceSelect() {
 
           <div className="flex items-center justify-between">
             <span className="text-muted">Estimated</span>
-            <span className="text-xl font-bold">₹{total}</span>
+            <span className="text-xl font-bold">Rs. {totalMin} - Rs. {totalMax}</span>
           </div>
 
           <Link
