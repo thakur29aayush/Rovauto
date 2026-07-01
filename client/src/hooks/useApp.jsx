@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import api from "@/api/axios";
+import { garageApi } from "@/api/garage";
 import { getLocationStateFromUser } from "@/utils/address";
 import {
   clearCustomerState,
@@ -291,7 +292,23 @@ const saveProfileCache = (data, fetchedAt) => {
     dispatch(setGarage(garageData));
   };
 
-  const logoutGarage = () => {
+  const refreshGarage = async (authToken = garageToken || localStorage.getItem("garage_token")) => {
+    if (!authToken) return null;
+
+    const garageData = await garageApi.getProfile(authToken);
+    localStorage.setItem("garage", JSON.stringify(garageData));
+    dispatch(setGarage(garageData));
+    dispatch(setGarageToken(authToken));
+    return garageData;
+  };
+
+  const logoutGarage = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // Local cleanup still needs to happen if the server session is already gone.
+    }
+
     localStorage.removeItem("garage_token");
     localStorage.removeItem("garage");
     dispatch(clearGarageState());
@@ -491,6 +508,12 @@ const saveProfileCache = (data, fetchedAt) => {
         dispatch(setGarage(garageData));
         if (savedGarageToken) {
           dispatch(setGarageToken(savedGarageToken));
+          garageApi.getProfile(savedGarageToken)
+            .then((freshGarage) => {
+              localStorage.setItem("garage", JSON.stringify(freshGarage));
+              dispatch(setGarage(freshGarage));
+            })
+            .catch(() => logoutGarage());
         }
       } catch {}
     }
@@ -649,6 +672,7 @@ const saveProfileCache = (data, fetchedAt) => {
       logout,
       loginGarage,
       logoutGarage,
+      refreshGarage,
       fetchMe,
       fetchDashboard,
       fetchVehicles,

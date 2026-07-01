@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FiArrowRight, FiBuilding, FiUser, FiPhone, FiMail, FiFileText } from "react-icons/fi";
+import { FiArrowRight, FiHome, FiUser, FiPhone, FiMail, FiFileText } from "react-icons/fi";
 import Logo from "@/components/common/Logo";
 
 export default function OnboardingStep1({ data, onChange, onNext }) {
@@ -31,7 +31,7 @@ export default function OnboardingStep1({ data, onChange, onNext }) {
             <div>
               <label className="block text-sm font-medium mb-2">Garage Name</label>
               <div className="relative">
-                <FiBuilding className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+                <FiHome className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
                 <input
                   type="text"
                   value={data.name}

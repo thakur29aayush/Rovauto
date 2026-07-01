@@ -1,18 +1,75 @@
-
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { FiPlus, FiTrendingUp, FiArrowDown, FiArrowUp } from "react-icons/fi";
+import { FiPlus, FiArrowDown, FiArrowUp, FiCheckCircle } from "react-icons/fi";
 import { setWallet } from "@/store/garageSlice";
-import { mockTransactions } from "@/data/garageData";
+import { garageApi } from "@/api/garage";
+import { useApp } from "@/hooks/useApp";
 
 export default function GarageWallet() {
-  const { wallet } = useSelector(state => state.garage);
+  const { wallet } = useSelector((state) => state.garage);
   const dispatch = useDispatch();
+  const { garageToken, refreshGarage } = useApp();
   const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [amount, setAmount] = useState(1000);
+  const [pendingOrder, setPendingOrder] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const loadWallet = async () => {
+    if (!garageToken) return;
+    setError("");
+    try {
+      const [walletData, txData] = await Promise.all([
+        garageApi.getWallet(garageToken),
+        garageApi.getWalletTransactions(garageToken),
+      ]);
+      dispatch(setWallet({
+        ...(walletData.wallet || {}),
+        balance: walletData.wallet?.balance || 0,
+        activation: walletData.activation,
+        transactions: txData.transactions || [],
+      }));
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to load wallet");
+    }
+  };
 
   useEffect(() => {
-    dispatch(setWallet({ ...wallet, transactions: mockTransactions }));
-  }, [dispatch]);
+    loadWallet();
+  }, [garageToken]);
+
+  const createRecharge = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const order = await garageApi.createRechargeOrder(garageToken, Number(amount));
+      setPendingOrder(order.cashfreeOrder);
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to create recharge order");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyRecharge = async () => {
+    if (!pendingOrder?.id) return;
+    setLoading(true);
+    setError("");
+    try {
+      await garageApi.verifyRechargeOrder(garageToken, pendingOrder.id);
+      setPendingOrder(null);
+      setShowRechargeModal(false);
+      await loadWallet();
+      await refreshGarage(garageToken);
+    } catch (err) {
+      setError(err.response?.data?.message || "Cashfree payment is not completed yet");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const transactions = wallet.transactions || [];
 
   return (
     <div className="space-y-6">
@@ -21,13 +78,13 @@ export default function GarageWallet() {
         <p className="text-muted">Manage your wallet and transactions</p>
       </div>
 
+      {error && <div className="rounded-xl bg-red-50 p-4 text-red-700">{error}</div>}
+
       <div className="card-soft p-8 text-center bg-gradient-to-br from-brand-soft to-white">
         <p className="text-muted mb-2">Available Balance</p>
-        <h2 className="text-5xl font-bold mb-6">₹{wallet.balance.toLocaleString()}</h2>
-        <button
-          onClick={() => setShowRechargeModal(true)}
-          className="btn-primary"
-        >
+        <h2 className="text-5xl font-bold mb-3">Rs. {Number(wallet.balance || 0).toLocaleString()}</h2>
+        <p className="text-sm text-muted mb-6">Minimum Rs. {wallet.activation?.minimumBalance || 1000} required for activation</p>
+        <button onClick={() => setShowRechargeModal(true)} className="btn-primary">
           <FiPlus className="w-4 h-4" />
           Recharge Wallet
         </button>
@@ -36,26 +93,65 @@ export default function GarageWallet() {
       <div className="card-soft p-6">
         <h3 className="text-xl font-bold mb-4">Transaction History</h3>
         <div className="space-y-3">
-          {wallet.transactions.map((txn) => (
-            <div key={txn.id} className="flex items-center justify-between p-4 bg-bg-soft rounded-xl">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${
-                  txn.amount > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                }`}>
-                  {txn.amount > 0 ? <FiArrowDown /> : <FiArrowUp />}
+          {transactions.length > 0 ? transactions.map((txn) => {
+            const isCredit = txn.type === "RECHARGE" || Number(txn.amount) > 0;
+            return (
+              <div key={txn.id} className="flex items-center justify-between p-4 bg-bg-soft rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-full ${isCredit ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                    {isCredit ? <FiArrowDown /> : <FiArrowUp />}
+                  </div>
+                  <div>
+                    <p className="font-semibold">{txn.description || txn.type}</p>
+                    <p className="text-muted text-sm">{new Date(txn.createdAt).toLocaleDateString()} • {txn.status}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold">{txn.description}</p>
-                  <p className="text-muted text-sm">{new Date(txn.date).toLocaleDateString()}</p>
-                </div>
+                <p className={`font-bold ${isCredit ? "text-green-700" : "text-red-700"}`}>
+                  {isCredit ? "+" : "-"}Rs. {Math.abs(Number(txn.amount || 0)).toLocaleString()}
+                </p>
               </div>
-              <p className={`font-bold ${txn.amount > 0 ? "text-green-700" : "text-red-700"}`}>
-                {txn.amount > 0 ? "+" : ""}₹{Math.abs(txn.amount)}
-              </p>
-            </div>
-          ))}
+            );
+          }) : <p className="text-muted">No wallet transactions yet.</p>}
         </div>
       </div>
+
+      {showRechargeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6">
+            <h3 className="text-xl font-bold mb-2">Recharge Wallet</h3>
+            <p className="text-muted mb-5">Create a Cashfree recharge order. Minimum amount is Rs. 1000.</p>
+
+            {!pendingOrder ? (
+              <form onSubmit={createRecharge} className="space-y-4">
+                <input
+                  type="number"
+                  min="1000"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full rounded-xl border border-line px-4 py-3 focus:border-ink focus:outline-none"
+                />
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setShowRechargeModal(false)} className="btn-ghost flex-1">Cancel</button>
+                  <button type="submit" disabled={loading} className="btn-primary flex-1">{loading ? "Creating..." : "Create Order"}</button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-xl bg-bg-soft p-4 text-sm">
+                  <p><span className="text-muted">Order ID:</span> {pendingOrder.id}</p>
+                  <p><span className="text-muted">Amount:</span> Rs. {Number(pendingOrder.amount || amount).toLocaleString()}</p>
+                  {pendingOrder.paymentSessionId && <p className="break-all"><span className="text-muted">Payment Session:</span> {pendingOrder.paymentSessionId}</p>}
+                </div>
+                <button onClick={verifyRecharge} disabled={loading} className="btn-primary w-full">
+                  <FiCheckCircle />
+                  {loading ? "Verifying..." : "Verify Payment"}
+                </button>
+                <button onClick={() => setPendingOrder(null)} className="btn-ghost w-full">Create another order</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

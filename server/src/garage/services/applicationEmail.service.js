@@ -8,15 +8,20 @@ if (process.env.RESEND_API_KEY) {
 const sendGarageApplicationEmail = async ({ to, subject, message }) => {
   if (!to) return false;
 
+  const html = `
+      <h2>${subject}</h2>
+      <p>${message}</p>
+      <p>Team Rovauto</p>
+    `;
+
   if (!resend || !process.env.EMAIL_FROM) {
-    if (process.env.NODE_ENV !== "production") {
-      console.log("=================================");
-      console.log("ROVAUTO GARAGE APPLICATION EMAIL");
-      console.log("To:", to);
-      console.log("Subject:", subject);
-      console.log("Message:", message);
-      console.log("=================================");
-    }
+    console.log("=================================");
+    console.log("ROVAUTO GARAGE APPLICATION EMAIL PREVIEW");
+    console.log("To:", to);
+    console.log("Subject:", subject);
+    console.log("Message:", message);
+    console.log("HTML:", html.trim());
+    console.log("=================================");
     return false;
   }
 
@@ -24,11 +29,7 @@ const sendGarageApplicationEmail = async ({ to, subject, message }) => {
     from: process.env.EMAIL_FROM,
     to,
     subject,
-    html: `
-      <h2>${subject}</h2>
-      <p>${message}</p>
-      <p>Team Rovauto</p>
-    `,
+    html,
   });
 
   return true;

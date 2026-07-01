@@ -1,6 +1,7 @@
 const asyncHandler = require("../utils/asyncHandler");
 const ApiResponse = require("../utils/apiResponse");
 const garageService = require("../services/garage.service");
+const garageOwnerService = require("../garage/services/garageOwner.service");
 
 const getGarages = asyncHandler(async (req, res) => {
   const garages = await garageService.getGarages(req.query);
@@ -16,6 +17,14 @@ const getNearbyGarages = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, "Nearby garages fetched successfully", garages));
+});
+
+const getMyGarage = asyncHandler(async (req, res) => {
+  const garage = await garageOwnerService.getGarageOwnerProfile(req.user.id);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Garage owner profile fetched successfully", garage));
 });
 
 const getGarageById = asyncHandler(async (req, res) => {
@@ -37,6 +46,7 @@ const getGarageServices = asyncHandler(async (req, res) => {
 module.exports = {
   getGarages,
   getNearbyGarages,
+  getMyGarage,
   getGarageById,
   getGarageServices,
 };

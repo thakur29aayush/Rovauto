@@ -43,6 +43,42 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
               </div>
             </div>
 
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">City</label>
+                <input
+                  type="text"
+                  value={data.city}
+                  onChange={(e) => onChange({ ...data, city: e.target.value })}
+                  placeholder="Kathmandu"
+                  className="w-full px-4 py-3 rounded-xl border border-line focus:border-ink focus:outline-none transition-colors"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Area</label>
+                <input
+                  type="text"
+                  value={data.area}
+                  onChange={(e) => onChange({ ...data, area: e.target.value })}
+                  placeholder="Baneshwor"
+                  className="w-full px-4 py-3 rounded-xl border border-line focus:border-ink focus:outline-none transition-colors"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Short Description</label>
+              <textarea
+                value={data.description}
+                onChange={(e) => onChange({ ...data, description: e.target.value })}
+                placeholder="Tell customers what your garage specializes in"
+                rows={2}
+                className="w-full px-4 py-3 rounded-xl border border-line focus:border-ink focus:outline-none transition-colors resize-none"
+              />
+            </div>
+
             <div className="card-soft p-4">
               <div className="flex items-center justify-between mb-3">
                 <span className="font-semibold">GPS Location</span>

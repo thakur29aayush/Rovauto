@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.get("/", garageController.getGarages);
 router.get("/nearby", protect, garageController.getNearbyGarages);
+router.get("/me", protect, garageController.getMyGarage);
 
 router.get("/:id", garageController.getGarageById);
 router.get("/:id/services", garageController.getGarageServices);

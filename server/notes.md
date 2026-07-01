@@ -401,7 +401,7 @@ Review / Complaint
 * Firebase Push Notifications
 
 ##COMMANDS
-npm run db:delete-user -- --email=aayush@example.com --confirm
+npm run db:delete-user -- --email=aayush@example.co --confirm
 npm run db:delete-active-bookings -- --email=aayush@example.com --confirm
 npm run db:delete-payments -- --email=aayush@example.com --confirm
 npm run db:delete-service-history -- --email=aayush@example.com --confirm

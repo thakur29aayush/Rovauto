@@ -3,7 +3,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { FiMail, FiArrowLeft, FiCheckCircle } from "react-icons/fi";
-import Logo from "@/components/common/Logo";
+import api from "@/api/axios";
 
 export default function GarageForgotPassword() {
   const [step, setStep] = useState("email");
@@ -13,9 +13,12 @@ export default function GarageForgotPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setStep("success");
-    setLoading(false);
+    try {
+      await api.post("/auth/forgot-password", { email });
+      setStep("success");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,9 +39,9 @@ export default function GarageForgotPassword() {
           {step === "success" ? (
             <>
               <FiCheckCircle className="w-16 h-16 mx-auto text-brand mb-4" />
-              <h1 className="text-3xl font-bold mb-2">Reset Link Sent!</h1>
+              <h1 className="text-3xl font-bold mb-2">Reset OTP Sent!</h1>
               <p className="text-muted mb-6">
-                Check your email {email} for password reset instructions
+                Check your email {email} for the password reset OTP
               </p>
               <Link to="/garage/login" className="btn-primary">
                 Back to Login

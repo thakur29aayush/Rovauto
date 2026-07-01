@@ -1,75 +1,73 @@
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useSelector } from "react-redux";
-import { FiPlus, FiEdit, FiTrash2 } from "react-icons/fi";
+import { useSelector, useDispatch } from "react-redux";
+import { FiLock } from "react-icons/fi";
+import api from "@/api/axios";
+import { setServices } from "@/store/garageSlice";
 
 export default function GarageServices() {
-  const { services } = useSelector(state => state.garage);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingService, setEditingService] = useState(null);
+  const { services, garage } = useSelector((state) => state.garage);
+  const dispatch = useDispatch();
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!garage?.id) return;
+      setLoading(true);
+      setError("");
+      try {
+        const res = await api.get(`/garages/${garage.id}/services`);
+        dispatch(setServices(res.data?.data || []));
+      } catch (err) {
+        setError(err.response?.data?.message || "Unable to load garage services");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [garage?.id]);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Services</h1>
-          <p className="text-muted">Manage your service offerings</p>
+          <p className="text-muted">Services currently linked to your garage</p>
         </div>
-        <button
-          onClick={() => {
-            setEditingService(null);
-            setIsModalOpen(true);
-          }}
-          className="btn-primary w-full sm:w-auto"
-        >
-          <FiPlus className="w-4 h-4" />
-          Add Service
+        <button disabled className="btn-ghost w-full sm:w-auto opacity-70">
+          <FiLock className="w-4 h-4" />
+          Managed by Admin
         </button>
       </div>
 
+      {error && <div className="rounded-xl bg-red-50 p-4 text-red-700">{error}</div>}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {services.map((service) => (
-          <motion.div
-            key={service.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="card-soft p-4 sm:p-6"
-          >
-            <div className="flex items-start justify-between mb-4 gap-3">
-              <h3 className="text-lg sm:text-xl font-bold break-all">{service.name}</h3>
-              <div className="flex gap-2 flex-shrink-0">
-                <button
-                  onClick={() => {
-                    setEditingService(service);
-                    setIsModalOpen(true);
-                  }}
-                  className="p-2 rounded-lg hover:bg-bg-soft"
-                >
-                  <FiEdit className="w-4 h-4" />
-                </button>
-                <button className="p-2 rounded-lg hover:bg-bg-soft text-red-500">
-                  <FiTrash2 className="w-4 h-4" />
-                </button>
+        {loading ? (
+          <div className="card-soft p-5 text-muted">Loading services...</div>
+        ) : services.length > 0 ? services.map((item) => {
+          const service = item.service || item;
+          return (
+            <motion.div key={item.id || service.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card-soft p-4 sm:p-6">
+              <h3 className="text-lg sm:text-xl font-bold break-words mb-2">{service.name}</h3>
+              <p className="text-muted text-xs sm:text-sm mb-4 break-words">{service.description || service.category?.name || "Garage service"}</p>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs sm:text-sm gap-2">
+                  <span className="text-muted">Price</span>
+                  <span className="font-semibold">Rs. {Number(item.price || service.basePrice || 0).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-xs sm:text-sm gap-2">
+                  <span className="text-muted">Category</span>
+                  <span className="font-semibold">{service.category?.name || service.category || "General"}</span>
+                </div>
               </div>
-            </div>
-            <p className="text-muted text-xs sm:text-sm mb-4 break-words">{service.description}</p>
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs sm:text-sm gap-2">
-                <span className="text-muted">Price Range</span>
-                <span className="font-semibold">₹{service.startingPrice} - ₹{service.maximumPrice}</span>
-              </div>
-              <div className="flex justify-between text-xs sm:text-sm gap-2">
-                <span className="text-muted">Est. Time</span>
-                <span className="font-semibold">{service.estimatedTime}</span>
-              </div>
-              <div className="flex justify-between text-xs sm:text-sm gap-2">
-                <span className="text-muted">Category</span>
-                <span className="font-semibold">{service.category}</span>
-              </div>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        }) : (
+          <div className="card-soft p-5 text-muted">No services are linked to this garage yet.</div>
+        )}
       </div>
     </div>
   );

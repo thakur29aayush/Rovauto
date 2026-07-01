@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
+import api from "@/api/axios";
 import { isPaymentAuthError, payForBooking } from "@/utils/bookingPayment";
 
 const getServicesText = (booking) => {
@@ -43,6 +44,7 @@ export default function ActiveBookings() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [payingId, setPayingId] = useState(null);
+  const [acceptingId, setAcceptingId] = useState(null);
   const [error, setError] = useState("");
 
   const loadBookings = async ({ force = false } = {}) => {
@@ -102,6 +104,21 @@ export default function ActiveBookings() {
     }
   };
 
+  const acceptDelivery = async (booking) => {
+    try {
+      setAcceptingId(booking.id);
+      setError("");
+      await api.post(`/bookings/${booking.id}/accept-delivery`);
+      clearBookingCaches?.();
+      await loadBookings({ force: true });
+      nav("/dashboard/history");
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not accept delivery. Please try again.");
+    } finally {
+      setAcceptingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div>
@@ -137,6 +154,7 @@ export default function ActiveBookings() {
       <div className="grid gap-4">
         {bookings.map((booking) => {
           const isPendingPayment = booking.status === "PENDING_PAYMENT";
+          const isAwaitingDeliveryAcceptance = Boolean(booking.deliveredAt && !booking.customerAcceptedAt);
 
           return (
             <div
@@ -184,6 +202,15 @@ export default function ActiveBookings() {
                     Track
                   </button>
                 </div>
+              ) : isAwaitingDeliveryAcceptance ? (
+                <button
+                  type="button"
+                  onClick={() => acceptDelivery(booking)}
+                  disabled={acceptingId === booking.id}
+                  className="btn-primary w-full whitespace-nowrap px-4 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
+                >
+                  {acceptingId === booking.id ? "Accepting..." : "Accept Delivery"}
+                </button>
               ) : (
                 <Link
                   to="/tracking"

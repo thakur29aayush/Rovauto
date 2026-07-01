@@ -29,14 +29,21 @@ const assertOtpCooldown = (latestOtp) => {
 };
 
 const sendEmailOtp = async ({ to, otp, subject = "Rovauto verification OTP" }) => {
-  if (process.env.EMAIL_OTP_DELIVERY !== "email") {
-    if (process.env.NODE_ENV === "development") {
-      console.log("=================================");
-      console.log("ROVAUTO EMAIL OTP:", otp);
-      console.log("To:", to);
-      console.log("Subject:", subject);
-      console.log("=================================");
-    }
+  const html = `
+      <h2>Verify your Rovauto account</h2>
+      <p>Your OTP is:</p>
+      <h1>${otp}</h1>
+      <p>This OTP expires in 5 minutes.</p>
+    `;
+
+  if (process.env.EMAIL_OTP_DELIVERY !== "email" || !resend || !process.env.EMAIL_FROM) {
+    console.log("=================================");
+    console.log("ROVAUTO EMAIL OTP PREVIEW");
+    console.log("To:", to);
+    console.log("Subject:", subject);
+    console.log("OTP:", otp);
+    console.log("HTML:", html.trim());
+    console.log("=================================");
     return true;
   }
 
@@ -44,12 +51,7 @@ const sendEmailOtp = async ({ to, otp, subject = "Rovauto verification OTP" }) =
     from: process.env.EMAIL_FROM,
     to,
     subject,
-    html: `
-      <h2>Verify your Rovauto account</h2>
-      <p>Your OTP is:</p>
-      <h1>${otp}</h1>
-      <p>This OTP expires in 5 minutes.</p>
-    `,
+    html,
   });
 
   return true;

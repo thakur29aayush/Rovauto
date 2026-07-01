@@ -21,6 +21,41 @@ const getGarageForOwner = async (userId, options = {}) => {
   return garage;
 };
 
+const getGarageOwnerProfile = async (userId) => {
+  const garage = await getGarageForOwner(userId, {
+    include: {
+      owner: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+        },
+      },
+      wallet: true,
+      images: {
+        orderBy: [{ isThumbnail: "desc" }, { order: "asc" }],
+      },
+    },
+  });
+
+  return {
+    ...garage,
+    activation: {
+      minimumBalance: GARAGE_MINIMUM_ACTIVATION_RECHARGE,
+      minimumPhotos: GARAGE_MINIMUM_ACTIVATION_IMAGES,
+      walletBalance: garage.wallet?.balance || 0,
+      photoCount: garage.images?.length || 0,
+      hasMinimumBalance:
+        (garage.wallet?.balance || 0) >= GARAGE_MINIMUM_ACTIVATION_RECHARGE,
+      hasMinimumPhotos:
+        (garage.images?.length || 0) >= GARAGE_MINIMUM_ACTIVATION_IMAGES,
+      isActive: garage.isActive,
+    },
+  };
+};
+
 const activateGarageIfEligible = async (tx, garageId) => {
   const garage = await tx.garage.findUnique({
     where: { id: garageId },
@@ -31,7 +66,12 @@ const activateGarageIfEligible = async (tx, garageId) => {
     throw new ApiError(404, "Garage not found");
   }
 
-  if (!garage.isVerified || !garage.wallet || garage.wallet.balance < GARAGE_MINIMUM_ACTIVATION_RECHARGE) {
+  if (
+    !garage.isVerified ||
+    !garage.wallet ||
+    garage.wallet.balance < GARAGE_MINIMUM_ACTIVATION_RECHARGE ||
+    (garage.images?.length || 0) < GARAGE_MINIMUM_ACTIVATION_IMAGES
+  ) {
     return garage;
   }
 
@@ -47,4 +87,5 @@ const activateGarageIfEligible = async (tx, garageId) => {
 module.exports = {
   activateGarageIfEligible,
   getGarageForOwner,
+  getGarageOwnerProfile,
 };

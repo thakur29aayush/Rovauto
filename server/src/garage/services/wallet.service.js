@@ -22,7 +22,7 @@ const getOrCreateGarageWallet = async (garageId) => {
 };
 
 const getGarageWalletForOwner = async (userId) => {
-  const garage = await getGarageForOwner(userId, { include: { wallet: true } });
+  const garage = await getGarageForOwner(userId, { include: { wallet: true, images: true } });
   const wallet = garage.wallet || (await getOrCreateGarageWallet(garage.id));
 
   return {
@@ -30,7 +30,13 @@ const getGarageWalletForOwner = async (userId) => {
     wallet,
     activation: {
       minimumBalance: GARAGE_MINIMUM_ACTIVATION_RECHARGE,
-      isEligible: garage.isVerified && wallet.balance >= GARAGE_MINIMUM_ACTIVATION_RECHARGE,
+      isEligible:
+        garage.isVerified &&
+        wallet.balance >= GARAGE_MINIMUM_ACTIVATION_RECHARGE &&
+        (garage.images?.length || 0) >= GARAGE_MINIMUM_ACTIVATION_IMAGES,
+      minimumPhotos: GARAGE_MINIMUM_ACTIVATION_IMAGES,
+      photoCount: garage.images?.length || 0,
+      hasMinimumPhotos: (garage.images?.length || 0) >= GARAGE_MINIMUM_ACTIVATION_IMAGES,
       isActive: garage.isActive,
     },
   };

@@ -7,12 +7,14 @@ import {
   FiTrash2, FiChevronDown, FiChevronUp, FiCheck, 
   FiX, FiAlertTriangle 
 } from "react-icons/fi";
-import { setNotifications, clearGarageState } from "@/store/garageSlice";
+import { setNotifications } from "@/store/garageSlice";
+import { useApp } from "@/hooks/useApp";
 
 export default function GarageSettings() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const notifications = useSelector(state => state.garage.notifications);
+  const { logoutGarage } = useApp();
 
   // State for expandable sections
   const [activeSection, setActiveSection] = useState(null);
@@ -97,16 +99,14 @@ export default function GarageSettings() {
   // Handle logout
   const handleLogout = async () => {
     setActionLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    dispatch(clearGarageState());
+    await logoutGarage();
     navigate("/garage/login");
   };
 
   // Handle delete account
   const handleDeleteAccount = async () => {
     setActionLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
-    dispatch(clearGarageState());
+    await logoutGarage();
     navigate("/");
   };
 
