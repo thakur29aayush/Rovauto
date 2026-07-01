@@ -415,3 +415,18 @@ npm run db:approve-garage -- --email=owner@example.com --confirm
 
 npm run db:approve-garage -- --list
 
+
+##Activation
+
+
+Dry-run listing (inactive garages + pending apps): npm run db:activate-garage -- --list
+
+Dry-run find by email: npm run db:activate-garage -- --email=owner@example.com
+
+Approve (if needed) and activate by email: npm run db:activate-garage -- --email=owner@example.com --confirm
+
+Activate existing garage by garage id: npm run db:activate-garage -- --garage-id=<garage-id></garage> --confirm
+
+Approve by application id and activate: npm run db:activate-garage -- --application-id=<application-id></application> --confirm --note="Welcome!"
+
+
