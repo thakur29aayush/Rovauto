@@ -91,9 +91,6 @@ const upsertGarageService = async (garageId, payload) => {
   const price = payload.price === undefined || payload.price === null || payload.price === ""
     ? null
     : Number(payload.price);
-  const duration = payload.duration === undefined || payload.duration === null || payload.duration === ""
-    ? null
-    : Number(payload.duration);
 
   return prisma.garageService.upsert({
     where: {
@@ -106,12 +103,10 @@ const upsertGarageService = async (garageId, payload) => {
       garageId,
       serviceId: payload.serviceId,
       price,
-      duration,
       isActive: parseBoolean(payload.isActive, true),
     },
     update: {
       price,
-      duration,
       isActive: parseBoolean(payload.isActive, true),
     },
     include: {

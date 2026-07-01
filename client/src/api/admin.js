@@ -49,6 +49,18 @@ export const adminApi = {
     return unwrap(await api.get("/admin/city-service-price-ranges", { params }));
   },
 
+  async getCustomers(params = {}) {
+    return unwrap(await api.get("/admin/customers", { params }));
+  },
+
+  async getBookings(params = {}) {
+    return unwrap(await api.get("/admin/bookings", { params }));
+  },
+
+  async sendNotification(payload) {
+    return unwrap(await api.post("/admin/notifications", payload));
+  },
+
   async createPriceRange(payload) {
     return unwrap(await api.post("/admin/city-service-price-ranges", payload));
   },

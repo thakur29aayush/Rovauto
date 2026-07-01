@@ -129,7 +129,7 @@ const addThumbnail = (garage) => ({
 });
 
 const serializeGarageService = (garageService) => {
-  const { price, duration, ...rest } = garageService;
+  const { price, ...rest } = garageService;
   return {
     ...rest,
     service: garageService.service ? addServicePriceRange(garageService.service) : garageService.service,

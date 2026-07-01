@@ -117,17 +117,12 @@ async function main() {
         service.minPrice ||
         Math.floor(Math.random() * 4000) + 500;
 
-      const duration =
-        service.durationMin ||
-        [30, 60, 90, 120][Math.floor(Math.random() * 4)];
-
       if (!existingGarageService) {
         await prisma.garageService.create({
           data: {
             garageId: garage.id,
             serviceId: service.id,
             price,
-            duration,
             isActive: true,
           },
         });
@@ -136,7 +131,6 @@ async function main() {
           where: { id: existingGarageService.id },
           data: {
             price,
-            duration,
             isActive: true,
           },
         });

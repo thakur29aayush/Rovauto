@@ -8,6 +8,8 @@ export default function AdminDashboard() {
     activeGarages: 0,
     pendingApplications: 0,
     priceRanges: 0,
+    customers: 0,
+    bookings: 0,
   });
   const [recentApplications, setRecentApplications] = useState([]);
   const [error, setError] = useState("");
@@ -16,10 +18,12 @@ export default function AdminDashboard() {
     const load = async () => {
       setError("");
       try {
-        const [garages, pendingApplications, priceRanges] = await Promise.all([
+        const [garages, pendingApplications, priceRanges, customers, bookings] = await Promise.all([
           adminApi.getGarages(),
           adminApi.getApplications("PENDING"),
           adminApi.getPriceRanges(),
+          adminApi.getCustomers(),
+          adminApi.getBookings(),
         ]);
 
         setStats({
@@ -27,6 +31,8 @@ export default function AdminDashboard() {
           activeGarages: garages.filter((garage) => garage.isActive).length,
           pendingApplications: pendingApplications.length,
           priceRanges: priceRanges.length,
+          customers: customers.length,
+          bookings: bookings.length,
         });
         setRecentApplications(pendingApplications.slice(0, 5));
       } catch (err) {
@@ -41,7 +47,7 @@ export default function AdminDashboard() {
     { icon: FiHome, n: stats.garages, l: "Total Garages", c: `${stats.activeGarages} active` },
     { icon: FiCalendar, n: stats.pendingApplications, l: "Pending Applications", c: "Needs review" },
     { icon: FiDollarSign, n: stats.priceRanges, l: "Price Ranges", c: "Configured" },
-    { icon: FiUsers, n: "-", l: "Customers", c: "No admin endpoint yet" },
+    { icon: FiUsers, n: stats.customers, l: "Customers", c: `${stats.bookings} bookings` },
   ];
 
   return (

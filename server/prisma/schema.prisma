@@ -225,7 +225,6 @@ model Service {
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
   basePrice       Int?
-  durationMin     Int?
   maxPrice        Int?
   minPrice        Int?
   bookingItems    BookingService[]
@@ -262,7 +261,6 @@ model GarageService {
   garageId  String
   serviceId String
   price     Int?
-  duration  Int?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

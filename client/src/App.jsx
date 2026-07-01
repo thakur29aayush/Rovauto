@@ -101,6 +101,7 @@ const AdminCustomers = lazy(() => import("@/pages/admin/Customers"));
 const AdminGarages = lazy(() => import("@/pages/admin/Garages"));
 const AdminBookings = lazy(() => import("@/pages/admin/Bookings"));
 const AdminRevenue = lazy(() => import("@/pages/admin/Revenue"));
+const AdminNotifications = lazy(() => import("@/pages/admin/Notifications"));
 
 import { FiGrid, FiTruck, FiPlusCircle, FiCalendar, FiClock, FiShield, FiCreditCard, FiBell, FiUser,
   FiInbox, FiBriefcase, FiTrendingUp, FiStar, FiUsers, FiSettings, FiDollarSign, FiHome } from "react-icons/fi";
@@ -132,6 +133,7 @@ const adminItems = [
   { to: "/admin/revenue", label: "Price Ranges", icon: FiDollarSign },
   { to: "/admin/customers", label: "Customers", icon: FiUsers },
   { to: "/admin/bookings", label: "Bookings", icon: FiCalendar },
+  { to: "/admin/notifications", label: "Notifications", icon: FiBell },
 ];
 
 function AppRoutes() {
@@ -199,6 +201,7 @@ function AppRoutes() {
           <Route path="/admin/garages" element={<ProtectedRoute><AdminGarages /></ProtectedRoute>} />
           <Route path="/admin/bookings" element={<ProtectedRoute><AdminBookings /></ProtectedRoute>} />
           <Route path="/admin/revenue" element={<ProtectedRoute><AdminRevenue /></ProtectedRoute>} />
+          <Route path="/admin/notifications" element={<ProtectedRoute><AdminNotifications /></ProtectedRoute>} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

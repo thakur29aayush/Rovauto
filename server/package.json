@@ -12,6 +12,7 @@
     "prisma:studio": "prisma studio",
     "seed:services": "node src/seed/seedServices.js",
     "seed:garages": "node src/seed/seedGarages.js",
+    "seed:admin": "node src/seed/seedAdmin.js",
     "db:delete-user": "node src/scripts/deleteUserData.js",
     "db:delete-active-bookings": "node src/scripts/deleteCustomerRecords.js --scope=active-bookings",
     "db:delete-payments": "node src/scripts/deleteCustomerRecords.js --scope=payments",

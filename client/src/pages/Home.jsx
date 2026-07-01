@@ -31,7 +31,6 @@ const HARDCODED_POPULAR_SERVICES = [
     id: "1",
     name: "Express Exterior Wash",
     description: "Foam Wash, High-pressure Rinse, Hand Dry",
-    durationMin: 30,
     basePrice: 299,
     category: { name: "Cleaning" },
     customImage: washimg,
@@ -41,7 +40,6 @@ const HARDCODED_POPULAR_SERVICES = [
     id: "2",
     name: "Full Car Wash & Interior",
     description: "Foam Wash, Underbody Wash, Interior Vacuum, Dashboard Polish, Window Cleaning",
-    durationMin: 120,
     basePrice: 999,
     category: { name: "Cleaning" },
     customImage: washimg,
@@ -51,7 +49,6 @@ const HARDCODED_POPULAR_SERVICES = [
     id: "3",
     name: "Standard Car Service",
     description: "Engine Oil Change, Oil Filter Replacement, Air Filter Cleaning, Coolant Top-up, Brake Inspection",
-    durationMin: 360,
     basePrice: 3292,
     category: { name: "General Service" },
     customImage: serviceimg,
@@ -61,7 +58,6 @@ const HARDCODED_POPULAR_SERVICES = [
     id: "4",
     name: "Comprehensive Car Service",
     description: "Synthetic Engine Oil, All Filters (Oil, Air, Fuel), AC Vent Cleaning, Brake Inspection, Spark Plug Check",
-    durationMin: 480,
     basePrice: 4820,
     category: { name: "General Service" },
     customImage: serviceimg,
@@ -71,7 +67,6 @@ const HARDCODED_POPULAR_SERVICES = [
     id: "5",
     name: "Regular AC Service",
     description: "AC Gas Top-up, Condenser Cleaning, Cooling Coil Service, Leak Test, AC Vent Sanitization",
-    durationMin: 240,
     basePrice: 2161,
     category: { name: "AC" },
     customImage: acserviceimg,
@@ -81,17 +76,6 @@ const HARDCODED_POPULAR_SERVICES = [
 
 const getServicePrice = (service) => {
   return service?.basePrice || service?.minPrice || 0;
-};
-
-const getDuration = (service) => {
-  if (!service?.durationMin) return "Duration varies";
-
-  if (service.durationMin >= 60) {
-    const hours = Math.round(service.durationMin / 60);
-    return `${hours} ${hours === 1 ? "Hour" : "Hours"}`;
-  }
-
-  return `${service.durationMin} Minutes`;
 };
 
 const getServiceImage = (categoryName) => {
@@ -351,9 +335,7 @@ export default function Home() {
 
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <span className="chip">{getDuration(service)}</span>
-
-                      <h3 className="mt-3 font-semibold text-lg group-hover:text-ink">
+                      <h3 className="font-semibold text-lg group-hover:text-ink">
                         {service.name}
                       </h3>
 

@@ -6,17 +6,6 @@ import { FiStar, FiArrowLeft, FiX, FiTool } from "react-icons/fi";
 import { useApp } from "@/hooks/useApp";
 import { formatServicePriceRange, getServiceMinPrice, getServiceMaxPrice } from "@/utils/priceRange";
 
-const getDuration = (service) => {
-  if (!service.durationMin) return "Duration varies";
-
-  if (service.durationMin >= 60) {
-    const hours = Math.round(service.durationMin / 60);
-    return `${hours} ${hours === 1 ? "Hour" : "Hours"}`;
-  }
-
-  return `${service.durationMin} Minutes`;
-};
-
 const getIncludes = (service) => {
   if (!service.description) return ["Service inspection", "Basic checks"];
 
@@ -161,11 +150,6 @@ export default function CategoryDetail() {
 
                   <ul className="mb-5 space-y-2">
                     <li className="flex items-start gap-2 text-base">
-                      <span className="font-bold text-ink">Time:</span>
-                      <span className="text-muted">{getDuration(pkg)}</span>
-                    </li>
-
-                    <li className="flex items-start gap-2 text-base">
                       <span className="font-bold text-ink">Warranty:</span>
                       <span className="text-muted">Service warranty available</span>
                     </li>
@@ -258,13 +242,6 @@ export default function CategoryDetail() {
               </div>
 
               <div className="mb-5 grid grid-cols-2 gap-3">
-                <div>
-                  <span className="text-sm text-muted">Time</span>
-                  <div className="font-semibold">
-                    {getDuration(selectedPackage)}
-                  </div>
-                </div>
-
                 <div>
                   <span className="text-sm text-muted">Warranty</span>
                   <div className="font-semibold">

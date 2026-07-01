@@ -1,0 +1,1 @@
+ALTER TABLE "Service" DROP COLUMN IF EXISTS "durationMin";

@@ -26,6 +26,7 @@ const dashboardRoutes = require("../customer/routes/dashboard.routes");
 const adminGarageApplicationRoutes = require("../admin/routes/garageApplication.routes");
 const cityServicePriceRangeRoutes = require("../admin/routes/cityServicePriceRange.routes");
 const adminGarageRoutes = require("../admin/routes/garageAdmin.routes");
+const adminOperationsRoutes = require("../admin/routes/adminOperations.routes");
 const authController = require("../customer/controllers/auth.controller");
 const validate = require("../middlewares/validate.middleware");
 const rateLimit = require("../middlewares/rateLimit.middleware");
@@ -67,6 +68,7 @@ router.use("/garage/requests", garageRequestRoutes);
 router.use("/admin/garage-applications", adminGarageApplicationRoutes);
 router.use("/admin/city-service-price-ranges", cityServicePriceRangeRoutes);
 router.use("/admin/garages", adminGarageRoutes);
+router.use("/admin", adminOperationsRoutes);
 router.use("/sos", sosRoutes);
 
 module.exports = router;

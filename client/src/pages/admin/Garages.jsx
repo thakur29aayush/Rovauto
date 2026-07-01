@@ -13,7 +13,7 @@ export default function Garages() {
   const [garages, setGarages] = useState([]);
   const [services, setServices] = useState([]);
   const [selectedGarageId, setSelectedGarageId] = useState("");
-  const [serviceForm, setServiceForm] = useState({ serviceId: "", price: "", duration: "" });
+  const [serviceForm, setServiceForm] = useState({ serviceId: "", price: "" });
   const [noteByApplication, setNoteByApplication] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -85,11 +85,10 @@ export default function Garages() {
       await adminApi.saveGarageService(selectedGarageId, {
         serviceId: serviceForm.serviceId,
         price: serviceForm.price,
-        duration: serviceForm.duration,
         isActive: true,
       });
       setSuccess("Garage service saved.");
-      setServiceForm({ serviceId: "", price: "", duration: "" });
+      setServiceForm({ serviceId: "", price: "" });
       await loadGaragesAndServices();
     } catch (err) {
       setError(err.response?.data?.message || "Unable to save garage service");
@@ -112,7 +111,6 @@ export default function Garages() {
     setServiceForm({
       serviceId: item.serviceId,
       price: item.price || "",
-      duration: item.duration || "",
     });
   };
 
@@ -239,7 +237,7 @@ export default function Garages() {
               )}
             </div>
 
-            <form onSubmit={saveGarageService} className="card-soft grid gap-3 p-5 lg:grid-cols-[1fr_140px_140px_auto]">
+            <form onSubmit={saveGarageService} className="card-soft grid gap-3 p-5 lg:grid-cols-[1fr_160px_auto]">
               <select
                 required
                 value={serviceForm.serviceId}
@@ -261,21 +259,13 @@ export default function Garages() {
                 placeholder="Price"
                 className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
               />
-              <input
-                value={serviceForm.duration}
-                onChange={(e) => setServiceForm({ ...serviceForm, duration: e.target.value })}
-                type="number"
-                min="0"
-                placeholder="Minutes"
-                className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
-              />
               <button disabled={!selectedGarageId} className="btn-primary">Save</button>
             </form>
 
             <div className="card-soft overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-bg-soft text-left">
-                  <tr>{["Service", "Category", "Price", "Duration", ""].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr>
+                  <tr>{["Service", "Category", "Price", ""].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr>
                 </thead>
                 <tbody>
                   {selectedGarage?.services?.length ? selectedGarage.services.map((item) => (
@@ -283,7 +273,6 @@ export default function Garages() {
                       <td className="px-4 py-3 font-medium">{item.service?.name}</td>
                       <td className="px-4 py-3">{item.service?.category?.name || "General"}</td>
                       <td className="px-4 py-3">{money(item.price || item.service?.basePrice)}</td>
-                      <td className="px-4 py-3">{item.duration || item.service?.durationMin || "-"} min</td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
                           <button onClick={() => editGarageService(item)} className="btn-ghost !px-3 !py-2" type="button"><FiEdit3 /></button>
@@ -292,7 +281,7 @@ export default function Garages() {
                       </td>
                     </tr>
                   )) : (
-                    <tr><td colSpan="5" className="px-4 py-5 text-muted">No services assigned yet.</td></tr>
+                    <tr><td colSpan="4" className="px-4 py-5 text-muted">No services assigned yet.</td></tr>
                   )}
                 </tbody>
               </table>
