@@ -17,7 +17,8 @@
     "db:delete-payments": "node src/scripts/deleteCustomerRecords.js --scope=payments",
     "db:delete-service-history": "node src/scripts/deleteCustomerRecords.js --scope=service-history",
     "db:nuke-users": "node src/scripts/nukeUsersData.js",
-    "db:approve-garage": "node src/scripts/approveGarageApplication.js"
+    "db:approve-garage": "node src/scripts/approveGarageApplication.js",
+    "db:activate-garage": "node server/src/scripts/activateGarage.js"
   },
   "repository": {
     "type": "git",
