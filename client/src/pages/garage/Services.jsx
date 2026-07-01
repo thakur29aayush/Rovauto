@@ -13,21 +13,32 @@ export default function GarageServices() {
 
   useEffect(() => {
     const load = async () => {
-      if (!garage?.id) return;
+      // Fetch if garage exists and has an id
+      if (!garage?.id) {
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       setError("");
       try {
         const res = await api.get(`/garages/${garage.id}/services`);
-        dispatch(setServices(res.data?.data || []));
+        const servicesList = res.data?.data || [];
+        dispatch(setServices(servicesList));
       } catch (err) {
-        setError(err.response?.data?.message || "Unable to load garage services");
+        // Only show error if it's not a 404 (no services yet) or 403 (not approved)
+        if (err.response?.status !== 404 && err.response?.status !== 403) {
+          setError(err.response?.data?.message || "Unable to load garage services");
+        }
+        // Set empty services list instead of erroring
+        dispatch(setServices([]));
       } finally {
         setLoading(false);
       }
     };
 
     load();
-  }, [garage?.id]);
+  }, [garage?.id, dispatch]);
 
   return (
     <div className="space-y-6">
@@ -66,7 +77,11 @@ export default function GarageServices() {
             </motion.div>
           );
         }) : (
-          <div className="card-soft p-5 text-muted">No services are linked to this garage yet.</div>
+          <div className="card-soft p-5 text-muted">
+            {!garage?.id 
+              ? "Garage profile not loaded. Try refreshing the page."
+              : "No services are linked to this garage yet. Services will be assigned by admin after approval."}
+          </div>
         )}
       </div>
     </div>
