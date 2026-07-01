@@ -102,11 +102,8 @@ export default function Notifications() {
           const Card = notification.link ? Link : "button";
 
           return (
-            <Card
+            <div
               key={notification.id}
-              to={notification.link || undefined}
-              type={notification.link ? undefined : "button"}
-              onClick={() => markRead(notification)}
               className={`card-soft p-4 flex items-center gap-4 text-left ${
                 !notification.isRead ? "border-l-4 border-l-brand" : ""
               }`}
@@ -115,16 +112,31 @@ export default function Notifications() {
                 <FiBell />
               </span>
 
-              <div className="flex-1">
+              <Card
+                to={notification.link || undefined}
+                type={notification.link ? undefined : "button"}
+                onClick={() => markRead(notification)}
+                className="min-w-0 flex-1 text-left"
+              >
                 <div className="font-medium">{notification.title}</div>
                 <div className="text-xs text-muted">{notification.message}</div>
                 <div className="text-xs text-muted mt-1">
                   {formatTime(notification.createdAt)}
                 </div>
-              </div>
+              </Card>
 
-              {!notification.isRead && <span className="chip-brand">New</span>}
-            </Card>
+              {!notification.isRead ? (
+                <button
+                  type="button"
+                  onClick={() => markRead(notification)}
+                  className="btn-ghost shrink-0 text-xs"
+                >
+                  Mark as read
+                </button>
+              ) : (
+                <span className="chip-brand shrink-0 bg-bg-soft text-muted">Read</span>
+              )}
+            </div>
           );
         })}
 

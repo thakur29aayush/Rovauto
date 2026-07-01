@@ -3,7 +3,7 @@ const ApiResponse = require("../../utils/apiResponse");
 const applicationService = require("../services/application.service");
 
 const submitApplication = asyncHandler(async (req, res) => {
-  const application = await applicationService.submitApplication(req.body);
+  const application = await applicationService.submitApplication(req.body, req.files || []);
   return res.status(201).json(new ApiResponse(201, "Garage application submitted successfully", application));
 });
 
@@ -32,8 +32,14 @@ const denyApplication = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, "Garage application denied successfully", application));
 });
 
+const deleteApplications = asyncHandler(async (req, res) => {
+  const result = await applicationService.deleteApplications(req.body.applicationIds);
+  return res.status(200).json(new ApiResponse(200, "Garage applications deleted successfully", result));
+});
+
 module.exports = {
   approveApplication,
+  deleteApplications,
   denyApplication,
   getApplication,
   listApplications,

@@ -29,6 +29,10 @@ export const adminApi = {
     return unwrap(await api.post(`/admin/garage-applications/${applicationId}/deny`, { adminNote }));
   },
 
+  async deleteApplications(applicationIds = []) {
+    return unwrap(await api.delete("/admin/garage-applications", { data: { applicationIds } }));
+  },
+
   async getGarages(params = {}) {
     return unwrap(await api.get("/admin/garages", { params }));
   },

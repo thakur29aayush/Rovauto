@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(protect);
 
 router.get("/", notificationController.getMyNotifications);
-router.patch("/:id/read", notificationController.markNotificationRead);
 router.patch("/read-all", notificationController.markAllNotificationsRead);
+router.patch("/:id/read", notificationController.markNotificationRead);
 
 module.exports = router;

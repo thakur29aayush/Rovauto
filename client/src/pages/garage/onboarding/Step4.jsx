@@ -23,7 +23,8 @@ export default function OnboardingStep4({ data, onChange }) {
     setError("");
 
     try {
-      await garageApi.submitApplication({
+      const formData = new FormData();
+      const fields = {
         ownerName: data.ownerName,
         email: data.email,
         phone: data.phone,
@@ -40,7 +41,18 @@ export default function OnboardingStep4({ data, onChange }) {
         latitude: data.location?.lat,
         longitude: data.location?.lng,
         workingRadiusKm: data.workingRadius,
+      };
+
+      Object.entries(fields).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          formData.append(key, value);
+        }
       });
+      data.images.forEach((image) => {
+        if (image.file) formData.append("images", image.file);
+      });
+
+      await garageApi.submitApplication(formData);
       setComplete(true);
     } catch (err) {
       setError(err.response?.data?.message || "Unable to submit application");

@@ -11,6 +11,7 @@ export default function AddressForm() {
   const { user, setUser, setLocation, fetchProfile, clearProfileCache } = useApp();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [manualLocationEdited, setManualLocationEdited] = useState(false);
 
   const defaultUserLocation = getDefaultUserLocation(user);
   const initialAddress =
@@ -34,7 +35,10 @@ export default function AddressForm() {
     setForm((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
+      latitude: null,
+      longitude: null,
     }));
+    setManualLocationEdited(true);
   };
 
   const detectLocation = async () => {
@@ -50,6 +54,7 @@ export default function AddressForm() {
 
       const latitude = Number(position.coords.latitude.toFixed(6));
       const longitude = Number(position.coords.longitude.toFixed(6));
+      setManualLocationEdited(false);
 
       try {
         const url = new URL("https://nominatim.openstreetmap.org/reverse");
@@ -88,20 +93,44 @@ export default function AddressForm() {
 
     try {
       const fullAddress = buildFullAddress(form);
+      let latitude = Number(form.latitude);
+      let longitude = Number(form.longitude);
+      const shouldGeocodeManualAddress =
+        manualLocationEdited ||
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude);
+
+      if (shouldGeocodeManualAddress) {
+        const geocodeResponse = await api.get("/locations/geocode", {
+          params: {
+            address: fullAddress,
+            city: form.city,
+            country: "",
+            countrycodes: "in,np",
+          },
+        });
+        const geocoded = geocodeResponse.data?.data;
+        latitude = Number(geocoded?.latitude);
+        longitude = Number(geocoded?.longitude);
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+          throw new Error("Could not find latitude and longitude for this address.");
+        }
+      }
 
       await api.patch("/customer/profile", {
         address: fullAddress,
       });
 
       if (
-        Number.isFinite(Number(form.latitude)) &&
-        Number.isFinite(Number(form.longitude))
+        Number.isFinite(latitude) &&
+        Number.isFinite(longitude)
       ) {
         await api.post("/locations", {
-          latitude: Number(form.latitude),
-          longitude: Number(form.longitude),
+          latitude,
+          longitude,
           address: fullAddress,
-          source: form.latitude && form.longitude ? "GPS" : "MANUAL",
+          source: shouldGeocodeManualAddress ? "MANUAL" : "GPS",
           isDefault: true,
         });
       }
@@ -112,8 +141,8 @@ export default function AddressForm() {
         city: form.city,
         pincode: form.pincode,
         fullAddress,
-        latitude: form.latitude,
-        longitude: form.longitude,
+        latitude,
+        longitude,
       });
 
       clearProfileCache();

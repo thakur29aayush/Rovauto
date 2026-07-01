@@ -16,6 +16,7 @@ router.use(protect);
 router.use(authorizeRoles("ADMIN"));
 
 router.get("/", applicationQuerySchema, validate, applicationController.listApplications);
+router.delete("/", applicationController.deleteApplications);
 router.get("/:applicationId", applicationIdSchema, validate, applicationController.getApplication);
 router.post("/:applicationId/approve", reviewApplicationSchema, validate, applicationController.approveApplication);
 router.post("/:applicationId/request-changes", reviewApplicationSchema, validate, applicationController.requestChanges);

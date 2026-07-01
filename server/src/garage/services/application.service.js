@@ -2,6 +2,7 @@ const argon2 = require("argon2");
 const crypto = require("crypto");
 const prisma = require("../../config/prisma");
 const ApiError = require("../../utils/apiError");
+const { uploadToCloudinary, deleteFromCloudinary } = require("../../utils/cloudinaryUpload");
 const { sendGarageApplicationEmail } = require("./applicationEmail.service");
 const { createResetPasswordOtp } = require("../../customer/services/otp.service");
 
@@ -27,9 +28,12 @@ const applicationSelect = {
   approvedGarageId: true,
   createdAt: true,
   updatedAt: true,
+  images: {
+    orderBy: [{ isThumbnail: "desc" }, { order: "asc" }],
+  },
 };
 
-const submitApplication = async (payload) => {
+const submitApplication = async (payload, files = []) => {
   const email = normalizeEmail(payload.email);
   const phone = normalizePhone(payload.phone);
 
@@ -44,23 +48,44 @@ const submitApplication = async (payload) => {
     throw new ApiError(409, "A garage application is already pending or awaiting changes for this email/phone");
   }
 
-  return prisma.garageApplication.create({
-    data: {
-      ownerName: payload.ownerName.trim(),
-      email,
-      phone,
-      garageName: payload.garageName.trim(),
-      description: payload.description?.trim() || null,
-      address: payload.address.trim(),
-      city: payload.city.trim(),
-      area: payload.area.trim(),
-      latitude: payload.latitude === undefined ? null : Number(payload.latitude),
-      longitude: payload.longitude === undefined ? null : Number(payload.longitude),
-      workingRadiusKm: Number(payload.workingRadiusKm) || 15,
-      status: "PENDING",
-    },
-    select: applicationSelect,
-  });
+  if (files.length > 15) {
+    throw new ApiError(400, "You can upload up to 15 garage photos");
+  }
+
+  const uploadedImages = [];
+  try {
+    for (const [index, file] of files.entries()) {
+      const uploaded = await uploadToCloudinary(file.buffer, "rovauto/garage-applications", "image");
+      uploadedImages.push({
+        imageUrl: uploaded.secure_url,
+        publicId: uploaded.public_id,
+        order: index,
+        isThumbnail: index === 0,
+      });
+    }
+
+    return await prisma.garageApplication.create({
+      data: {
+        ownerName: payload.ownerName.trim(),
+        email,
+        phone,
+        garageName: payload.garageName.trim(),
+        description: payload.description?.trim() || null,
+        address: payload.address.trim(),
+        city: payload.city.trim(),
+        area: payload.area.trim(),
+        latitude: payload.latitude === undefined ? null : Number(payload.latitude),
+        longitude: payload.longitude === undefined ? null : Number(payload.longitude),
+        workingRadiusKm: Number(payload.workingRadiusKm) || 15,
+        status: "PENDING",
+        images: uploadedImages.length ? { create: uploadedImages } : undefined,
+      },
+      select: applicationSelect,
+    });
+  } catch (error) {
+    await Promise.all(uploadedImages.map((image) => deleteFromCloudinary(image.publicId).catch(() => null)));
+    throw error;
+  }
 };
 
 const listApplications = async (query = {}) => {
@@ -180,8 +205,18 @@ const approveApplication = async (applicationId, adminNote) => {
         isVerified: true,
         isActive: false,
         wallet: { create: { balance: 0 } },
+        images: application.images?.length
+          ? {
+              create: application.images.map((image) => ({
+                imageUrl: image.imageUrl,
+                publicId: image.publicId,
+                order: image.order,
+                isThumbnail: image.isThumbnail,
+              })),
+            }
+          : undefined,
       },
-      include: { owner: true, wallet: true },
+      include: { owner: true, wallet: true, images: true },
     });
 
     const updatedApplication = await tx.garageApplication.update({
@@ -226,8 +261,42 @@ const approveApplication = async (applicationId, adminNote) => {
   };
 };
 
+const deleteApplications = async (applicationIds = []) => {
+  const ids = Array.isArray(applicationIds) ? applicationIds.filter(Boolean) : [];
+  if (!ids.length) throw new ApiError(400, "Select at least one application to delete");
+
+  const applications = await prisma.garageApplication.findMany({
+    where: {
+      id: { in: ids },
+      status: { in: ["APPROVED", "DENIED"] },
+    },
+    select: {
+      id: true,
+      status: true,
+      approvedGarageId: true,
+      images: { select: { publicId: true } },
+    },
+  });
+
+  if (applications.length !== ids.length) {
+    throw new ApiError(400, "Only approved or denied applications can be deleted");
+  }
+
+  const publicIds = applications
+    .filter((application) => application.status === "DENIED" || !application.approvedGarageId)
+    .flatMap((application) => application.images.map((image) => image.publicId));
+  const result = await prisma.garageApplication.deleteMany({
+    where: { id: { in: ids } },
+  });
+
+  await Promise.all(publicIds.map((publicId) => deleteFromCloudinary(publicId).catch(() => null)));
+
+  return { deleted: result.count };
+};
+
 module.exports = {
   approveApplication,
+  deleteApplications,
   denyApplication,
   getApplication,
   listApplications,

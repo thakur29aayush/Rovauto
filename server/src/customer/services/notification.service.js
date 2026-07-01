@@ -8,6 +8,10 @@ const getNotificationsCacheKey = (userId) => {
   return `customer:${userId}:notifications`;
 };
 
+const getReadCopySourceId = (notification) => {
+  return notification?.metadata?.sourceNotificationId || null;
+};
+
 const invalidateNotificationCache = async (userId) => {
   if (!userId) return;
   await deletePattern(`customer:${userId}:notifications*`);
@@ -32,9 +36,19 @@ const getMyNotifications = async (userId) => {
     take: 50,
   });
 
-  await setCache(cacheKey, notifications, NOTIFICATIONS_CACHE_TTL);
+  const readGlobalIds = new Set(
+    notifications
+      .filter((notification) => notification.userId === userId && getReadCopySourceId(notification))
+      .map(getReadCopySourceId)
+  );
+  const visibleNotifications = notifications.filter((notification) => {
+    if (notification.userId !== null) return !getReadCopySourceId(notification);
+    return !readGlobalIds.has(notification.id);
+  });
 
-  return notifications;
+  await setCache(cacheKey, visibleNotifications, NOTIFICATIONS_CACHE_TTL);
+
+  return visibleNotifications;
 };
 
 const createNotification = async ({
@@ -83,6 +97,18 @@ const markNotificationRead = async (userId, notificationId) => {
   }
 
   if (!notification.userId) {
+    const userNotifications = await prisma.notification.findMany({
+      where: { userId },
+    });
+    const existingReadCopy = userNotifications.find(
+      (item) => getReadCopySourceId(item) === notification.id
+    );
+
+    if (existingReadCopy) {
+      await invalidateNotificationCache(userId);
+      return existingReadCopy;
+    }
+
     const copied = await prisma.notification.create({
       data: {
         userId,
@@ -90,7 +116,12 @@ const markNotificationRead = async (userId, notificationId) => {
         message: notification.message,
         type: notification.type,
         link: notification.link,
-        metadata: notification.metadata,
+        metadata: {
+          ...(notification.metadata && typeof notification.metadata === "object" && !Array.isArray(notification.metadata)
+            ? notification.metadata
+            : {}),
+          sourceNotificationId: notification.id,
+        },
         isRead: true,
       },
     });
@@ -114,14 +145,56 @@ const markNotificationRead = async (userId, notificationId) => {
 };
 
 const markAllNotificationsRead = async (userId) => {
-  await prisma.notification.updateMany({
-    where: {
-      userId,
-      isRead: false,
-    },
-    data: {
-      isRead: true,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.notification.updateMany({
+      where: {
+        userId,
+        isRead: false,
+      },
+      data: {
+        isRead: true,
+      },
+    });
+
+    const globalNotifications = await tx.notification.findMany({
+      where: { userId: null },
+      select: {
+        id: true,
+        title: true,
+        message: true,
+        type: true,
+        link: true,
+        metadata: true,
+        createdAt: true,
+      },
+    });
+
+    const existingCopies = await tx.notification.findMany({
+      where: { userId },
+      select: { metadata: true },
+    });
+    const copiedGlobalIds = new Set(existingCopies.map(getReadCopySourceId).filter(Boolean));
+    const missingReadCopies = globalNotifications.filter((notification) => !copiedGlobalIds.has(notification.id));
+
+    if (missingReadCopies.length) {
+      await tx.notification.createMany({
+        data: missingReadCopies.map((notification) => ({
+          userId,
+          title: notification.title,
+          message: notification.message,
+          type: notification.type,
+          link: notification.link,
+          metadata: {
+            ...(notification.metadata && typeof notification.metadata === "object" && !Array.isArray(notification.metadata)
+              ? notification.metadata
+              : {}),
+            sourceNotificationId: notification.id,
+          },
+          isRead: true,
+          createdAt: notification.createdAt,
+        })),
+      });
+    }
   });
 
   await invalidateNotificationCache(userId);

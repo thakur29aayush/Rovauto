@@ -15,6 +15,7 @@ export default function Garages() {
   const [selectedGarageId, setSelectedGarageId] = useState("");
   const [serviceForm, setServiceForm] = useState({ serviceId: "", price: "" });
   const [noteByApplication, setNoteByApplication] = useState({});
+  const [selectedApplicationIds, setSelectedApplicationIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -29,6 +30,7 @@ export default function Garages() {
     setError("");
     try {
       setApplications(await adminApi.getApplications(applicationStatus));
+      setSelectedApplicationIds([]);
     } catch (err) {
       setError(err.response?.data?.message || "Unable to load applications");
     } finally {
@@ -114,6 +116,31 @@ export default function Garages() {
     });
   };
 
+  const toggleApplicationSelection = (applicationId) => {
+    setSelectedApplicationIds((current) =>
+      current.includes(applicationId)
+        ? current.filter((id) => id !== applicationId)
+        : [...current, applicationId]
+    );
+  };
+
+  const deleteApplications = async (applicationIds) => {
+    if (!applicationIds.length) return;
+    setError("");
+    setSuccess("");
+    try {
+      const result = await adminApi.deleteApplications(applicationIds);
+      const deleted = result.deleted || applicationIds.length;
+      setSuccess(`${deleted} application${deleted === 1 ? "" : "s"} deleted.`);
+      await loadApplications();
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to delete applications");
+    }
+  };
+
+  const canDeleteApplications = applicationStatus === "APPROVED" || applicationStatus === "DENIED";
+  const allApplicationIds = applications.map((application) => application.id);
+
   return (
     <div className="mx-auto w-full max-w-[1480px] space-y-6 overflow-hidden">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -155,6 +182,31 @@ export default function Garages() {
             <button onClick={loadApplications} className="btn-ghost !py-2 text-sm">
               <FiRefreshCw /> Refresh
             </button>
+            {canDeleteApplications && applications.length > 0 && (
+              <>
+                <label className="inline-flex items-center gap-2 rounded-full bg-bg-soft px-4 py-2 text-xs font-semibold text-muted sm:text-sm">
+                  <input
+                    type="checkbox"
+                    checked={selectedApplicationIds.length === applications.length}
+                    onChange={(event) => setSelectedApplicationIds(event.target.checked ? allApplicationIds : [])}
+                  />
+                  Select all
+                </label>
+                <button
+                  onClick={() => deleteApplications(selectedApplicationIds)}
+                  disabled={!selectedApplicationIds.length}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 disabled:opacity-50 sm:text-sm"
+                >
+                  <FiTrash2 /> Delete selected
+                </button>
+                <button
+                  onClick={() => deleteApplications(allApplicationIds)}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-red-700 px-4 py-2 text-xs font-semibold text-white sm:text-sm"
+                >
+                  <FiTrash2 /> Delete all
+                </button>
+              </>
+            )}
           </div>
 
           <div className="grid gap-4">
@@ -164,6 +216,16 @@ export default function Garages() {
               <div key={application.id} className="card-soft p-4 sm:p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0 space-y-2">
+                    {canDeleteApplications && (
+                      <label className="inline-flex items-center gap-2 text-sm font-semibold text-muted">
+                        <input
+                          type="checkbox"
+                          checked={selectedApplicationIds.includes(application.id)}
+                          onChange={() => toggleApplicationSelection(application.id)}
+                        />
+                        Select
+                      </label>
+                    )}
                     <div>
                       <h3 className="text-lg font-bold">{application.garageName}</h3>
                       <p className="text-sm text-muted">{application.ownerName} · {application.email} · {application.phone}</p>
@@ -174,6 +236,25 @@ export default function Garages() {
                       Lat/Lng: {application.latitude ?? "N/A"}, {application.longitude ?? "N/A"}
                     </p>
                     {application.description && <p className="whitespace-pre-wrap text-sm text-muted">{application.description}</p>}
+                    {application.images?.length > 0 && (
+                      <div className="grid grid-cols-2 gap-3 pt-2 sm:grid-cols-4 lg:grid-cols-6">
+                        {application.images.map((image, index) => (
+                          <a
+                            key={image.id}
+                            href={image.imageUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block overflow-hidden rounded-xl border border-line bg-bg-soft"
+                          >
+                            <img
+                              src={image.imageUrl}
+                              alt={`${application.garageName} ${index + 1}`}
+                              className="aspect-square w-full object-cover"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <span className="chip-brand self-start">{application.status}</span>
                 </div>
@@ -236,6 +317,41 @@ export default function Garages() {
                 </p>
               )}
             </div>
+
+            {selectedGarage && (
+              <div className="card-soft space-y-3 p-5">
+                <p className="whitespace-pre-wrap text-sm text-muted">
+                  {selectedGarage.description || "No garage description submitted."}
+                </p>
+                <div className="grid gap-2 text-sm text-muted sm:grid-cols-2 lg:grid-cols-3">
+                  <span>Owner: {selectedGarage.owner?.name || "N/A"}</span>
+                  <span>Email: {selectedGarage.email || selectedGarage.owner?.email || "N/A"}</span>
+                  <span>Phone: {selectedGarage.phone || selectedGarage.owner?.phone || "N/A"}</span>
+                  <span>Area: {selectedGarage.area || "N/A"}</span>
+                  <span>Radius: {selectedGarage.workingRadiusKm || 15} km</span>
+                  <span>Lat/Lng: {selectedGarage.latitude ?? "N/A"}, {selectedGarage.longitude ?? "N/A"}</span>
+                </div>
+                {selectedGarage.images?.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+                    {selectedGarage.images.map((image, index) => (
+                      <a
+                        key={image.id}
+                        href={image.imageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block overflow-hidden rounded-xl border border-line bg-bg-soft"
+                      >
+                        <img
+                          src={image.imageUrl}
+                          alt={`${selectedGarage.name} ${index + 1}`}
+                          className="aspect-square w-full object-cover"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <form onSubmit={saveGarageService} className="card-soft grid min-w-0 gap-3 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_150px_auto]">
               <select

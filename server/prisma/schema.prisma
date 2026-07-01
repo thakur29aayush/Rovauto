@@ -573,7 +573,7 @@ model Notification {
 }
 
 model GarageApplication {
-  id               String                  @id @default(uuid())
+  id               String                   @id @default(uuid())
   ownerName        String
   email            String
   phone            String
@@ -584,18 +584,34 @@ model GarageApplication {
   area             String
   latitude         Float?
   longitude        Float?
-  workingRadiusKm  Int      @default(15)
-  status           GarageApplicationStatus @default(PENDING)
+  workingRadiusKm  Int                      @default(15)
+  status           GarageApplicationStatus  @default(PENDING)
   adminNote        String?
   reviewedAt       DateTime?
-  approvedGarageId String?                 @unique
-  createdAt        DateTime                @default(now())
-  updatedAt        DateTime                @updatedAt
+  approvedGarageId String?                  @unique
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  images           GarageApplicationImage[]
 
   @@index([email])
   @@index([phone])
   @@index([status])
   @@index([createdAt])
+}
+
+model GarageApplicationImage {
+  id            String            @id @default(uuid())
+  applicationId String
+  imageUrl      String
+  publicId      String
+  order         Int               @default(0)
+  isThumbnail   Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  application   GarageApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@index([isThumbnail])
 }
 
 enum GarageApplicationStatus {
