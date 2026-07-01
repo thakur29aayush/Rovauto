@@ -72,10 +72,9 @@ export default function GarageDashboard() {
             <div>
               <h2 className="font-bold text-yellow-900">Activation pending</h2>
               <p className="text-sm text-yellow-800">
-                Upload at least {activation.minimumPhotos || 5} garage photos and keep Rs. {activation.minimumBalance || 1000}+ in your wallet to activate customer visibility.
+                Keep Rs. {activation.minimumBalance || 1000}+ in your wallet to activate customer visibility.
               </p>
               <div className="mt-3 flex flex-wrap gap-2 text-sm">
-                <span className="rounded-full bg-white px-3 py-1">Photos: {activation.photoCount || garage?.imageCount || 0}/{activation.minimumPhotos || 5}</span>
                 <span className="rounded-full bg-white px-3 py-1">Wallet: Rs. {balance.toLocaleString()}</span>
               </div>
             </div>

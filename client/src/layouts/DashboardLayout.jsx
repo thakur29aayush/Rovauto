@@ -19,7 +19,9 @@ export default function DashboardLayout({ items, title }) {
   const isDashboardLink = (to) =>
     to === "/dashboard" ||
     to === "/customer/dashboard" ||
-    to === "/dashboard/customer";
+    to === "/dashboard/customer" ||
+    to === "/garage" ||
+    to === "/admin";
   const isGaragePortal = pathname.startsWith("/garage");
   const account = isGaragePortal ? garage : user;
   const accountName = isGaragePortal

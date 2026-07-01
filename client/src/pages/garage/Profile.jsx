@@ -19,12 +19,11 @@ export default function GarageProfile() {
 
   const activation = garage?.activation || {};
   const uploadedImages = garage?.images || [];
-  const minimumPhotos = activation.minimumPhotos || 5;
   const minimumBalance = activation.minimumBalance || 1000;
   const balance = activation.walletBalance || garage?.walletBalance || garage?.wallet?.balance || 0;
 
   const handleUpload = async () => {
-    if (!garage?.id || images.length < minimumPhotos) return;
+    if (!garage?.id || images.length === 0) return;
     setLoading(true);
     setError("");
     setSuccess("");
@@ -44,7 +43,7 @@ export default function GarageProfile() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Profile</h1>
-        <p className="text-muted">Manage your garage information and activation photos</p>
+        <p className="text-muted">Manage your garage information and listing photos</p>
       </div>
 
       {error && <div className="rounded-xl bg-red-50 p-4 text-red-700">{error}</div>}
@@ -77,9 +76,9 @@ export default function GarageProfile() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="card-soft p-5">
-          <FiCheckCircle className={activation.hasMinimumPhotos ? "text-green-700" : "text-muted"} />
+          <FiCheckCircle className={uploadedImages.length > 0 ? "text-green-700" : "text-muted"} />
           <h3 className="mt-3 font-bold">Garage Photos</h3>
-          <p className="text-sm text-muted">{uploadedImages.length}/{minimumPhotos} uploaded</p>
+          <p className="text-sm text-muted">{uploadedImages.length} uploaded</p>
         </div>
         <div className="card-soft p-5">
           <FiCheckCircle className={balance >= minimumBalance ? "text-green-700" : "text-muted"} />
@@ -89,7 +88,7 @@ export default function GarageProfile() {
         <div className="card-soft p-5">
           <FiCheckCircle className={garage?.isActive ? "text-green-700" : "text-muted"} />
           <h3 className="mt-3 font-bold">Customer Visibility</h3>
-          <p className="text-sm text-muted">{garage?.isActive ? "Garage is visible" : "Complete both requirements"}</p>
+          <p className="text-sm text-muted">{garage?.isActive ? "Garage is visible" : "Maintain required wallet balance"}</p>
         </div>
       </div>
 
@@ -108,12 +107,12 @@ export default function GarageProfile() {
         <div className="mb-5 flex items-center gap-3">
           <FiUploadCloud className="text-brand" />
           <div>
-            <h3 className="text-xl font-bold">Upload Activation Photos</h3>
-            <p className="text-muted text-sm">Upload {minimumPhotos} to 10 photos. The first image becomes the thumbnail.</p>
+            <h3 className="text-xl font-bold">Upload Listing Photos</h3>
+            <p className="text-muted text-sm">Upload up to 15 photos, each 1 MB or less. The first image becomes the thumbnail.</p>
           </div>
         </div>
-        <ImageUpload min={minimumPhotos} max={10} value={images} onChange={setImages} />
-        <button onClick={handleUpload} disabled={loading || images.length < minimumPhotos} className="btn-primary mt-6 w-full">
+        <ImageUpload min={0} max={15} maxSizeMb={1} value={images} onChange={setImages} />
+        <button onClick={handleUpload} disabled={loading || images.length === 0} className="btn-primary mt-6 w-full">
           {loading ? "Uploading..." : "Upload Garage Photos"}
         </button>
       </div>
