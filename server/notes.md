@@ -410,3 +410,8 @@ npm run db:nuke-users -- --confirm --i-understand-delete-all-users (codebase)
 npm --prefix server run db:nuke-users -- --confirm --i-understand-delete-all-users (server)
 
 npm run db:nuke-users(Dry run)
+
+npm run db:approve-garage -- --email=owner@example.com --confirm
+
+npm run db:approve-garage -- --list
+
