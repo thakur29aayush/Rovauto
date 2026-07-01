@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const prisma = require("../../config/prisma");
 const ApiError = require("../../utils/apiError");
 const { sendGarageApplicationEmail } = require("./applicationEmail.service");
+const otpService = require("../../customer/services/otp.service");
 
 const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
 const normalizePhone = (phone) => String(phone || "").trim();
@@ -206,6 +207,13 @@ const approveApplication = async (applicationId, adminNote) => {
     subject: "Rovauto garage application approved",
     message: "Your garage has been approved. Login with your email and use forgot password if you need to set your password. Recharge at least Rs. 1000 to activate your garage listing.",
   });
+
+  try {
+    await otpService.createResetPasswordOtp(result.owner.id, result.owner.email);
+    console.log(`Reset OTP created for owner ${result.owner.email} (userId=${result.owner.id})`);
+  } catch (err) {
+    console.error(`Failed to create reset OTP for owner ${result.owner.email}:`, err.message || err);
+  }
 
   return result;
 };
