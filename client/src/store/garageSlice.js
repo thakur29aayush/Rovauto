@@ -8,7 +8,7 @@ const initialState = {
   bookings: [],
   services: [],
   wallet: {
-    balance: 25000,
+    balance: 0,
     transactions: []
   },
   reviews: [],
