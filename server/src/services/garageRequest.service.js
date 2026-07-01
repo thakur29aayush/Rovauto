@@ -19,15 +19,9 @@ const {
 const bookingLifecycleService = require("./bookingLifecycle.service");
 
 const SOS_CHARGE = 50;
-const DEFAULT_GARAGE_BROADCAST_RADIUS_KM = 15;
-
 const getGarageBroadcastRadiusKm = () => {
-  const radius = Number(
-    process.env.GARAGE_BROADCAST_RADIUS_KM || DEFAULT_GARAGE_BROADCAST_RADIUS_KM
-  );
-  return Number.isFinite(radius) && radius > 0
-    ? radius
-    : DEFAULT_GARAGE_BROADCAST_RADIUS_KM;
+  const radius = Number(process.env.GARAGE_BROADCAST_RADIUS_KM);
+  return Number.isFinite(radius) && radius > 0 ? radius : null;
 };
 
 const serializeGarageRequest = (request) => ({

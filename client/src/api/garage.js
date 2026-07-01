@@ -28,17 +28,13 @@ export const normalizeGarage = (garage) => {
     walletBalance: wallet.balance || activation.walletBalance || 0,
     imageCount: images.length || activation.photoCount || 0,
     minimumBalance: activation.minimumBalance || 1000,
-    minimumPhotos: activation.minimumPhotos || 5,
     isOnboardingComplete: Boolean(garage.isVerified),
     activation: {
       minimumBalance: activation.minimumBalance || 1000,
-      minimumPhotos: activation.minimumPhotos || 5,
       walletBalance: wallet.balance || activation.walletBalance || 0,
       photoCount: images.length || activation.photoCount || 0,
       hasMinimumBalance:
         activation.hasMinimumBalance ?? (wallet.balance || 0) >= (activation.minimumBalance || 1000),
-      hasMinimumPhotos:
-        activation.hasMinimumPhotos ?? images.length >= (activation.minimumPhotos || 5),
       isActive: activation.isActive ?? garage.isActive,
     },
   };
@@ -120,6 +116,10 @@ export const garageApi = {
 
   async verifyRechargeOrder(token, cashfreeOrderId) {
     return unwrap(await api.post("/garage/wallet/recharge/verify", { cashfreeOrderId }, authConfig(token)));
+  },
+
+  async changePassword(token, currentPassword, newPassword) {
+    return unwrap(await api.post("/auth/change-password", { currentPassword, newPassword }, authConfig(token)));
   },
 
   async uploadPhotos(token, garageId, files) {

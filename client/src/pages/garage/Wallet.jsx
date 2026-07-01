@@ -26,6 +26,7 @@ export default function GarageWallet() {
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [amount, setAmount] = useState(1000);
   const [pendingOrder, setPendingOrder] = useState(null);
+  const [cashfreeMode, setCashfreeMode] = useState("sandbox");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -59,6 +60,7 @@ export default function GarageWallet() {
     try {
       const order = await garageApi.createRechargeOrder(garageToken, Number(amount));
       setPendingOrder(order.cashfreeOrder);
+      setCashfreeMode(order.mode || "sandbox");
     } catch (err) {
       setError(err.response?.data?.message || "Unable to create recharge order");
     } finally {
@@ -78,7 +80,7 @@ export default function GarageWallet() {
       await loadCashfreeCheckout();
 
       const cashfree = window.Cashfree({
-        mode: "sandbox",
+        mode: cashfreeMode,
       });
 
       const checkoutResult = await cashfree.checkout({
@@ -131,7 +133,7 @@ export default function GarageWallet() {
       <div className="card-soft p-8 text-center bg-gradient-to-br from-brand-soft to-white">
         <p className="text-muted mb-2">Available Balance</p>
         <h2 className="text-5xl font-bold mb-3">Rs. {Number(wallet.balance || 0).toLocaleString()}</h2>
-        <p className="text-sm text-muted mb-6">Minimum Rs. {wallet.activation?.minimumBalance || 1000} required for activation</p>
+        <p className="text-sm text-muted mb-6">Minimum Rs. {wallet.activation?.minimumBalance || 1000} wallet balance required for activation</p>
         <button onClick={() => setShowRechargeModal(true)} className="btn-primary">
           <FiPlus className="w-4 h-4" />
           Recharge Wallet

@@ -17,7 +17,7 @@ export default function GarageOnboarding() {
     city: "",
     area: "",
     description: "",
-    location: { lat: 12.9716, lng: 77.5946 },
+    location: { lat: null, lng: null },
     workingRadius: 15,
     images: [],
     garageType: "MULTI_BRAND",

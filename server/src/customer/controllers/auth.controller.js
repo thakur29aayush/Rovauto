@@ -99,6 +99,14 @@ const resetPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Password reset successful", result));
 });
 
+const changePassword = asyncHandler(async (req, res) => {
+  const result = await authService.changePassword(req.user.id, req.body);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Password changed successfully", result));
+});
+
 module.exports = {
   signup,
   verifyOtp,
@@ -111,4 +119,5 @@ module.exports = {
   me,
   forgotPassword,
   resetPassword,
+  changePassword,
 };

@@ -7,7 +7,7 @@ import { FiMenu, FiX, FiLogOut } from "react-icons/fi";
 
 export default function DashboardLayout({ items, title }) {
   const { pathname } = useLocation();
-  const { user, logout } = useApp();
+  const { user, garage, logout, logoutGarage } = useApp();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -20,6 +20,22 @@ export default function DashboardLayout({ items, title }) {
     to === "/dashboard" ||
     to === "/customer/dashboard" ||
     to === "/dashboard/customer";
+  const isGaragePortal = pathname.startsWith("/garage");
+  const account = isGaragePortal ? garage : user;
+  const accountName = isGaragePortal
+    ? account?.ownerName || account?.owner?.name || account?.name
+    : account?.name;
+  const accountRole = isGaragePortal ? "GARAGE_OWNER" : account?.role || "CUSTOMER";
+  const handleLogout = async () => {
+    if (isGaragePortal) {
+      await logoutGarage();
+      navigate("/garage/login");
+      return;
+    }
+
+    await logout();
+    navigate("/");
+  };
 
   return (
     <div className="flex min-h-screen bg-bg-soft">
@@ -68,25 +84,22 @@ export default function DashboardLayout({ items, title }) {
         <div className="border-t border-line p-3">
           <div className="flex items-center gap-3 px-2 py-2">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-brand font-bold text-ink">
-              {user?.name?.[0] || "R"}
+              {accountName?.[0] || "R"}
             </span>
 
             <div className="min-w-0">
               <div className="truncate text-sm font-semibold">
-                {user?.name || "Guest"}
+                {accountName || "Guest"}
               </div>
               <div className="truncate text-xs text-muted">
-                {user?.role || "customer"}
+                {accountRole}
               </div>
             </div>
           </div>
 
           <button
             type="button"
-            onClick={() => {
-              logout();
-              navigate("/");
-            }}
+            onClick={handleLogout}
             className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-line px-4 py-2 text-sm transition hover:border-ink"
           >
             <FiLogOut />

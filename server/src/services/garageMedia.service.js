@@ -3,7 +3,7 @@ const ApiError = require("../utils/apiError");
 const { uploadToCloudinary } = require("../utils/cloudinaryUpload");
 const {
   GARAGE_MAXIMUM_IMAGES,
-  GARAGE_MINIMUM_ACTIVATION_IMAGES,
+  GARAGE_MAX_IMAGE_SIZE_BYTES,
 } = require("../garage/constants");
 const { activateGarageIfEligible } = require("../garage/services/garageOwner.service");
 
@@ -14,8 +14,8 @@ const validateImageFile = (file) => {
     throw new ApiError(400, "Only image files are allowed for garage photos");
   }
 
-  if (file.size > 10 * 1024 * 1024) {
-    throw new ApiError(400, "Each garage photo must be under 10 MB");
+  if (file.size > GARAGE_MAX_IMAGE_SIZE_BYTES) {
+    throw new ApiError(400, "Each garage photo must be less than or equal to 1 MB");
   }
 };
 
@@ -30,10 +30,10 @@ const uploadGarageMedia = async (garageId, files, user) => {
 
   const totalPhotoCount = getTotalPhotoCount(images, thumbnail);
 
-  if (totalPhotoCount < GARAGE_MINIMUM_ACTIVATION_IMAGES || totalPhotoCount > GARAGE_MAXIMUM_IMAGES) {
+  if (totalPhotoCount > GARAGE_MAXIMUM_IMAGES) {
     throw new ApiError(
       400,
-      `Garage must upload ${GARAGE_MINIMUM_ACTIVATION_IMAGES} to ${GARAGE_MAXIMUM_IMAGES} photos`
+      `Garage can upload up to ${GARAGE_MAXIMUM_IMAGES} photos`
     );
   }
 
@@ -42,7 +42,7 @@ const uploadGarageMedia = async (garageId, files, user) => {
   }
 
   if (thumbnail.length === 0 && images.length === 0) {
-    throw new ApiError(400, "At least 5 garage photos are required");
+    throw new ApiError(400, "At least 1 garage photo is required");
   }
 
   const garage = await prisma.garage.findUnique({
@@ -101,9 +101,7 @@ const uploadGarageMedia = async (garageId, files, user) => {
       ...freshGarage,
       activation: {
         isActive: updatedGarage.isActive,
-        hasMinimumPhotos: freshGarage.images.length >= GARAGE_MINIMUM_ACTIVATION_IMAGES,
         photoCount: freshGarage.images.length,
-        minimumPhotos: GARAGE_MINIMUM_ACTIVATION_IMAGES,
       },
     }));
   });

@@ -11,6 +11,10 @@ const submitGarageApplicationSchema = [
   body("area").trim().notEmpty().withMessage("Area is required"),
   body("latitude").optional({ nullable: true, checkFalsy: true }).isFloat({ min: -90, max: 90 }).withMessage("Latitude must be valid"),
   body("longitude").optional({ nullable: true, checkFalsy: true }).isFloat({ min: -180, max: 180 }).withMessage("Longitude must be valid"),
+  body("workingRadiusKm")
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Working radius must be between 1 and 100 km"),
 ];
 
 const applicationIdSchema = [

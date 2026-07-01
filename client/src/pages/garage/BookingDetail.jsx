@@ -134,7 +134,7 @@ export default function GarageBookingDetail() {
           {booking.status === "ACCEPTED" || booking.status === "CONFIRMED" ? (
             <div className="card-soft p-6">
               <h3 className="text-xl font-bold mb-4">Receive Vehicle</h3>
-              <p className="text-muted mb-4">Enter the customer handover OTP and upload at least 5 vehicle photos.</p>
+              <p className="text-muted mb-4">Enter the customer handover OTP and upload 5 vehicle photos, each 1 MB or less.</p>
               <input
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
@@ -151,7 +151,7 @@ export default function GarageBookingDetail() {
           {booking.status === "IN_PROGRESS" ? (
             <div className="card-soft p-6">
               <h3 className="text-xl font-bold mb-4">Complete Service</h3>
-              <p className="text-muted mb-4">Upload at least 5 post-service photos before marking delivery complete.</p>
+              <p className="text-muted mb-4">Upload 5 post-service photos, each 1 MB or less, before marking delivery complete.</p>
               <ImageUpload min={5} max={5} value={postServiceImages} onChange={setPostServiceImages} />
               <button onClick={markDelivered} disabled={loading || postServiceImages.length < 5} className="btn-primary w-full mt-6">
                 {loading ? "Completing..." : "Mark Delivered"}

@@ -1,7 +1,6 @@
 const prisma = require("../../config/prisma");
 const ApiError = require("../../utils/apiError");
 const {
-  GARAGE_MINIMUM_ACTIVATION_IMAGES,
   GARAGE_MINIMUM_ACTIVATION_RECHARGE,
 } = require("../constants");
 const {
@@ -32,11 +31,8 @@ const getGarageWalletForOwner = async (userId) => {
       minimumBalance: GARAGE_MINIMUM_ACTIVATION_RECHARGE,
       isEligible:
         garage.isVerified &&
-        wallet.balance >= GARAGE_MINIMUM_ACTIVATION_RECHARGE &&
-        (garage.images?.length || 0) >= GARAGE_MINIMUM_ACTIVATION_IMAGES,
-      minimumPhotos: GARAGE_MINIMUM_ACTIVATION_IMAGES,
+        wallet.balance >= GARAGE_MINIMUM_ACTIVATION_RECHARGE,
       photoCount: garage.images?.length || 0,
-      hasMinimumPhotos: (garage.images?.length || 0) >= GARAGE_MINIMUM_ACTIVATION_IMAGES,
       isActive: garage.isActive,
     },
   };
@@ -150,14 +146,12 @@ const verifyGarageWalletRechargeOrder = async (userId, cashfreeOrderId) => {
       garage: updatedGarage,
       activation: {
         minimumBalance: GARAGE_MINIMUM_ACTIVATION_RECHARGE,
-        minimumPhotos: GARAGE_MINIMUM_ACTIVATION_IMAGES,
         photoCount: updatedGarage.images?.length || 0,
-        hasMinimumPhotos: (updatedGarage.images?.length || 0) >= GARAGE_MINIMUM_ACTIVATION_IMAGES,
         isActive: updatedGarage.isActive,
       },
       message: updatedGarage.isActive
         ? "Garage wallet recharge verified. Garage is active."
-        : "Garage wallet recharge verified. Upload at least 5 garage photos to activate if not already uploaded.",
+        : "Garage wallet recharge verified. Garage activation is pending verification or minimum balance.",
     };
   });
 };

@@ -13,7 +13,7 @@ router.post(
   authorizeRoles("GARAGE_OWNER", "ADMIN"),
   upload.fields([
     { name: "thumbnail", maxCount: 1 },
-    { name: "images", maxCount: 10 },
+    { name: "images", maxCount: 14 },
   ]),
   garageMediaController.uploadGarageMedia
 );

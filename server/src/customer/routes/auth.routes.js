@@ -14,6 +14,7 @@ const {
   googleAuthValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
+  changePasswordValidation,
 } = require("../validations/auth.validation");
 const rateLimit = require("../../middlewares/rateLimit.middleware");
 const { otpSendRateLimits } = require("../../middlewares/otpRateLimit.middleware");
@@ -44,6 +45,7 @@ router.post("/login", loginRateLimit, loginValidation, validate, authController.
 router.post("/google", loginRateLimit, googleAuthValidation, validate, authController.googleAuth);
 router.post("/logout", authController.logout);
 router.get("/me", protect, authController.me);
+router.post("/change-password", protect, changePasswordValidation, validate, authController.changePassword);
 router.post(
   "/forgot-password",
   forgotPasswordValidation,

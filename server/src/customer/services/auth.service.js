@@ -491,6 +491,32 @@ const resetPassword = async ({ email, otp, newPassword }) => {
   };
 };
 
+const changePassword = async (userId, { currentPassword, newPassword }) => {
+  if (!currentPassword || !newPassword) {
+    throw new ApiError(400, "Current password and new password are required");
+  }
+
+  if (!PASSWORD_REGEX.test(newPassword)) {
+    throw new ApiError(400, PASSWORD_MESSAGE);
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new ApiError(404, "User not found");
+
+  const isCurrentPasswordValid = await argon2.verify(user.password, currentPassword);
+  if (!isCurrentPasswordValid) {
+    throw new ApiError(401, "Current password is incorrect");
+  }
+
+  const hashedPassword = await argon2.hash(newPassword);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: hashedPassword },
+  });
+
+  return { message: "Password changed successfully" };
+};
+
 module.exports = {
   signup,
   verifyOtp,
@@ -502,4 +528,5 @@ module.exports = {
   getMe,
   forgotPassword,
   resetPassword,
+  changePassword,
 };

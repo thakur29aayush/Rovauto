@@ -7,8 +7,9 @@ const getPreview = (image) => {
   return image.preview || image.imageUrl || "";
 };
 
-export default function ImageUpload({ min, max, value = [], onChange }) {
+export default function ImageUpload({ min, max, value = [], onChange, maxSizeMb = 1 }) {
   const [isDragging, setIsDragging] = useState(false);
+  const [error, setError] = useState("");
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -26,6 +27,14 @@ export default function ImageUpload({ min, max, value = [], onChange }) {
   };
 
   const handleFiles = (files) => {
+    setError("");
+    const maxSizeBytes = maxSizeMb * 1024 * 1024;
+    const oversizedFile = files.find((file) => file.type.startsWith("image/") && file.size > maxSizeBytes);
+    if (oversizedFile) {
+      setError(`Each image must be less than or equal to ${maxSizeMb} MB.`);
+      return;
+    }
+
     const imageFiles = files
       .filter((file) => file.type.startsWith("image/"))
       .map((file) => ({
@@ -62,6 +71,7 @@ export default function ImageUpload({ min, max, value = [], onChange }) {
             <span className="text-red-500 ml-2">(Minimum {min} required)</span>
           )}
         </p>
+        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
         <label className="btn-primary cursor-pointer">
           <FiUpload className="w-4 h-4" />
           <span>Browse Files</span>

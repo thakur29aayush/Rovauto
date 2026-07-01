@@ -1,6 +1,7 @@
 const GARAGE_MINIMUM_ACTIVATION_RECHARGE = 1000;
-const GARAGE_MINIMUM_ACTIVATION_IMAGES = 5;
-const GARAGE_MAXIMUM_IMAGES = 10;
+const GARAGE_MAXIMUM_IMAGES = 15;
+const GARAGE_MAX_IMAGE_SIZE_BYTES = 1024 * 1024;
+const REQUIRED_BOOKING_INSPECTION_IMAGES = 5;
 
 const calculatePlatformFee = (totalServiceAmount, requestType = "NORMAL") => {
   if (requestType === "SOS") return 50;
@@ -17,7 +18,8 @@ const calculatePlatformFee = (totalServiceAmount, requestType = "NORMAL") => {
 
 module.exports = {
   GARAGE_MINIMUM_ACTIVATION_RECHARGE,
-  GARAGE_MINIMUM_ACTIVATION_IMAGES,
   GARAGE_MAXIMUM_IMAGES,
+  GARAGE_MAX_IMAGE_SIZE_BYTES,
+  REQUIRED_BOOKING_INSPECTION_IMAGES,
   calculatePlatformFee,
 };

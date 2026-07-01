@@ -9,12 +9,13 @@ import {
 } from "react-icons/fi";
 import { setNotifications } from "@/store/garageSlice";
 import { useApp } from "@/hooks/useApp";
+import { garageApi } from "@/api/garage";
 
 export default function GarageSettings() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const notifications = useSelector(state => state.garage.notifications);
-  const { logoutGarage } = useApp();
+  const { garageToken, logoutGarage } = useApp();
 
   // State for expandable sections
   const [activeSection, setActiveSection] = useState(null);
@@ -83,17 +84,30 @@ export default function GarageSettings() {
       setPasswordLoading(false);
       return;
     }
-    if (passwordForm.newPassword.length < 6) {
-      setPasswordError("Password must be at least 6 characters long!");
+    if (!passwordForm.currentPassword) {
+      setPasswordError("Current password is required!");
+      setPasswordLoading(false);
+      return;
+    }
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordError("Password must be at least 8 characters long!");
       setPasswordLoading(false);
       return;
     }
 
-    // Simulate API call
-    await new Promise(r => setTimeout(r, 1500));
-    setPasswordSuccess("Password changed successfully!");
-    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    setPasswordLoading(false);
+    try {
+      await garageApi.changePassword(
+        garageToken,
+        passwordForm.currentPassword,
+        passwordForm.newPassword
+      );
+      setPasswordSuccess("Password changed successfully!");
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (err) {
+      setPasswordError(err.response?.data?.message || err.message || "Unable to change password");
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   // Handle logout

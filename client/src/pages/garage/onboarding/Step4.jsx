@@ -39,6 +39,7 @@ export default function OnboardingStep4({ data, onChange }) {
         area: data.area,
         latitude: data.location?.lat,
         longitude: data.location?.lng,
+        workingRadiusKm: data.workingRadius,
       });
       setComplete(true);
     } catch (err) {
@@ -59,7 +60,7 @@ export default function OnboardingStep4({ data, onChange }) {
           <FiCheckCircle className="w-20 h-20 mx-auto text-brand mb-6" />
           <h1 className="text-4xl font-bold mb-4">Application Submitted</h1>
           <p className="text-muted text-lg mb-6">
-            Your garage application is pending admin review. After approval, log in to upload at least 5 garage photos and recharge Rs. 1000 or more to activate your listing.
+            Your garage application is pending admin review. After approval, recharge Rs. 1000 or more to activate your listing.
           </p>
           <Link to="/garage/login" className="btn-primary w-full">
             Go to Garage Login

@@ -708,6 +708,8 @@ const saveProfileCache = (data, fetchedAt) => {
     [
       user,
       token,
+      garageUser,
+      garageToken,
       vehicle,
       vehicles,
       cart,

@@ -6,6 +6,8 @@ import Logo from "@/components/common/Logo";
 
 export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -13,6 +15,34 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
     await new Promise(r => setTimeout(r, 500));
     setLoading(false);
     onNext();
+  };
+
+  const getCurrentLocation = () => {
+    setLocationError("");
+
+    if (!navigator.geolocation) {
+      setLocationError("Current location is not supported by this browser.");
+      return;
+    }
+
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        onChange({
+          ...data,
+          location: {
+            lat: Number(position.coords.latitude.toFixed(6)),
+            lng: Number(position.coords.longitude.toFixed(6)),
+          },
+        });
+        setLocationLoading(false);
+      },
+      (error) => {
+        setLocationError(error.message || "Unable to fetch current location.");
+        setLocationLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
   };
 
   return (
@@ -82,14 +112,15 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
             <div className="card-soft p-4">
               <div className="flex items-center justify-between mb-3">
                 <span className="font-semibold">GPS Location</span>
-                <button type="button" className="btn-ghost text-sm py-2 px-3">
+                <button type="button" onClick={getCurrentLocation} disabled={locationLoading} className="btn-ghost text-sm py-2 px-3">
                   <FiNavigation className="w-4 h-4" />
-                  Get Current Location
+                  {locationLoading ? "Fetching..." : "Get Current Location"}
                 </button>
               </div>
               <div className="text-muted text-sm">
                 Lat: {data.location?.lat || "Not set"}, Lng: {data.location?.lng || "Not set"}
               </div>
+              {locationError && <div className="mt-2 text-sm text-red-600">{locationError}</div>}
             </div>
 
             <div>

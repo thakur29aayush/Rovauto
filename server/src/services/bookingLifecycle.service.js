@@ -6,10 +6,12 @@ const BOOKING_STATUS = require("../constants/bookingStatus");
 const BROADCAST_STATUS = require("../constants/broadcastStatus");
 const notificationService = require("../customer/services/notification.service");
 const { uploadToCloudinary } = require("../utils/cloudinaryUpload");
+const { REQUIRED_BOOKING_INSPECTION_IMAGES } = require("../garage/constants");
 
 const DEFAULT_SEARCH_TIMEOUT_SECONDS = 120;
 const DEFAULT_HANDOVER_OTP_TTL_MINUTES = 30;
-const REQUIRED_INSPECTION_PHOTO_COUNT = 5;
+const REQUIRED_INSPECTION_PHOTO_COUNT = REQUIRED_BOOKING_INSPECTION_IMAGES;
+const MAX_INSPECTION_PHOTO_SIZE_BYTES = 1024 * 1024;
 const INSPECTION_IMAGE_FOLDER = "project-x/bookings/inspection-images";
 
 const getGarageSearchTimeoutMs = () => {
@@ -39,8 +41,8 @@ const validateInspectionImages = (files) => {
       throw new ApiError(400, "Only image files are allowed for car inspection photos");
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      throw new ApiError(400, "Each car inspection photo must be under 10 MB");
+    if (file.size > MAX_INSPECTION_PHOTO_SIZE_BYTES) {
+      throw new ApiError(400, "Each car inspection photo must be less than or equal to 1 MB");
     }
   }
 };

@@ -297,7 +297,7 @@ const findNearbyEligibleGarages = async ({
   latitude,
   longitude,
   serviceIds = [],
-  maxDistance = 10,
+  maxDistance = null,
   onlyVerified = true,
   requireOpenNow = true,
   requireWalletBalance = false,
@@ -352,7 +352,16 @@ const findNearbyEligibleGarages = async ({
         garage.longitude
       ),
     }))
-    .filter((garage) => garage.distanceKm <= Number(maxDistance))
+    .filter((garage) => {
+      const garageRadius = Number(garage.workingRadiusKm) || 15;
+      const configuredLimit = Number(maxDistance);
+      const effectiveRadius =
+        Number.isFinite(configuredLimit) && configuredLimit > 0
+          ? Math.min(garageRadius, configuredLimit)
+          : garageRadius;
+
+      return garage.distanceKm <= effectiveRadius;
+    })
     .sort((a, b) => a.distanceKm - b.distanceKm);
 };
 

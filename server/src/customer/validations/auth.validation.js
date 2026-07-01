@@ -172,6 +172,18 @@ const resetPasswordValidation = [
     .withMessage(PASSWORD_MESSAGE),
 ];
 
+const changePasswordValidation = [
+  body("currentPassword")
+    .notEmpty()
+    .withMessage("Current password is required"),
+
+  body("newPassword")
+    .notEmpty()
+    .withMessage("New password is required")
+    .matches(PASSWORD_REGEX)
+    .withMessage(PASSWORD_MESSAGE),
+];
+
 module.exports = {
   signupValidation,
   verifyOtpValidation,
@@ -182,4 +194,5 @@ module.exports = {
   googleAuthValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
+  changePasswordValidation,
 };

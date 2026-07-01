@@ -27,12 +27,13 @@ export default function OnboardingStep3({ data, onChange, onNext, onBack }) {
           className="w-full max-w-2xl card-soft p-8"
         >
           <h1 className="text-3xl font-bold mb-2">Garage Images</h1>
-          <p className="text-muted mb-8">Upload photos after approval to activate</p>
+          <p className="text-muted mb-8">Upload up to 15 garage photos. Each photo must be 1 MB or less.</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <ImageUpload
               min={0}
               max={15}
+              maxSizeMb={1}
               value={data.images}
               onChange={(images) => onChange({ ...data, images })}
             />

@@ -148,6 +148,7 @@ model Garage {
   area               String
   latitude           Float
   longitude          Float
+  workingRadiusKm    Int                       @default(15)
   isVerified         Boolean                   @default(false)
   isActive           Boolean                   @default(true)
   ratingAvg          Float                     @default(0)
@@ -585,6 +586,7 @@ model GarageApplication {
   area             String
   latitude         Float?
   longitude        Float?
+  workingRadiusKm  Int      @default(15)
   status           GarageApplicationStatus @default(PENDING)
   adminNote        String?
   reviewedAt       DateTime?

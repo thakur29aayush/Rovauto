@@ -1,7 +1,6 @@
 const prisma = require("../../config/prisma");
 const ApiError = require("../../utils/apiError");
 const {
-  GARAGE_MINIMUM_ACTIVATION_IMAGES,
   GARAGE_MINIMUM_ACTIVATION_RECHARGE,
 } = require("../constants");
 
@@ -44,13 +43,10 @@ const getGarageOwnerProfile = async (userId) => {
     ...garage,
     activation: {
       minimumBalance: GARAGE_MINIMUM_ACTIVATION_RECHARGE,
-      minimumPhotos: GARAGE_MINIMUM_ACTIVATION_IMAGES,
       walletBalance: garage.wallet?.balance || 0,
       photoCount: garage.images?.length || 0,
       hasMinimumBalance:
         (garage.wallet?.balance || 0) >= GARAGE_MINIMUM_ACTIVATION_RECHARGE,
-      hasMinimumPhotos:
-        (garage.images?.length || 0) >= GARAGE_MINIMUM_ACTIVATION_IMAGES,
       isActive: garage.isActive,
     },
   };
@@ -69,8 +65,7 @@ const activateGarageIfEligible = async (tx, garageId) => {
   if (
     !garage.isVerified ||
     !garage.wallet ||
-    garage.wallet.balance < GARAGE_MINIMUM_ACTIVATION_RECHARGE ||
-    (garage.images?.length || 0) < GARAGE_MINIMUM_ACTIVATION_IMAGES
+    garage.wallet.balance < GARAGE_MINIMUM_ACTIVATION_RECHARGE
   ) {
     return garage;
   }

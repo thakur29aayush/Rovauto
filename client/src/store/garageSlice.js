@@ -1,10 +1,21 @@
 
 import { createSlice } from "@reduxjs/toolkit";
 
+const readJson = (key, fallback = null) => {
+  try {
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const initialGarage = readJson("garage", null);
+
 const initialState = {
-  garage: null,
-  token: null,
-  isOnboardingComplete: false,
+  garage: initialGarage,
+  token: localStorage.getItem("garage_token") || null,
+  isOnboardingComplete: initialGarage?.isOnboardingComplete || false,
   bookings: [],
   services: [],
   wallet: {
