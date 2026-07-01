@@ -415,9 +415,7 @@ npm run db:approve-garage -- --email=owner@example.com --confirm
 
 npm run db:approve-garage -- --list
 
-
 ##Activation
-
 
 Dry-run listing (inactive garages + pending apps): npm run db:activate-garage -- --list
 
@@ -430,3 +428,28 @@ Activate existing garage by garage id: npm run db:activate-garage -- --garage-id
 Approve by application id and activate: npm run db:activate-garage -- --application-id=<application-id></application> --confirm --note="Welcome!"
 
 
+
+# Delete all garages
+
+npm run db:delete-garages --
+npm run db:delete-garages -- --confirm
+
+# Delete one garage by garage email or owner email
+
+npm run db:delete-garages -- --email=owner@example.com
+npm run db:delete-garages -- --email=owner@example.com --confirm
+
+# Remove all price range data
+
+npm run db:delete-price-ranges --
+npm run db:delete-price-ranges -- --confirm
+
+# Remove all bookings
+
+npm run db:delete-bookings --
+npm run db:delete-bookings -- --confirm
+
+# Remove all notifications
+
+npm run db:delete-notifications --
+npm run db:delete-notifications -- --confirm

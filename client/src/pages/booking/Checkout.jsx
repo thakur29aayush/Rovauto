@@ -41,7 +41,7 @@ const calculateHandlingFee = (totalServiceAmount) => {
 };
 
 export default function Checkout() {
-  const { cart, vehicle, location, setLocation, user, clearCart, clearBookingCaches } =
+  const { cart, vehicle, location, setLocation, user, clearCart, clearBookingCaches, clearProfileCache, fetchProfile } =
     useApp();
   const nav = useNavigate();
   const routeLocation = useLocation();
@@ -104,6 +104,8 @@ export default function Checkout() {
       await api.patch("/customer/profile", {
         address: fullAddress,
       });
+      clearProfileCache?.();
+      await fetchProfile?.({ force: true });
     } catch (err) {
       console.error("Failed to save address to profile:", err);
     }

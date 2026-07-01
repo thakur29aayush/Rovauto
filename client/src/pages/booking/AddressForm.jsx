@@ -117,10 +117,10 @@ export default function AddressForm() {
       });
 
       clearProfileCache();
-      await fetchProfile({ force: true });
+      const refreshedUser = await fetchProfile({ force: true });
 
       setUser((prev) => ({
-        ...prev,
+        ...(refreshedUser || prev),
         isOnboarded: true,
       }));
 

@@ -1,5 +1,14 @@
 const prisma = require("../../config/prisma");
 const ApiError = require("../../utils/apiError");
+const invalidateCustomerCache = require("../../utils/invalidateCustomerCache");
+
+const syncDefaultLocationToProfile = async (tx, userId, address) => {
+  await tx.customerProfile.upsert({
+    where: { userId },
+    update: { address: address || null },
+    create: { userId, address: address || null },
+  });
+};
 
 const createLocation = async (userId, data) => {
   const locationCount = await prisma.customerLocation.count({
@@ -27,8 +36,16 @@ const createLocation = async (userId, data) => {
       },
     });
 
+    if (shouldBeDefault) {
+      await syncDefaultLocationToProfile(tx, userId, location.address);
+    }
+
     return location;
   });
+
+  if (shouldBeDefault) {
+    await invalidateCustomerCache(userId);
+  }
 
   return result;
 };
@@ -100,8 +117,16 @@ const updateLocation = async (userId, locationId, data) => {
       },
     });
 
+    if ((updatedLocation.isDefault || shouldBeDefault) && data.address !== undefined) {
+      await syncDefaultLocationToProfile(tx, userId, updatedLocation.address);
+    }
+
     return updatedLocation;
   });
+
+  if ((result.isDefault || shouldBeDefault) && data.address !== undefined) {
+    await invalidateCustomerCache(userId);
+  }
 
   return result;
 };
@@ -135,8 +160,14 @@ const deleteLocation = async (userId, locationId) => {
           data: { isDefault: true },
         });
       }
+
+      await syncDefaultLocationToProfile(tx, userId, nextLocation?.address || null);
     }
   });
+
+  if (location.isDefault) {
+    await invalidateCustomerCache(userId);
+  }
 
   return {
     deleted: true,
@@ -166,8 +197,12 @@ const setDefaultLocation = async (userId, locationId) => {
       data: { isDefault: true },
     });
 
+    await syncDefaultLocationToProfile(tx, userId, updatedLocation.address);
+
     return updatedLocation;
   });
+
+  await invalidateCustomerCache(userId);
 
   return result;
 };
