@@ -508,12 +508,20 @@ const saveProfileCache = (data, fetchedAt) => {
         dispatch(setGarage(garageData));
         if (savedGarageToken) {
           dispatch(setGarageToken(savedGarageToken));
+          // Refresh garage profile in background but don't log out on error
           garageApi.getProfile(savedGarageToken)
             .then((freshGarage) => {
               localStorage.setItem("garage", JSON.stringify(freshGarage));
               dispatch(setGarage(freshGarage));
             })
-            .catch(() => logoutGarage());
+            .catch((err) => {
+              // Log error but keep user logged in with cached garage data
+              console.warn("Failed to refresh garage profile:", err.message);
+              // Only logout if it's a 401 (unauthorized/token invalid)
+              if (err.response?.status === 401) {
+                logoutGarage();
+              }
+            });
         }
       } catch {}
     }
