@@ -65,6 +65,17 @@ const completeOnboarding = async (userId, { vehicle, location }) => {
       },
     });
 
+    await tx.customerProfile.upsert({
+      where: { userId },
+      update: {
+        address: location.address || null,
+      },
+      create: {
+        userId,
+        address: location.address || null,
+      },
+    });
+
     const updatedUser = await tx.user.update({
       where: { id: userId },
       data: {
@@ -204,6 +215,13 @@ const updateProfile = async (userId, data) => {
         avatarUrl: data.avatarUrl || null,
       },
     });
+
+    if (data.address !== undefined) {
+      await tx.customerLocation.updateMany({
+        where: { userId, isDefault: true },
+        data: { address: data.address || null },
+      });
+    }
 
     return {
       ...updatedUser,

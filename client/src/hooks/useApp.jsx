@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import api from "@/api/axios";
+import { getLocationStateFromUser } from "@/utils/address";
 import {
   clearCustomerState,
   selectCustomerState,
@@ -89,7 +90,7 @@ export function AppProvider({ children }) {
   );
   const [serviceHistoryFetchedAt, setServiceHistoryFetchedAt] = useState(() =>
     readNumber("rov_service_history_time", null)
-  ); 
+  );
   const [profileCache, setProfileCache] = useState(() =>
     readJson("rov_profile", null)
   );
@@ -239,6 +240,11 @@ const saveProfileCache = (data, fetchedAt) => {
     if (!me) return null;
 
     dispatch(syncCustomerBundle(me));
+
+    const syncedLocation = getLocationStateFromUser(me, location);
+    if (syncedLocation) {
+      dispatch(setCustomerLocation(syncedLocation));
+    }
 
     localStorage.setItem("user", JSON.stringify(me));
     localStorage.setItem("rov_user", JSON.stringify(me));
@@ -404,6 +410,11 @@ const saveProfileCache = (data, fetchedAt) => {
 
   saveProfileCache(data, fetchedAt);
   dispatch(syncCustomerBundle(data));
+
+  const syncedLocation = getLocationStateFromUser(data, location);
+  if (syncedLocation) {
+    dispatch(setCustomerLocation(syncedLocation));
+  }
 
   localStorage.setItem("user", JSON.stringify(data));
   localStorage.setItem("rov_user", JSON.stringify(data));

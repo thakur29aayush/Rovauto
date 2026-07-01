@@ -1,8 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
 import api from "@/api/axios";
 import { isPaymentAuthError, payForBooking } from "@/utils/bookingPayment";
+import {
+  buildFullAddress,
+  getDefaultUserLocation,
+  getLocationStateFromAddress,
+  getProfileAddress,
+  parseAddressParts,
+} from "@/utils/address";
 import { formatServicePriceRange, getServiceMinPrice, getServiceMaxPrice } from "@/utils/priceRange";
 import { FiCheckCircle, FiLock, FiTrash2, FiTruck, FiEdit } from "react-icons/fi";
 
@@ -10,6 +17,18 @@ const DEFAULT_LOCATION = {
   latitude: 28.6369,
   longitude: 77.3696,
   address: "Indirapuram, Ghaziabad, 201014",
+};
+
+const getCheckoutAddressForm = ({ location, user }) => {
+  const defaultUserLocation = getDefaultUserLocation(user);
+  const fullAddress =
+    location?.fullAddress ||
+    buildFullAddress(location) ||
+    defaultUserLocation?.address ||
+    getProfileAddress(user) ||
+    "";
+
+  return parseAddressParts(fullAddress);
 };
 
 const calculateHandlingFee = (totalServiceAmount) => {
@@ -29,12 +48,9 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [editingAddress, setEditingAddress] = useState(false);
-  const [addressForm, setAddressForm] = useState({
-    address: location?.address || "",
-    area: location?.area || "",
-    city: location?.city || "",
-    pincode: location?.pincode || "",
-  });
+  const [addressForm, setAddressForm] = useState(() =>
+    getCheckoutAddressForm({ location, user })
+  );
 
   const subTotalMin = cart.reduce((sum, item) => sum + getServiceMinPrice(item), 0);
   const subTotalMax = cart.reduce((sum, item) => sum + getServiceMaxPrice(item), 0);
@@ -43,14 +59,29 @@ export default function Checkout() {
   const payAtGarageMin = subTotalMin;
   const payAtGarageMax = subTotalMax;
 
-  const buildLocationPayload = () => ({
-    latitude: location?.latitude || DEFAULT_LOCATION.latitude,
-    longitude: location?.longitude || DEFAULT_LOCATION.longitude,
-    address:
-      location?.address ||
-      [location?.area, location?.city, location?.pincode].filter(Boolean).join(", ") ||
-      DEFAULT_LOCATION.address,
-  });
+  useEffect(() => {
+    if (!editingAddress) {
+      setAddressForm(getCheckoutAddressForm({ location, user }));
+    }
+  }, [editingAddress, location, user]);
+
+  const buildLocationPayload = () => {
+    const defaultUserLocation = getDefaultUserLocation(user);
+    const fullAddress =
+      buildFullAddress(addressForm) ||
+      location?.fullAddress ||
+      defaultUserLocation?.address ||
+      getProfileAddress(user) ||
+      DEFAULT_LOCATION.address;
+
+    return {
+      latitude:
+        location?.latitude || defaultUserLocation?.latitude || DEFAULT_LOCATION.latitude,
+      longitude:
+        location?.longitude || defaultUserLocation?.longitude || DEFAULT_LOCATION.longitude,
+      address: fullAddress,
+    };
+  };
 
   const handleAddressChange = (e) => {
     setAddressForm((prev) => ({
@@ -60,18 +91,16 @@ export default function Checkout() {
   };
 
   const saveAddress = async () => {
-    // Update app location state
-    setLocation({
-      address: addressForm.address,
-      area: addressForm.area,
-      city: addressForm.city,
-      pincode: addressForm.pincode,
+    const fullAddress = buildFullAddress(addressForm);
+    const defaultUserLocation = getDefaultUserLocation(user);
+    const nextLocation = getLocationStateFromAddress(fullAddress, {
+      latitude: location?.latitude ?? defaultUserLocation?.latitude,
+      longitude: location?.longitude ?? defaultUserLocation?.longitude,
     });
 
-    // Also update user profile
+    setLocation(nextLocation);
+
     try {
-      const fullAddress = [addressForm.address, addressForm.area, addressForm.city, addressForm.pincode]
-        .filter(Boolean).join(", ");
       await api.patch("/customer/profile", {
         address: fullAddress,
       });
@@ -102,11 +131,7 @@ export default function Checkout() {
       const bookingRes = await api.post("/bookings/checkout", {
         vehicleId: vehicle.id,
         serviceIds: cart.map((item) => item.id),
-        location: {
-          latitude: location?.latitude || DEFAULT_LOCATION.latitude,
-          longitude: location?.longitude || DEFAULT_LOCATION.longitude,
-          address: [addressForm.address, addressForm.area, addressForm.city, addressForm.pincode].filter(Boolean).join(", "),
-        },
+        location: buildLocationPayload(),
       });
 
       const booking = bookingRes.data.data;
@@ -241,18 +266,14 @@ export default function Checkout() {
                 >
                   Cancel
                 </button>
-                <button
-                  type="button"
-                  onClick={saveAddress}
-                  className="flex-1 btn-primary"
-                >
+                <button type="button" onClick={saveAddress} className="flex-1 btn-primary">
                   Save Address
                 </button>
               </div>
             </div>
           ) : (
             <div className="text-muted">
-              {[addressForm.address, addressForm.area, addressForm.city, addressForm.pincode].filter(Boolean).join(", ") || "No address set"}
+              {buildFullAddress(addressForm) || "No address set"}
             </div>
           )}
         </div>
@@ -260,9 +281,7 @@ export default function Checkout() {
         <div className="card-soft mt-6 p-6">
           <h3 className="mb-4 text-lg font-semibold">Payment Method</h3>
           <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              ["Cashfree", "UPI, cards, wallets"],
-            ].map(([name, description], index) => (
+            {[["Cashfree", "UPI, cards, wallets"]].map(([name, description], index) => (
               <label
                 key={name}
                 className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 ${

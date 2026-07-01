@@ -118,7 +118,7 @@ export default function ServiceSelect() {
             return (
               <div
                 key={service.id}
-                className="card-soft flex flex-col gap-4 p-5 sm:flex-row"
+                className="card-soft flex flex-col gap-5 p-5 sm:flex-row sm:items-start"
               >
                 <div className="min-w-0 flex-1">
                   <span className="chip">{duration}</span>
@@ -147,10 +147,10 @@ export default function ServiceSelect() {
                   </ul>
                 </div>
 
-                <div className="flex items-center justify-between gap-2 text-right sm:w-40 sm:flex-col sm:items-end">
+                <div className="flex shrink-0 items-center justify-between gap-3 text-right sm:w-56 sm:flex-col sm:items-end">
                   <div>
                     <div className="text-xs text-muted">Estimated</div>
-                    <div className="text-xl font-bold">{priceRange}</div>
+                    <div className="whitespace-nowrap text-lg font-bold leading-tight sm:text-xl">{priceRange}</div>
                   </div>
 
                   <button
@@ -158,7 +158,7 @@ export default function ServiceSelect() {
                     onClick={() =>
                       inCart ? removeFromCart(service.id) : addToCart(service)
                     }
-                    className={inCart ? "btn-dark" : "btn-primary"}
+                    className={`${inCart ? "btn-dark" : "btn-primary"} shrink-0`}
                   >
                     {inCart ? "Remove" : "Add"}
                   </button>
@@ -201,10 +201,10 @@ export default function ServiceSelect() {
               {cart.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between text-sm"
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm"
                 >
                   <span className="truncate">{item.name}</span>
-                  <span className="font-semibold">
+                  <span className="whitespace-nowrap text-right text-xs font-semibold sm:text-sm">
                     {formatServicePriceRange(item)}
                   </span>
                 </div>
@@ -214,9 +214,9 @@ export default function ServiceSelect() {
 
           <hr className="my-4 border-line" />
 
-          <div className="flex items-center justify-between">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
             <span className="text-muted">Estimated</span>
-            <span className="text-xl font-bold">Rs. {totalMin} - Rs. {totalMax}</span>
+            <span className="whitespace-nowrap text-right text-lg font-bold sm:text-xl">Rs. {totalMin} - Rs. {totalMax}</span>
           </div>
 
           <Link

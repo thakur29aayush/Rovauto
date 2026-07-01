@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
 import api from "@/api/axios";
+import { buildFullAddress, getDefaultUserLocation, parseAddressParts } from "@/utils/address";
 import { FiCheckCircle, FiMapPin } from "react-icons/fi";
 
 export default function AddressForm() {
@@ -11,32 +12,23 @@ export default function AddressForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Parse existing address from user or route state
-  const initialAddress = routeLocation.state?.existingAddress || user?.customerProfile?.address || user?.address || "";
-  const initialParts = parseAddress(initialAddress);
+  const defaultUserLocation = getDefaultUserLocation(user);
+  const initialAddress =
+    routeLocation.state?.existingAddress ||
+    user?.customerProfile?.address ||
+    defaultUserLocation?.address ||
+    user?.address ||
+    "";
+  const initialParts = parseAddressParts(initialAddress);
 
   const [form, setForm] = useState({
     address: initialParts.address || "",
     area: initialParts.area || "",
     city: initialParts.city || "",
     pincode: initialParts.pincode || "",
-    latitude: routeLocation.state?.latitude || user?.locations?.[0]?.latitude || null,
-    longitude: routeLocation.state?.longitude || user?.locations?.[0]?.longitude || null,
+    latitude: routeLocation.state?.latitude || defaultUserLocation?.latitude || null,
+    longitude: routeLocation.state?.longitude || defaultUserLocation?.longitude || null,
   });
-
-  function parseAddress(fullAddress) {
-    if (!fullAddress) return { address: "", area: "", city: "", pincode: "" };
-    const parts = fullAddress.split(", ");
-    const lastPart = parts[parts.length - 1] || "";
-    const pincodeMatch = lastPart.match(/\d{6}/);
-
-    return {
-      address: parts.slice(0, -2).join(", ") || fullAddress,
-      area: parts[parts.length - 2] || "",
-      city: lastPart.replace(pincodeMatch?.[0] || "", "").trim() || "",
-      pincode: pincodeMatch?.[0] || "",
-    };
-  }
 
   const change = (e) => {
     setForm((prev) => ({
@@ -59,7 +51,6 @@ export default function AddressForm() {
       const latitude = Number(position.coords.latitude.toFixed(6));
       const longitude = Number(position.coords.longitude.toFixed(6));
 
-      // Reverse geocode to get address
       try {
         const url = new URL("https://nominatim.openstreetmap.org/reverse");
         url.searchParams.set("format", "jsonv2");
@@ -72,7 +63,7 @@ export default function AddressForm() {
         if (response.ok) {
           const data = await response.json();
           const fullAddress = data.display_name || "";
-          const parsed = parseAddress(fullAddress);
+          const parsed = parseAddressParts(fullAddress);
           setForm({
             address: parsed.address || fullAddress,
             area: parsed.area,
@@ -96,9 +87,8 @@ export default function AddressForm() {
     setError("");
 
     try {
-      const fullAddress = [form.address, form.area, form.city, form.pincode].filter(Boolean).join(", ");
+      const fullAddress = buildFullAddress(form);
 
-      // Save to profile
       await api.patch("/customer/profile", {
         address: fullAddress,
       });
@@ -116,27 +106,24 @@ export default function AddressForm() {
         });
       }
 
-      // Update app location state
       setLocation({
         address: form.address,
         area: form.area,
         city: form.city,
         pincode: form.pincode,
+        fullAddress,
         latitude: form.latitude,
         longitude: form.longitude,
       });
 
-      // Refresh user data
       clearProfileCache();
       await fetchProfile({ force: true });
 
-      // Update user's isOnboarded flag locally if needed
       setUser((prev) => ({
         ...prev,
         isOnboarded: true,
       }));
 
-      // Redirect to next page
       const nextPath = routeLocation.state?.from?.pathname || "/booking/vehicle";
       nav(nextPath, { state: routeLocation.state?.from?.state });
     } catch (err) {
@@ -227,11 +214,7 @@ export default function AddressForm() {
           </label>
         </div>
 
-        <button
-          disabled={loading}
-          type="submit"
-          className="btn-primary mt-4"
-        >
+        <button disabled={loading} type="submit" className="btn-primary mt-4">
           {loading ? "Saving..." : (
             <>
               <FiCheckCircle />

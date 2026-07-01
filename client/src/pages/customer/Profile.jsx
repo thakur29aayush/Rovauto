@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useApp } from "@/hooks/useApp";
 import api from "@/api/axios";
+import { getLocationStateFromUser } from "@/utils/address";
 
 export default function Profile() {
   const {
     user,
     setUser,
+    setLocation,
     fetchProfile,
     clearProfileCache,
     clearDashboardCache,
@@ -33,6 +35,11 @@ export default function Profile() {
     });
 
     setUser(data);
+
+    const syncedLocation = getLocationStateFromUser(data);
+    if (syncedLocation) {
+      setLocation(syncedLocation);
+    }
   };
 
   const loadProfile = async ({ force = false } = {}) => {
