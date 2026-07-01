@@ -161,6 +161,7 @@ model Garage {
   bookings           Booking[]
   owner              User?                     @relation(fields: [ownerId], references: [id])
   broadcasts         GarageBroadcastRequest[]
+  inspectionImages   BookingInspectionImage[]
   images             GarageImage[]
   services           GarageService[]
   videos             GarageVideo[]
@@ -320,12 +321,19 @@ model Booking {
   totalServiceAmount    Int                      @default(0)
   totalServiceMaxAmount Int                      @default(0)
   walletAmountUsed      Int                      @default(0)
+  searchExpiresAt       DateTime?
+  handoverOtpHash       String?
+  handoverOtpExpiresAt  DateTime?
+  handoverOtpVerifiedAt DateTime?
+  deliveredAt           DateTime?
+  customerAcceptedAt    DateTime?
   garage                Garage?                  @relation(fields: [garageId], references: [id])
   user                  User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicle               Vehicle                  @relation(fields: [vehicleId], references: [id])
   services              BookingService[]
   complaints            Complaint[]
   broadcasts            GarageBroadcastRequest[]
+  inspectionImages      BookingInspectionImage[]
   payment               Payment?
   review                Review?
 
@@ -334,6 +342,25 @@ model Booking {
   @@index([vehicleId])
   @@index([status])
   @@index([requestType])
+}
+
+model BookingInspectionImage {
+  id        String            @id @default(uuid())
+  bookingId String
+  garageId  String
+  phase     BookingPhotoPhase
+  imageUrl  String
+  publicId  String
+  order     Int               @default(0)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  booking   Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  garage    Garage            @relation(fields: [garageId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, phase, order])
+  @@index([bookingId])
+  @@index([garageId])
+  @@index([phase])
 }
 
 model BookingService {
@@ -675,4 +702,9 @@ enum BroadcastStatus {
 enum RequestType {
   NORMAL
   SOS
+}
+
+enum BookingPhotoPhase {
+  PICKUP
+  DELIVERY
 }

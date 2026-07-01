@@ -12,10 +12,11 @@ Express + Prisma backend for Rovauto.
 - Cashfree order creation and payment verification
 - Pending-payment support through persisted `Payment` and `Booking` states
 - Garage request broadcasting after successful payment verification
+- Booking inspection image capture: 5 pickup photos after OTP verification and 5 delivery photos before garage delivery marking
 - Garage wallet/request/media routes and services
 - Redis-backed cache utility with safe fallback when `REDIS_URL` is not configured
 - PostgreSQL persistence through Prisma
-- Media upload support through Cloudinary
+- Media upload support through Cloudinary for garage media, complaints, service media, and booking inspection evidence
 - Email support through Resend
 - SMS/OTP provider support through Fast2SMS-compatible config
 - Database cleanup scripts with dry-run defaults and explicit confirmation flags
@@ -163,6 +164,26 @@ Customer notification behavior:
 - Search timeout: no accepted garage within the configured search window, customer is told to try again.
 - Delivered: customer is notified to review and accept delivery.
 
+
+Garage activation requirements:
+
+```text
+Admin approved / verified
++ Cashfree-verified wallet balance >= Rs.1000
++ 5 to 10 garage photos uploaded
+= garage active
+```
+
+Garage media upload is photos-only now:
+
+```text
+POST /api/v1/garages/:garageId/media
+thumbnail: optional, max 1
+images: remaining photos
+videos: not accepted
+```
+
+Total photos must be minimum 5 and maximum 10. These photos are compulsory for activation and are used for garage listing/profile display.
 Garage request endpoints:
 
 ```text
@@ -180,6 +201,30 @@ POST /api/v1/bookings/:id/accept-delivery
 GET /api/v1/bookings/service-history
 ```
 
+
+## Booking Inspection Images
+
+The garage handover and delivery endpoints now require Cloudinary-backed inspection evidence:
+
+```text
+POST /api/v1/garage/requests/:requestId/verify-handover-otp
+multipart fields: otp, images[5]
+Effect: validates OTP, uploads 5 PICKUP photos, stores rows in BookingInspectionImage, then moves booking to IN_PROGRESS.
+
+POST /api/v1/garage/requests/:requestId/mark-delivered
+multipart fields: images[5]
+Effect: uploads 5 DELIVERY photos, stores rows in BookingInspectionImage, then sets deliveredAt and notifies the customer.
+```
+
+Each image row stores `bookingId`, `garageId`, `phase`, `imageUrl`, `publicId`, and `order`. Booking list/detail/history and garage request responses include `inspectionImages` ordered by phase and order.
+
+Migration added:
+
+```text
+prisma/migrations/20260701010000_add_booking_inspection_images/migration.sql
+```
+
+Run `npm run prisma:deploy` against Neon during release, then `npm run prisma:generate` where the server runs.
 ## Geocoding API
 
 Manual customer addresses can be converted to coordinates through OpenStreetMap Nominatim:
@@ -273,7 +318,7 @@ Mounted under `/api/v1`:
 
 ## Media Notes
 
-- Garage media, complaint images, before/after job media, and other dynamic uploads should use Cloudinary.
+- Garage media, complaint images, booking pickup/delivery inspection images, and other dynamic uploads should use Cloudinary.
 - Fixed frontend assets can remain bundled with the client when they rarely change.
 - Upload limits and media validation are enforced through backend middleware.
 

@@ -57,6 +57,7 @@ const verifyHandoverOtp = asyncHandler(async (req, res) => {
     garageId,
     requestId: req.params.requestId,
     otp: req.body.otp,
+    images: req.files,
   });
 
   return res
@@ -69,6 +70,7 @@ const markDelivered = asyncHandler(async (req, res) => {
   const result = await bookingLifecycleService.markBookingDeliveredByGarage({
     garageId,
     requestId: req.params.requestId,
+    images: req.files,
   });
 
   return res

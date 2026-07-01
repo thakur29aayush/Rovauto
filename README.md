@@ -25,11 +25,12 @@ The customer flow is the most complete area today. Garage and admin routes/pages
 - Cashfree order creation and payment verification
 - Pending-payment recovery from Checkout, Active Bookings, Payments, and Tracking
 - Garage request broadcasting after successful booking payment
+- Mandatory 5-photo pickup inspection after handover OTP verification and 5-photo delivery inspection before garage delivery marking
 - Customer dashboard caching with frontend cache and optional Redis backend cache
 - Route-level frontend code splitting with `React.lazy()` and `Suspense`
 - Customer backend modules grouped under `server/src/customer`
 - PostgreSQL persistence through Prisma
-- Cloudinary media upload support for garage/customer/admin media workflows
+- Cloudinary media upload support for garage/customer/admin media workflows, including booking inspection evidence
 - Resend email support and Fast2SMS-compatible OTP support
 - Database maintenance scripts for targeted cleanup and user-data backup/delete operations
 
@@ -353,6 +354,7 @@ POST /api/v1/garage/applications
 GET/POST/PATCH/DELETE /api/v1/admin/city-service-price-ranges
 POST /api/v1/garage/wallet/recharge/order
 POST /api/v1/garage/wallet/recharge/verify
+POST /api/v1/garages/:garageId/media
 GET /api/v1/garage/requests
 POST /api/v1/garage/requests/:requestId/accept
 POST /api/v1/garage/requests/:requestId/verify-handover-otp
@@ -362,6 +364,19 @@ GET /api/v1/bookings/service-history
 ```
 
 WhatsApp provider envs can stay empty during testing. When empty, the backend logs the outgoing WhatsApp-style message and accept link instead of calling a real provider.
+---
+
+
+### Booking Inspection Images
+
+Garage owners must upload exactly 5 car inspection photos at each handover checkpoint:
+
+```text
+PICKUP: after valid handover OTP verification, before booking moves to IN_PROGRESS
+DELIVERY: before garage marks the vehicle delivered
+```
+
+Both sets are uploaded to Cloudinary and stored in PostgreSQL/Neon through `BookingInspectionImage` with `bookingId`, `garageId`, `phase`, `imageUrl`, `publicId`, and `order`. Booking responses include `inspectionImages` ordered by phase and photo order.
 ---
 
 ## Auth And State Notes
@@ -377,7 +392,7 @@ WhatsApp provider envs can stay empty during testing. When empty, the backend lo
 ## Media Notes
 
 - Static brand/core UI assets can stay in the frontend build.
-- Dynamic garage media, complaint images, before/after job media, and admin-managed service media should use Cloudinary.
+- Dynamic garage media, complaint images, booking pickup/delivery inspection images, and admin-managed service media should use Cloudinary.
 - Optimize large image assets before production traffic.
 
 ---

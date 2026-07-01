@@ -4,6 +4,7 @@ const garageRequestController = require("../controllers/garageRequest.controller
 const { protect } = require("../middlewares/auth.middleware");
 const { authorizeRoles } = require("../middlewares/role.middleware");
 const validate = require("../middlewares/validate.middleware");
+const upload = require("../middlewares/upload.middleware");
 
 const {
   acceptGarageRequestSchema,
@@ -29,6 +30,7 @@ router.post(
 
 router.post(
   "/:requestId/verify-handover-otp",
+  upload.array("images", 5),
   verifyHandoverOtpSchema,
   validate,
   garageRequestController.verifyHandoverOtp
@@ -36,6 +38,7 @@ router.post(
 
 router.post(
   "/:requestId/mark-delivered",
+  upload.array("images", 5),
   markDeliveredSchema,
   validate,
   garageRequestController.markDelivered

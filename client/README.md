@@ -6,7 +6,7 @@ React + Vite frontend for the Rovauto customer, garage, and admin experiences.
 
 - Public marketing and service category pages
 - Customer auth, OTP, Google sign-in, vehicle selection, location onboarding, service selection, checkout, payments, active bookings, service history, notifications, and profile pages
-- Garage dashboard, leads, jobs, wallet, earnings, and magic-link pages
+- Garage dashboard, leads, jobs, wallet, earnings, handover OTP, pickup/delivery photo capture, and magic-link pages
 - Admin dashboard, customers, garages, bookings, and revenue pages
 - Cashfree checkout integration through backend payment APIs
 - Pending-payment recovery from Active Bookings, Payments, and Tracking
@@ -115,8 +115,8 @@ Garage-facing routes:
 ```text
 GET /api/v1/garage/requests
 POST /api/v1/garage/requests/:requestId/accept
-POST /api/v1/garage/requests/:requestId/verify-handover-otp
-POST /api/v1/garage/requests/:requestId/mark-delivered
+POST /api/v1/garage/requests/:requestId/verify-handover-otp  # multipart: otp + images[5]
+POST /api/v1/garage/requests/:requestId/mark-delivered       # multipart: images[5]
 POST /api/v1/garage/wallet/recharge/order
 POST /api/v1/garage/wallet/recharge/verify
 ```
@@ -128,7 +128,8 @@ GET/POST/PATCH/DELETE /api/v1/admin/city-service-price-ranges
 GET/POST /api/v1/admin/garage-applications
 ```
 
-Manual address UX should call `/locations/geocode`, then send the returned `latitude` and `longitude` in checkout. Garage accept links may come from backend logs while WhatsApp provider envs are empty.
+Manual address UX should call `/locations/geocode`, then send the returned `latitude` and `longitude` in checkout. Garage accept links may come from backend logs while WhatsApp provider envs are empty. The garage UI should capture exactly 5 car photos after OTP verification and exactly 5 car photos before marking delivery; both requests must use multipart form data with the `images` field.
+
 ## Location Notes
 
 - A customer with a saved `CustomerLocation` or profile address should not see location onboarding again.
@@ -147,4 +148,4 @@ npm run build
 
 - `jsconfig.json` powers the `@/` path alias for editor/tooling support.
 - The npm workflow uses `package-lock.json`.
-- Large static images should be optimized before production. Dynamic garage/customer/admin media should be served from Cloudinary.
+- Large static images should be optimized before production. Dynamic garage/customer/admin media and booking pickup/delivery inspection images should be served from Cloudinary.

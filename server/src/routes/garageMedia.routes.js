@@ -14,7 +14,6 @@ router.post(
   upload.fields([
     { name: "thumbnail", maxCount: 1 },
     { name: "images", maxCount: 10 },
-    { name: "videos", maxCount: 2 },
   ]),
   garageMediaController.uploadGarageMedia
 );

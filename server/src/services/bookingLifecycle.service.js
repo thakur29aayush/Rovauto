@@ -5,9 +5,12 @@ const ApiError = require("../utils/apiError");
 const BOOKING_STATUS = require("../constants/bookingStatus");
 const BROADCAST_STATUS = require("../constants/broadcastStatus");
 const notificationService = require("../customer/services/notification.service");
+const { uploadToCloudinary } = require("../utils/cloudinaryUpload");
 
 const DEFAULT_SEARCH_TIMEOUT_SECONDS = 120;
 const DEFAULT_HANDOVER_OTP_TTL_MINUTES = 30;
+const REQUIRED_INSPECTION_PHOTO_COUNT = 5;
+const INSPECTION_IMAGE_FOLDER = "project-x/bookings/inspection-images";
 
 const getGarageSearchTimeoutMs = () => {
   const seconds = Number(process.env.GARAGE_SEARCH_TIMEOUT_SECONDS || DEFAULT_SEARCH_TIMEOUT_SECONDS);
@@ -25,6 +28,68 @@ const createHandoverOtp = () => {
   return { otp, otpHash: getOtpHash(otp), expiresAt };
 };
 
+
+const validateInspectionImages = (files) => {
+  if (!Array.isArray(files) || files.length !== REQUIRED_INSPECTION_PHOTO_COUNT) {
+    throw new ApiError(400, `Exactly ${REQUIRED_INSPECTION_PHOTO_COUNT} car inspection photos are required`);
+  }
+
+  for (const file of files) {
+    if (!file.mimetype?.startsWith("image/")) {
+      throw new ApiError(400, "Only image files are allowed for car inspection photos");
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      throw new ApiError(400, "Each car inspection photo must be under 10 MB");
+    }
+  }
+};
+
+const uploadInspectionImages = async ({ bookingId, garageId, phase, files }) => {
+  validateInspectionImages(files);
+
+  const existingImages = await prisma.bookingInspectionImage.findMany({
+    where: { bookingId, phase },
+    orderBy: { order: "asc" },
+  });
+
+  if (existingImages.length > 0) {
+    if (existingImages.length === REQUIRED_INSPECTION_PHOTO_COUNT) return existingImages;
+    throw new ApiError(400, `Existing ${phase.toLowerCase()} inspection photos are incomplete`);
+  }
+
+  const uploadedImages = [];
+  for (const file of files) {
+    const uploaded = await uploadToCloudinary(file.buffer, INSPECTION_IMAGE_FOLDER, "image");
+    uploadedImages.push(uploaded);
+  }
+
+  await prisma.bookingInspectionImage.createMany({
+    data: uploadedImages.map((image, index) => ({
+      bookingId,
+      garageId,
+      phase,
+      imageUrl: image.secure_url,
+      publicId: image.public_id,
+      order: index,
+    })),
+    skipDuplicates: true,
+  });
+
+  return prisma.bookingInspectionImage.findMany({
+    where: { bookingId, phase },
+    orderBy: { order: "asc" },
+  });
+};
+
+const bookingDetailInclude = {
+  user: true,
+  vehicle: true,
+  garage: true,
+  services: { include: { service: true } },
+  payment: true,
+  inspectionImages: { orderBy: [{ phase: "asc" }, { order: "asc" }] },
+};
 const notifySearchExpired = async (booking) => {
   await notificationService.createNotification({
     userId: booking.userId,
@@ -100,7 +165,7 @@ const notifyVehicleDelivered = async ({ booking, garage }) => {
   });
 };
 
-const verifyBookingHandoverOtp = async ({ garageId, requestId, otp }) => {
+const verifyBookingHandoverOtp = async ({ garageId, requestId, otp, images }) => {
   const request = await prisma.garageBroadcastRequest.findFirst({
     where: { id: requestId, garageId, status: BROADCAST_STATUS.ACCEPTED },
     include: { booking: true, garage: true },
@@ -125,25 +190,26 @@ const verifyBookingHandoverOtp = async ({ garageId, requestId, otp }) => {
     throw new ApiError(400, "Invalid handover OTP");
   }
 
+  await uploadInspectionImages({
+    bookingId: booking.id,
+    garageId,
+    phase: "PICKUP",
+    files: images,
+  });
+
   const updatedBooking = await prisma.booking.update({
     where: { id: booking.id },
     data: {
       status: BOOKING_STATUS.IN_PROGRESS,
       handoverOtpVerifiedAt: new Date(),
     },
-    include: {
-      user: true,
-      vehicle: true,
-      garage: true,
-      services: { include: { service: true } },
-      payment: true,
-    },
+    include: bookingDetailInclude,
   });
 
   return { request, booking: updatedBooking };
 };
 
-const markBookingDeliveredByGarage = async ({ garageId, requestId }) => {
+const markBookingDeliveredByGarage = async ({ garageId, requestId, images }) => {
   const request = await prisma.garageBroadcastRequest.findFirst({
     where: { id: requestId, garageId, status: BROADCAST_STATUS.ACCEPTED },
     include: { booking: { include: { user: true } }, garage: true },
@@ -160,15 +226,21 @@ const markBookingDeliveredByGarage = async ({ garageId, requestId }) => {
     throw new ApiError(400, "Booking cannot be marked delivered now");
   }
 
+  if (booking.deliveredAt) {
+    throw new ApiError(400, "Booking is already marked delivered");
+  }
+
+  await uploadInspectionImages({
+    bookingId: booking.id,
+    garageId,
+    phase: "DELIVERY",
+    files: images,
+  });
+
   const updatedBooking = await prisma.booking.update({
     where: { id: booking.id },
     data: { deliveredAt: new Date() },
-    include: {
-      garage: true,
-      vehicle: true,
-      services: { include: { service: true } },
-      payment: true,
-    },
+    include: bookingDetailInclude,
   });
 
   await notifyVehicleDelivered({ booking: updatedBooking, garage: request.garage });
@@ -197,6 +269,7 @@ const acceptDeliveredBookingByCustomer = async ({ userId, bookingId }) => {
       services: { include: { service: true } },
       payment: true,
       review: true,
+      inspectionImages: { orderBy: [{ phase: "asc" }, { order: "asc" }] },
     },
   });
 };

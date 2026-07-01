@@ -44,6 +44,7 @@ const bookingInclude = {
   },
   review: true,
   complaints: true,
+  inspectionImages: { orderBy: [{ phase: "asc" }, { order: "asc" }] },
 };
 
 const ALLOWED_BOOKING_STATUSES = [

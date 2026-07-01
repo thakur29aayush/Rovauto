@@ -64,6 +64,7 @@ const requestInclude = {
     include: {
       ...bookingForWhatsappInclude,
       payment: true,
+      inspectionImages: { orderBy: [{ phase: "asc" }, { order: "asc" }] },
     },
   },
   garage: true,

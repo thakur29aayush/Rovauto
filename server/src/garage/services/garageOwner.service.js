@@ -1,6 +1,9 @@
 const prisma = require("../../config/prisma");
 const ApiError = require("../../utils/apiError");
-const { GARAGE_MINIMUM_ACTIVATION_RECHARGE } = require("../constants");
+const {
+  GARAGE_MINIMUM_ACTIVATION_IMAGES,
+  GARAGE_MINIMUM_ACTIVATION_RECHARGE,
+} = require("../constants");
 
 const getGarageForOwner = async (userId, options = {}) => {
   const garage = await prisma.garage.findFirst({
@@ -21,7 +24,7 @@ const getGarageForOwner = async (userId, options = {}) => {
 const activateGarageIfEligible = async (tx, garageId) => {
   const garage = await tx.garage.findUnique({
     where: { id: garageId },
-    include: { wallet: true },
+    include: { wallet: true, images: true },
   });
 
   if (!garage) {
@@ -37,7 +40,7 @@ const activateGarageIfEligible = async (tx, garageId) => {
   return tx.garage.update({
     where: { id: garageId },
     data: { isActive: true },
-    include: { wallet: true },
+    include: { wallet: true, images: true },
   });
 };
 
