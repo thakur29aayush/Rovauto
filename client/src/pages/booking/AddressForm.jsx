@@ -41,19 +41,25 @@ export default function AddressForm() {
     setManualLocationEdited(true);
   };
 
+  const getCurrentCoordinates = async () => {
+    const position = await new Promise((resolve, reject) => {
+      if (!navigator.geolocation) reject(new Error("Geolocation not supported"));
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve(pos),
+        (err) => reject(err),
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+
+    return {
+      latitude: Number(position.coords.latitude.toFixed(6)),
+      longitude: Number(position.coords.longitude.toFixed(6)),
+    };
+  };
+
   const detectLocation = async () => {
     try {
-      const position = await new Promise((resolve, reject) => {
-        if (!navigator.geolocation) reject(new Error("Geolocation not supported"));
-        navigator.geolocation.getCurrentPosition(
-          (pos) => resolve(pos),
-          (err) => reject(err),
-          { enableHighAccuracy: true, timeout: 10000 }
-        );
-      });
-
-      const latitude = Number(position.coords.latitude.toFixed(6));
-      const longitude = Number(position.coords.longitude.toFixed(6));
+      const { latitude, longitude } = await getCurrentCoordinates();
       setManualLocationEdited(false);
 
       try {
@@ -95,27 +101,15 @@ export default function AddressForm() {
       const fullAddress = buildFullAddress(form);
       let latitude = Number(form.latitude);
       let longitude = Number(form.longitude);
-      const shouldGeocodeManualAddress =
+      const shouldUseBrowserGeolocation =
         manualLocationEdited ||
         !Number.isFinite(latitude) ||
         !Number.isFinite(longitude);
 
-      if (shouldGeocodeManualAddress) {
-        const geocodeResponse = await api.get("/locations/geocode", {
-          params: {
-            address: fullAddress,
-            city: form.city,
-            country: "",
-            countrycodes: "in,np",
-          },
-        });
-        const geocoded = geocodeResponse.data?.data;
-        latitude = Number(geocoded?.latitude);
-        longitude = Number(geocoded?.longitude);
-
-        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-          throw new Error("Could not find latitude and longitude for this address.");
-        }
+      if (shouldUseBrowserGeolocation) {
+        const currentCoordinates = await getCurrentCoordinates();
+        latitude = currentCoordinates.latitude;
+        longitude = currentCoordinates.longitude;
       }
 
       await api.patch("/customer/profile", {
@@ -130,7 +124,7 @@ export default function AddressForm() {
           latitude,
           longitude,
           address: fullAddress,
-          source: shouldGeocodeManualAddress ? "MANUAL" : "GPS",
+          source: manualLocationEdited ? "MANUAL" : "GPS",
           isDefault: true,
         });
       }
