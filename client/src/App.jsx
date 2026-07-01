@@ -6,10 +6,18 @@ import MainLayout from "@/layouts/MainLayout";
 import DashboardLayout from "@/layouts/DashboardLayout";
 
 function ProtectedRoute({ children }) {
-  const { user } = useApp();
+  const { user, garage } = useApp();
   const location = useLocation();
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  const isGarageRoute = location.pathname.startsWith("/garage");
+
+  if (isGarageRoute) {
+    if (!garage) {
+      return <Navigate to="/garage/login" state={{ from: location }} replace />;
+    }
+  } else {
+    if (!user) {
+      return <Navigate to="/login" state={{ from: location }} replace />;
+    }
   }
   return children;
 }
@@ -70,10 +78,16 @@ const Payments = lazy(() => import("@/pages/customer/Payments"));
 const Notifications = lazy(() => import("@/pages/customer/Notifications"));
 
 const GarageDashboard = lazy(() => import("@/pages/garage/Dashboard"));
-const GarageLeads = lazy(() => import("@/pages/garage/Leads"));
+const GarageLogin = lazy(() => import("@/pages/garage/auth/Login"));
+const GarageOtpLogin = lazy(() => import("@/pages/garage/auth/OtpLogin"));
+const GarageForgotPassword = lazy(() => import("@/pages/garage/auth/ForgotPassword"));
+const GarageOnboarding = lazy(() => import("@/pages/garage/Onboarding"));
+const GarageServices = lazy(() => import("@/pages/garage/Services"));
+const GarageBookings = lazy(() => import("@/pages/garage/Bookings"));
+const GarageBookingDetail = lazy(() => import("@/pages/garage/BookingDetail"));
+const GarageProfile = lazy(() => import("@/pages/garage/Profile"));
+const GarageSettings = lazy(() => import("@/pages/garage/Settings"));
 const GarageWallet = lazy(() => import("@/pages/garage/Wallet"));
-const GarageJobs = lazy(() => import("@/pages/garage/Jobs"));
-const GarageEarnings = lazy(() => import("@/pages/garage/Earnings"));
 const MagicLink = lazy(() => import("@/pages/garage/MagicLink"));
 
 const AdminDashboard = lazy(() => import("@/pages/admin/Dashboard"));
@@ -99,10 +113,11 @@ const customerItems = [
 
 const garageItems = [
   { to: "/garage", label: "Dashboard", icon: FiGrid },
-  { to: "/garage/leads", label: "Leads", icon: FiInbox },
-  { to: "/garage/jobs", label: "Active Jobs", icon: FiBriefcase },
+  { to: "/garage/bookings", label: "Bookings", icon: FiCalendar },
+  { to: "/garage/services", label: "Services", icon: FiInbox },
   { to: "/garage/wallet", label: "Wallet", icon: FiCreditCard },
-  { to: "/garage/earnings", label: "Earnings", icon: FiTrendingUp },
+  { to: "/garage/profile", label: "Profile", icon: FiUser },
+  { to: "/garage/settings", label: "Settings", icon: FiSettings },
 ];
 
 const adminItems = [
@@ -136,6 +151,12 @@ function AppRoutes() {
           <Route path="/otp" element={<OTP />} />
           <Route path="/forgot" element={<Forgot />} />
 
+          <Route path="/garage/login" element={<GarageLogin />} />
+          <Route path="/garage/otp-login" element={<GarageOtpLogin />} />
+          <Route path="/garage/forgot-password" element={<GarageForgotPassword />} />
+          <Route path="/garage/onboarding" element={<GarageOnboarding />} />
+          <Route path="/garage/magic/:id" element={<MagicLink />} />
+
           <Route path="/booking/address" element={<ProtectedRoute><AddressForm /></ProtectedRoute>} />
           <Route path="/booking/vehicle" element={<ProtectedRoute><AddressCheck><VehicleSelect /></AddressCheck></ProtectedRoute>} />
           <Route path="/booking/services" element={<ProtectedRoute><AddressCheck><VehicleCheck><ServiceSelect /></VehicleCheck></AddressCheck></ProtectedRoute>} />
@@ -143,7 +164,6 @@ function AppRoutes() {
           <Route path="/checkout" element={<ProtectedRoute><AddressCheck><VehicleCheck><Checkout /></VehicleCheck></AddressCheck></ProtectedRoute>} />
           <Route path="/tracking" element={<ProtectedRoute><AddressCheck><VehicleCheck><Tracking /></VehicleCheck></AddressCheck></ProtectedRoute>} />
 
-          <Route path="/garage/magic/:id" element={<MagicLink />} />
         </Route>
 
         <Route element={<DashboardLayout items={customerItems} title="Customer Portal" />}>
@@ -158,10 +178,12 @@ function AppRoutes() {
 
         <Route element={<DashboardLayout items={garageItems} title="Garage Portal" />}>
           <Route path="/garage" element={<ProtectedRoute><GarageDashboard /></ProtectedRoute>} />
-          <Route path="/garage/leads" element={<ProtectedRoute><GarageLeads /></ProtectedRoute>} />
-          <Route path="/garage/jobs" element={<ProtectedRoute><GarageJobs /></ProtectedRoute>} />
+          <Route path="/garage/bookings" element={<ProtectedRoute><GarageBookings /></ProtectedRoute>} />
+          <Route path="/garage/bookings/:id" element={<ProtectedRoute><GarageBookingDetail /></ProtectedRoute>} />
+          <Route path="/garage/services" element={<ProtectedRoute><GarageServices /></ProtectedRoute>} />
           <Route path="/garage/wallet" element={<ProtectedRoute><GarageWallet /></ProtectedRoute>} />
-          <Route path="/garage/earnings" element={<ProtectedRoute><GarageEarnings /></ProtectedRoute>} />
+          <Route path="/garage/profile" element={<ProtectedRoute><GarageProfile /></ProtectedRoute>} />
+          <Route path="/garage/settings" element={<ProtectedRoute><GarageSettings /></ProtectedRoute>} />
         </Route>
 
         <Route element={<DashboardLayout items={adminItems} title="Admin Console" />}>

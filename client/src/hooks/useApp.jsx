@@ -12,6 +12,12 @@ import {
   setCustomerVehicles,
   syncCustomerBundle,
 } from "@/store/customerSlice";
+import {
+  clearGarageState,
+  selectGarageState,
+  setGarage,
+  setGarageToken,
+} from "@/store/garageSlice";
 
 const AppCtx = createContext(null);
 
@@ -46,6 +52,8 @@ export function AppProvider({ children }) {
   const dispatch = useDispatch();
   const { user, token, vehicle, vehicles, location } =
     useSelector(selectCustomerState);
+  const { garage: garageUser, token: garageToken } =
+    useSelector(selectGarageState);
   const [cart, setCart] = useState([]);
 
   const [authLoading, setAuthLoading] = useState(true);
@@ -273,6 +281,22 @@ const saveProfileCache = (data, fetchedAt) => {
     clearProfileCache();
   };
 
+  const loginGarage = (garageData, authToken) => {
+    if (authToken) {
+      localStorage.setItem("garage_token", authToken);
+      dispatch(setGarageToken(authToken));
+    }
+
+    localStorage.setItem("garage", JSON.stringify(garageData));
+    dispatch(setGarage(garageData));
+  };
+
+  const logoutGarage = () => {
+    localStorage.removeItem("garage_token");
+    localStorage.removeItem("garage");
+    dispatch(clearGarageState());
+  };
+
   const logout = async () => {
     try {
       await api.post("/auth/logout");
@@ -458,6 +482,19 @@ const saveProfileCache = (data, fetchedAt) => {
   };
 
   useEffect(() => {
+    const savedGarage = localStorage.getItem("garage");
+    const savedGarageToken = localStorage.getItem("garage_token");
+
+    if (savedGarage) {
+      try {
+        const garageData = JSON.parse(savedGarage);
+        dispatch(setGarage(garageData));
+        if (savedGarageToken) {
+          dispatch(setGarageToken(savedGarageToken));
+        }
+      } catch {}
+    }
+
     if (token && user) {
       setAuthLoading(false);
       return;
@@ -563,6 +600,8 @@ const saveProfileCache = (data, fetchedAt) => {
     () => ({
       user,
       token,
+      garage: garageUser,
+      garageToken,
       vehicle,
       vehicles,
       cart,
@@ -608,6 +647,8 @@ const saveProfileCache = (data, fetchedAt) => {
 
       login,
       logout,
+      loginGarage,
+      logoutGarage,
       fetchMe,
       fetchDashboard,
       fetchVehicles,

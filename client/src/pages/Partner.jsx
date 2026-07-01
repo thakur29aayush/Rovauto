@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FiCheckCircle } from "react-icons/fi";
+import { Link } from "react-router-dom";
+import { FiCheckCircle, FiArrowRight } from "react-icons/fi";
 
 const SUPPORT_PHONE_DISPLAY = "+91 98993 19913";
 
@@ -16,6 +17,12 @@ export default function Partner() {
             <li key={x} className="flex items-center gap-3"><FiCheckCircle className="text-brand-dark text-lg" /> {x}</li>
           ))}
         </ul>
+        <div className="mt-8">
+          <Link to="/garage/login" className="btn-dark inline-flex items-center gap-2">
+            Login to Garage Portal
+            <FiArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
       <div className="card-soft p-7">
         {sent ? (

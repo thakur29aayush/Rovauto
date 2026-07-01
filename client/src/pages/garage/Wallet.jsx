@@ -1,33 +1,57 @@
-import { FiPlus, FiMinus } from "react-icons/fi";
 
-const TX = [
-  { type: "credit", t: "Wallet recharge", amount: 1000, time: "Today" },
-  { type: "debit", t: "Lead unlock · RV2391", amount: 40, time: "Today" },
-  { type: "debit", t: "Lead unlock · RV2390", amount: 40, time: "Yesterday" },
-  { type: "credit", t: "Wallet recharge", amount: 500, time: "12 Jun" },
-];
+import { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { FiPlus, FiTrendingUp, FiArrowDown, FiArrowUp } from "react-icons/fi";
+import { setWallet } from "@/store/garageSlice";
+import { mockTransactions } from "@/data/garageData";
 
-export default function Wallet() {
+export default function GarageWallet() {
+  const { wallet } = useSelector(state => state.garage);
+  const dispatch = useDispatch();
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
+
+  useEffect(() => {
+    dispatch(setWallet({ ...wallet, transactions: mockTransactions }));
+  }, [dispatch]);
+
   return (
-    <div className="grid gap-6">
-      <div className="rounded-3xl bg-gradient-to-br from-ink to-ink-2 text-white p-8">
-        <span className="chip-brand">Wallet</span>
-        <div className="mt-3 text-sm text-white/60">Available balance</div>
-        <div className="text-5xl font-bold mt-1">₹2,400</div>
-        <div className="mt-6 flex flex-wrap gap-2">
-          {[500, 1000, 2000, 5000].map((a) => (
-            <button key={a} className="px-5 py-3 rounded-full bg-brand text-ink font-semibold hover:bg-brand-dark transition">+ ₹{a}</button>
-          ))}
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Wallet</h1>
+        <p className="text-muted">Manage your wallet and transactions</p>
       </div>
+
+      <div className="card-soft p-8 text-center bg-gradient-to-br from-brand-soft to-white">
+        <p className="text-muted mb-2">Available Balance</p>
+        <h2 className="text-5xl font-bold mb-6">₹{wallet.balance.toLocaleString()}</h2>
+        <button
+          onClick={() => setShowRechargeModal(true)}
+          className="btn-primary"
+        >
+          <FiPlus className="w-4 h-4" />
+          Recharge Wallet
+        </button>
+      </div>
+
       <div className="card-soft p-6">
-        <h3 className="font-semibold mb-3">Recent Transactions</h3>
-        <div className="grid gap-2">
-          {TX.map((t, i) => (
-            <div key={i} className="flex items-center gap-3 py-2 border-b border-line last:border-0">
-              <span className={`grid place-items-center h-9 w-9 rounded-full ${t.type === "credit" ? "bg-brand text-ink" : "bg-bg-soft text-ink"}`}>{t.type === "credit" ? <FiPlus /> : <FiMinus />}</span>
-              <div className="flex-1"><div className="font-medium text-sm">{t.t}</div><div className="text-xs text-muted">{t.time}</div></div>
-              <div className={`font-semibold ${t.type === "credit" ? "text-green-600" : "text-red-500"}`}>{t.type === "credit" ? "+" : "-"}₹{t.amount}</div>
+        <h3 className="text-xl font-bold mb-4">Transaction History</h3>
+        <div className="space-y-3">
+          {wallet.transactions.map((txn) => (
+            <div key={txn.id} className="flex items-center justify-between p-4 bg-bg-soft rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${
+                  txn.amount > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                }`}>
+                  {txn.amount > 0 ? <FiArrowDown /> : <FiArrowUp />}
+                </div>
+                <div>
+                  <p className="font-semibold">{txn.description}</p>
+                  <p className="text-muted text-sm">{new Date(txn.date).toLocaleDateString()}</p>
+                </div>
+              </div>
+              <p className={`font-bold ${txn.amount > 0 ? "text-green-700" : "text-red-700"}`}>
+                {txn.amount > 0 ? "+" : ""}₹{Math.abs(txn.amount)}
+              </p>
             </div>
           ))}
         </div>
