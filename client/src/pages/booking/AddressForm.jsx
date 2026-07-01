@@ -92,6 +92,33 @@ export default function AddressForm() {
     }
   };
 
+  const geocodeManualAddress = async () => {
+    try {
+      const fullAddress = buildFullAddress(form);
+      
+      const response = await api.get("/locations/geocode", {
+        params: {
+          address: form.address,
+          city: form.city,
+          state: form.area,
+        },
+      });
+
+      const geocodeResult = response.data?.data || response.data;
+      
+      return {
+        latitude: Number(geocodeResult.latitude),
+        longitude: Number(geocodeResult.longitude),
+        address: fullAddress,
+      };
+    } catch (err) {
+      const errorMessage = 
+        err.response?.data?.message || 
+        "Could not find coordinates for this address. Please check and try again.";
+      throw new Error(errorMessage);
+    }
+  };
+
   const save = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -101,25 +128,38 @@ export default function AddressForm() {
       const fullAddress = buildFullAddress(form);
       let latitude = Number(form.latitude);
       let longitude = Number(form.longitude);
-      const shouldUseBrowserGeolocation =
-        manualLocationEdited ||
-        !Number.isFinite(latitude) ||
-        !Number.isFinite(longitude);
 
-      if (shouldUseBrowserGeolocation) {
-        const currentCoordinates = await getCurrentCoordinates();
-        latitude = currentCoordinates.latitude;
-        longitude = currentCoordinates.longitude;
+      // If address was manually edited, geocode it to get coordinates
+      if (manualLocationEdited) {
+        try {
+          const geocodeResult = await geocodeManualAddress();
+          latitude = geocodeResult.latitude;
+          longitude = geocodeResult.longitude;
+        } catch (geocodeErr) {
+          setError(geocodeErr.message);
+          setLoading(false);
+          return;
+        }
+      } else if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        // If no coordinates and address wasn't manually edited, use browser geolocation
+        try {
+          const currentCoordinates = await getCurrentCoordinates();
+          latitude = currentCoordinates.latitude;
+          longitude = currentCoordinates.longitude;
+        } catch (geoErr) {
+          setError("Could not detect location. Please enter address manually.");
+          setLoading(false);
+          return;
+        }
       }
 
+      // Save profile address
       await api.patch("/customer/profile", {
         address: fullAddress,
       });
 
-      if (
-        Number.isFinite(latitude) &&
-        Number.isFinite(longitude)
-      ) {
+      // Save location with coordinates
+      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
         await api.post("/locations", {
           latitude,
           longitude,
