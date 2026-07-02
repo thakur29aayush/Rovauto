@@ -3,18 +3,64 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { FiArrowRight, FiMapPin, FiNavigation, FiArrowLeft } from "react-icons/fi";
 import Logo from "@/components/common/Logo";
+import { garageApi } from "@/api/garage";
 
 export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState("");
 
+  const hasCoordinates = (location) =>
+    Number.isFinite(Number(location?.lat)) && Number.isFinite(Number(location?.lng));
+
+  const updateAddressField = (field, value) => {
+    onChange({
+      ...data,
+      [field]: value,
+      location: { lat: null, lng: null },
+    });
+    setLocationError("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise(r => setTimeout(r, 500));
-    setLoading(false);
-    onNext();
+    setLocationError("");
+
+    try {
+      let nextData = data;
+
+      if (!hasCoordinates(data.location)) {
+        const result = await garageApi.geocodeApplicationLocation({
+          address: data.address,
+          city: data.city,
+          area: data.area,
+        });
+
+        if (!Number.isFinite(result.latitude) || !Number.isFinite(result.longitude)) {
+          throw new Error("Could not determine coordinates for this garage address.");
+        }
+
+        nextData = {
+          ...data,
+          location: {
+            lat: result.latitude,
+            lng: result.longitude,
+          },
+        };
+        onChange(nextData);
+      }
+
+      onNext();
+    } catch (err) {
+      setLocationError(
+        err.response?.data?.message ||
+          err.message ||
+          "Could not find this garage location. Please verify the address and try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getCurrentLocation = () => {
@@ -64,7 +110,7 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
                 <FiMapPin className="absolute left-4 top-4 text-muted" />
                 <textarea
                   value={data.address}
-                  onChange={(e) => onChange({ ...data, address: e.target.value })}
+                  onChange={(e) => updateAddressField("address", e.target.value)}
                   placeholder="Enter full address"
                   rows={3}
                   className="w-full pl-11 pr-4 py-3 rounded-xl border border-line focus:border-ink focus:outline-none transition-colors resize-none"
@@ -79,7 +125,7 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
                 <input
                   type="text"
                   value={data.city}
-                  onChange={(e) => onChange({ ...data, city: e.target.value })}
+                  onChange={(e) => updateAddressField("city", e.target.value)}
                   placeholder="Kathmandu"
                   className="w-full px-4 py-3 rounded-xl border border-line focus:border-ink focus:outline-none transition-colors"
                   required
@@ -90,7 +136,7 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
                 <input
                   type="text"
                   value={data.area}
-                  onChange={(e) => onChange({ ...data, area: e.target.value })}
+                  onChange={(e) => updateAddressField("area", e.target.value)}
                   placeholder="Baneshwor"
                   className="w-full px-4 py-3 rounded-xl border border-line focus:border-ink focus:outline-none transition-colors"
                   required
@@ -146,7 +192,7 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
               disabled={loading}
               className="btn-primary w-full py-4 text-lg mt-4"
             >
-              {loading ? "Continuing..." : "Continue"}
+              {loading ? "Saving..." : "Save and Continue"}
               <FiArrowRight className="w-5 h-5" />
             </button>
           </form>

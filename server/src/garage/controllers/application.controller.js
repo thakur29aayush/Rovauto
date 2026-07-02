@@ -1,6 +1,12 @@
 const asyncHandler = require("../../utils/asyncHandler");
 const ApiResponse = require("../../utils/apiResponse");
 const applicationService = require("../services/application.service");
+const geocodingService = require("../../customer/services/geocoding.service");
+
+const geocodeApplicationLocation = asyncHandler(async (req, res) => {
+  const result = await geocodingService.geocodeAddress(req.query);
+  return res.status(200).json(new ApiResponse(200, "Garage address geocoded successfully", result));
+});
 
 const submitApplication = asyncHandler(async (req, res) => {
   const application = await applicationService.submitApplication(req.body, req.files || []);
@@ -41,6 +47,7 @@ module.exports = {
   approveApplication,
   deleteApplications,
   denyApplication,
+  geocodeApplicationLocation,
   getApplication,
   listApplications,
   requestChanges,

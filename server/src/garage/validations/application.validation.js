@@ -17,6 +17,14 @@ const submitGarageApplicationSchema = [
     .withMessage("Working radius must be between 1 and 100 km"),
 ];
 
+const geocodeGarageApplicationSchema = [
+  query("address").optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 300 }),
+  query("city").optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 120 }),
+  query("state").optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 120 }),
+  query("country").optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 120 }),
+  query("countrycodes").optional({ nullable: true, checkFalsy: true }).trim().isLength({ min: 2, max: 8 }),
+];
+
 const applicationIdSchema = [
   param("applicationId").isUUID().withMessage("Invalid application ID"),
 ];
@@ -36,6 +44,7 @@ const reviewApplicationSchema = [
 module.exports = {
   applicationIdSchema,
   applicationQuerySchema,
+  geocodeGarageApplicationSchema,
   reviewApplicationSchema,
   submitGarageApplicationSchema,
 };

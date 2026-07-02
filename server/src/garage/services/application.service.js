@@ -5,6 +5,7 @@ const ApiError = require("../../utils/apiError");
 const { uploadToCloudinary, deleteFromCloudinary } = require("../../utils/cloudinaryUpload");
 const { sendGarageApplicationEmail } = require("./applicationEmail.service");
 const { createResetPasswordOtp } = require("../../customer/services/otp.service");
+const geocodingService = require("../../customer/services/geocoding.service");
 
 const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
 const normalizePhone = (phone) => String(phone || "").trim();
@@ -36,6 +37,8 @@ const applicationSelect = {
 const submitApplication = async (payload, files = []) => {
   const email = normalizeEmail(payload.email);
   const phone = normalizePhone(payload.phone);
+  let latitude = payload.latitude === undefined ? null : Number(payload.latitude);
+  let longitude = payload.longitude === undefined ? null : Number(payload.longitude);
 
   const existingOpenApplication = await prisma.garageApplication.findFirst({
     where: {
@@ -50,6 +53,21 @@ const submitApplication = async (payload, files = []) => {
 
   if (files.length > 15) {
     throw new ApiError(400, "You can upload up to 15 garage photos");
+  }
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    const geocodeResult = await geocodingService.geocodeAddress({
+      address: payload.address,
+      city: payload.city,
+      state: payload.area,
+    });
+
+    latitude = Number(geocodeResult.latitude);
+    longitude = Number(geocodeResult.longitude);
+  }
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new ApiError(400, "Could not determine coordinates for this garage address");
   }
 
   const uploadedImages = [];
@@ -74,8 +92,8 @@ const submitApplication = async (payload, files = []) => {
         address: payload.address.trim(),
         city: payload.city.trim(),
         area: payload.area.trim(),
-        latitude: payload.latitude === undefined ? null : Number(payload.latitude),
-        longitude: payload.longitude === undefined ? null : Number(payload.longitude),
+        latitude,
+        longitude,
         workingRadiusKm: Number(payload.workingRadiusKm) || 15,
         status: "PENDING",
         images: uploadedImages.length ? { create: uploadedImages } : undefined,
@@ -199,8 +217,8 @@ const approveApplication = async (applicationId, adminNote) => {
         address: application.address,
         city: application.city,
         area: application.area,
-        latitude: application.latitude || 0,
-        longitude: application.longitude || 0,
+        latitude: application.latitude ?? 0,
+        longitude: application.longitude ?? 0,
         workingRadiusKm: application.workingRadiusKm || 15,
         isVerified: true,
         isActive: false,

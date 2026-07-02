@@ -102,6 +102,25 @@ export const garageApi = {
     return unwrap(await api.post("/garage/applications", payload));
   },
 
+  async geocodeApplicationLocation({ address, city, area }) {
+    const result = unwrap(
+      await api.get("/garage/applications/geocode", {
+        params: {
+          address,
+          city,
+          state: area,
+        },
+      })
+    );
+
+    return {
+      latitude: Number(result.latitude),
+      longitude: Number(result.longitude),
+      displayName: result.displayName,
+      corrected: Boolean(result.corrected),
+    };
+  },
+
   async getWallet(token) {
     return unwrap(await api.get("/garage/wallet", authConfig(token)));
   },
