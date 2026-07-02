@@ -11,6 +11,11 @@ export default function OnboardingStep4({ data, onChange }) {
   const [error, setError] = useState("");
 
   const toggleBrand = (brandId) => {
+    if (data.garageType === "AUTHORIZED") {
+      onChange({ ...data, brands: data.brands.includes(brandId) ? [] : [brandId] });
+      return;
+    }
+
     const brands = data.brands.includes(brandId)
       ? data.brands.filter((id) => id !== brandId)
       : [...data.brands, brandId];
@@ -114,7 +119,7 @@ export default function OnboardingStep4({ data, onChange }) {
               </button>
               <button
                 type="button"
-                onClick={() => onChange({ ...data, garageType: "AUTHORIZED" })}
+                onClick={() => onChange({ ...data, garageType: "AUTHORIZED", brands: data.brands.slice(0, 1) })}
                 className={`p-6 rounded-2xl border-2 text-center transition-all ${
                   data.garageType === "AUTHORIZED" ? "border-brand bg-brand-soft" : "border-line hover:border-ink-2"
                 }`}
@@ -125,7 +130,9 @@ export default function OnboardingStep4({ data, onChange }) {
             </div>
 
             <div className="space-y-4">
-              <h4 className="font-semibold">Select Brands You Service</h4>
+              <h4 className="font-semibold">
+                {data.garageType === "AUTHORIZED" ? "Select Authorized Brand" : "Select Brands You Service"}
+              </h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {mockBrands.map((brand) => {
                   const Icon = brand.icon;

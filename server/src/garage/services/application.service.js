@@ -51,6 +51,10 @@ const submitApplication = async (payload, files = []) => {
     throw new ApiError(409, "A garage application is already pending or awaiting changes for this email/phone");
   }
 
+  if (!files.length) {
+    throw new ApiError(400, "Upload at least one garage photo");
+  }
+
   if (files.length > 15) {
     throw new ApiError(400, "You can upload up to 15 garage photos");
   }

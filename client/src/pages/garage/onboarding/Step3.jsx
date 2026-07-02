@@ -7,9 +7,16 @@ import ImageUpload from "@/components/garage/ImageUpload";
 
 export default function OnboardingStep3({ data, onChange, onNext, onBack }) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+
+    if (!data.images.length) {
+      setError("Upload at least one garage photo before continuing.");
+      return;
+    }
 
     setLoading(true);
     await new Promise(r => setTimeout(r, 500));
@@ -28,10 +35,11 @@ export default function OnboardingStep3({ data, onChange, onNext, onBack }) {
         >
           <h1 className="text-3xl font-bold mb-2">Garage Images</h1>
           <p className="text-muted mb-8">Upload up to 15 garage photos. Each photo must be 1 MB or less.</p>
+          {error && <div className="mb-5 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <ImageUpload
-              min={0}
+              min={1}
               max={15}
               maxSizeMb={1}
               value={data.images}
