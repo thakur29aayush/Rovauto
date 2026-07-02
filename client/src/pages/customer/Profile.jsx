@@ -8,6 +8,8 @@ import { isCityAvailable, UNAVAILABLE_CITY_MESSAGE } from "@/utils/cityAvailabil
 import { addRecentActivity } from "@/utils/activityLog";
 import { FiMapPin, FiNavigation, FiX } from "react-icons/fi";
 
+const hasCoordinateValue = (value) => value !== null && value !== undefined && value !== "";
+
 export default function Profile() {
   const {
     user,
@@ -175,8 +177,11 @@ export default function Profile() {
       }
 
       const fullAddress = buildFullAddress(locationDraft);
-      let latitude = Number(locationDraft.latitude);
-      let longitude = Number(locationDraft.longitude);
+      const hasDraftCoordinates =
+        hasCoordinateValue(locationDraft.latitude) &&
+        hasCoordinateValue(locationDraft.longitude);
+      let latitude = hasDraftCoordinates ? Number(locationDraft.latitude) : null;
+      let longitude = hasDraftCoordinates ? Number(locationDraft.longitude) : null;
       let source = locationDraft.source || "MANUAL";
 
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {

@@ -5,7 +5,7 @@ import { FiStar, FiMapPin, FiArrowRight, FiCheckCircle, FiZap } from "react-icon
 import { useApp } from "@/hooks/useApp";
 import CitySelect from "@/components/common/CitySelect";
 import { isCityAvailable, UNAVAILABLE_CITY_MESSAGE } from "@/utils/cityAvailability";
-import { buildFullAddress, reverseGeocodeCoordinates } from "@/utils/address";
+import { buildFullAddress, hasUsableIndiaCoordinates, reverseGeocodeCoordinates } from "@/utils/address";
 import { queueGeocodeRequest } from "@/utils/geocodeService";
 import { addRecentActivity } from "@/utils/activityLog";
 
@@ -23,7 +23,7 @@ export default function GarageSelect() {
       return;
     }
 
-    if (!Number.isFinite(Number(location.latitude)) || !Number.isFinite(Number(location.longitude))) {
+    if (!hasUsableIndiaCoordinates(location)) {
       try {
         const geocode = await queueGeocodeRequest(
           location.address || location.area,
