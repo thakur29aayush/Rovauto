@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { adminApi } from "@/api/admin";
-import { FiCheck, FiEdit3, FiRefreshCw, FiTrash2, FiX } from "react-icons/fi";
+import { FiCheck, FiEdit3, FiEye, FiImage, FiRefreshCw, FiTrash2, FiX } from "react-icons/fi";
 
 const applicationStatuses = ["PENDING", "CHANGES_REQUESTED", "APPROVED", "DENIED"];
 
@@ -13,6 +13,7 @@ export default function Garages() {
   const [garages, setGarages] = useState([]);
   const [services, setServices] = useState([]);
   const [selectedGarageId, setSelectedGarageId] = useState("");
+  const [selectedGarageDetails, setSelectedGarageDetails] = useState(null);
   const [serviceForm, setServiceForm] = useState({ serviceId: "", price: "" });
   const [noteByApplication, setNoteByApplication] = useState({});
   const [selectedApplicationIds, setSelectedApplicationIds] = useState([]);
@@ -21,8 +22,8 @@ export default function Garages() {
   const [success, setSuccess] = useState("");
 
   const selectedGarage = useMemo(
-    () => garages.find((garage) => garage.id === selectedGarageId) || null,
-    [garages, selectedGarageId]
+    () => selectedGarageDetails || garages.find((garage) => garage.id === selectedGarageId) || null,
+    [garages, selectedGarageDetails, selectedGarageId]
   );
 
   const loadApplications = async () => {
@@ -49,6 +50,9 @@ export default function Garages() {
       setGarages(garageList || []);
       setServices(serviceList || []);
       setSelectedGarageId((current) => current || garageList?.[0]?.id || "");
+      setSelectedGarageDetails((current) =>
+        current && garageList?.some((garage) => garage.id === current.id) ? current : null
+      );
     } catch (err) {
       setError(err.response?.data?.message || "Unable to load garages/services");
     } finally {
@@ -116,6 +120,17 @@ export default function Garages() {
     });
   };
 
+  const openGarageDetails = async (garageId) => {
+    setSelectedGarageId(garageId);
+    setError("");
+    try {
+      setSelectedGarageDetails(await adminApi.getGarage(garageId));
+    } catch (err) {
+      setSelectedGarageDetails(null);
+      setError(err.response?.data?.message || "Unable to load garage details");
+    }
+  };
+
   const toggleApplicationSelection = (applicationId) => {
     setSelectedApplicationIds((current) =>
       current.includes(applicationId)
@@ -151,7 +166,7 @@ export default function Garages() {
         <div className="flex w-full gap-2 rounded-xl bg-bg-soft p-1 sm:w-auto">
           {[
             ["applications", "Applications"],
-            ["services", "Services"],
+            ["services", "Garages"],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -290,16 +305,20 @@ export default function Garages() {
         <div className="grid min-w-0 gap-5 2xl:grid-cols-[340px_minmax(0,1fr)]">
           <div className="card-soft min-w-0 overflow-hidden">
             <div className="border-b border-line p-4">
-              <h3 className="font-bold">Select Garage</h3>
+              <h3 className="font-bold">Garage Tab</h3>
+              <p className="mt-1 text-xs text-muted">Click a garage to view onboarding details.</p>
             </div>
             <div className="max-h-[420px] overflow-y-auto 2xl:max-h-[680px]">
               {garages.map((garage) => (
                 <button
                   key={garage.id}
-                  onClick={() => setSelectedGarageId(garage.id)}
+                  onClick={() => openGarageDetails(garage.id)}
                   className={`block w-full border-b border-line p-4 text-left transition ${selectedGarageId === garage.id ? "bg-ink text-white" : "hover:bg-bg-soft"}`}
                 >
-                  <div className="truncate font-semibold">{garage.name}</div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="truncate font-semibold">{garage.name}</span>
+                    <FiEye className="shrink-0" />
+                  </div>
                   <div className={`text-xs ${selectedGarageId === garage.id ? "text-white/70" : "text-muted"}`}>
                     {garage.city} · {garage.services?.length || 0} services · {garage.isActive ? "Active" : "Inactive"}
                   </div>
@@ -310,7 +329,22 @@ export default function Garages() {
 
           <div className="min-w-0 space-y-5">
             <div className="card-soft p-5">
-              <h3 className="text-xl font-bold">{selectedGarage?.name || "Select a garage"}</h3>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <h3 className="break-words text-xl font-bold">{selectedGarage?.name || "Select a garage"}</h3>
+                  {selectedGarage && (
+                    <p className="mt-1 break-words text-sm text-muted">
+                      {selectedGarage.address}, {selectedGarage.area}, {selectedGarage.city}
+                    </p>
+                  )}
+                </div>
+                {selectedGarage && (
+                  <div className="flex flex-wrap gap-2">
+                    <span className="chip-brand">{selectedGarage.isVerified ? "Verified" : "Unverified"}</span>
+                    <span className="chip-brand">{selectedGarage.isActive ? "Active" : "Inactive"}</span>
+                  </div>
+                )}
+              </div>
               {selectedGarage && (
                 <p className="break-words text-sm text-muted">
                   {selectedGarage.address}, {selectedGarage.city} · Wallet {money(selectedGarage.wallet?.balance)}
@@ -320,16 +354,31 @@ export default function Garages() {
 
             {selectedGarage && (
               <div className="card-soft space-y-3 p-5">
-                <p className="whitespace-pre-wrap text-sm text-muted">
-                  {selectedGarage.description || "No garage description submitted."}
-                </p>
-                <div className="grid gap-2 text-sm text-muted sm:grid-cols-2 lg:grid-cols-3">
-                  <span>Owner: {selectedGarage.owner?.name || "N/A"}</span>
-                  <span>Email: {selectedGarage.email || selectedGarage.owner?.email || "N/A"}</span>
-                  <span>Phone: {selectedGarage.phone || selectedGarage.owner?.phone || "N/A"}</span>
-                  <span>Area: {selectedGarage.area || "N/A"}</span>
-                  <span>Radius: {selectedGarage.workingRadiusKm || 15} km</span>
-                  <span>Lat/Lng: {selectedGarage.latitude ?? "N/A"}, {selectedGarage.longitude ?? "N/A"}</span>
+                <div>
+                  <h4 className="font-bold">Garage Details</h4>
+                  <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted">
+                    {selectedGarage.description || "No garage description submitted."}
+                  </p>
+                </div>
+                <div className="grid gap-3 text-sm text-muted sm:grid-cols-2 lg:grid-cols-3">
+                  <span><strong className="text-ink">Owner:</strong> {selectedGarage.owner?.name || "N/A"}</span>
+                  <span><strong className="text-ink">Owner email:</strong> {selectedGarage.owner?.email || "N/A"}</span>
+                  <span><strong className="text-ink">Owner phone:</strong> {selectedGarage.owner?.phone || "N/A"}</span>
+                  <span><strong className="text-ink">Garage email:</strong> {selectedGarage.email || "N/A"}</span>
+                  <span><strong className="text-ink">Garage phone:</strong> {selectedGarage.phone || "N/A"}</span>
+                  <span><strong className="text-ink">WhatsApp:</strong> {selectedGarage.whatsappNo || "N/A"}</span>
+                  <span><strong className="text-ink">City:</strong> {selectedGarage.city || "N/A"}</span>
+                  <span><strong className="text-ink">Area:</strong> {selectedGarage.area || "N/A"}</span>
+                  <span><strong className="text-ink">Radius:</strong> {selectedGarage.workingRadiusKm || 15} km</span>
+                  <span><strong className="text-ink">Latitude:</strong> {selectedGarage.latitude ?? "N/A"}</span>
+                  <span><strong className="text-ink">Longitude:</strong> {selectedGarage.longitude ?? "N/A"}</span>
+                  <span><strong className="text-ink">Hours:</strong> {selectedGarage.openingTime || "N/A"} - {selectedGarage.closingTime || "N/A"}</span>
+                  <span><strong className="text-ink">Rating:</strong> {selectedGarage.ratingAvg || 0} ({selectedGarage.ratingCount || 0})</span>
+                  <span><strong className="text-ink">Application:</strong> {selectedGarage.applicationId || "N/A"}</span>
+                  <span><strong className="text-ink">Created:</strong> {selectedGarage.createdAt ? new Date(selectedGarage.createdAt).toLocaleDateString() : "N/A"}</span>
+                </div>
+                <div className="flex items-center gap-2 pt-2 text-sm font-bold">
+                  <FiImage /> Uploaded Garage Photos ({selectedGarage.images?.length || 0}/15)
                 </div>
                 {selectedGarage.images?.length > 0 && (
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
@@ -343,11 +392,17 @@ export default function Garages() {
                       >
                         <img
                           src={image.imageUrl}
-                          alt={`${selectedGarage.name} ${index + 1}`}
+                          alt={`${selectedGarage.name} garage photo ${index + 1}`}
                           className="aspect-square w-full object-cover"
                         />
+                        <div className="px-2 py-1 text-xs text-muted">Photo {index + 1}</div>
                       </a>
                     ))}
+                  </div>
+                )}
+                {!selectedGarage.images?.length && (
+                  <div className="rounded-xl bg-bg-soft p-4 text-sm text-muted">
+                    No garage photos were submitted during onboarding.
                   </div>
                 )}
               </div>

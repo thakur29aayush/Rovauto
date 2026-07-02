@@ -37,6 +37,10 @@ export const adminApi = {
     return unwrap(await api.get("/admin/garages", { params }));
   },
 
+  async getGarage(garageId) {
+    return unwrap(await api.get(`/admin/garages/${garageId}`));
+  },
+
   async getAssignableServices(params = {}) {
     return unwrap(await api.get("/admin/garages/services", { params }));
   },

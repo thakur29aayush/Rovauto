@@ -15,10 +15,15 @@ const correctAddress = async (address, city, state) => {
   }
 
   try {
-    const message = await groq.messages.create({
-      model: "mixtral-8x7b-32768",
+    const completion = await groq.chat.completions.create({
+      model: process.env.GROQ_MODEL || "llama-3.1-8b-instant",
       max_tokens: 150,
+      temperature: 0.1,
       messages: [
+        {
+          role: "system",
+          content: "Return only a corrected Indian address or UNABLE_TO_CORRECT.",
+        },
         {
           role: "user",
           content: `You are an address correction assistant. Given an incomplete, misspelled, or informal address, provide the corrected full address in India.
@@ -39,7 +44,7 @@ Corrected address:`,
       ],
     });
 
-    const correctedAddress = message.content[0]?.text?.trim() || "";
+    const correctedAddress = completion.choices?.[0]?.message?.content?.trim() || "";
 
     if (correctedAddress === "UNABLE_TO_CORRECT" || !correctedAddress) {
       throw new ApiError(404, "Could not correct this address");

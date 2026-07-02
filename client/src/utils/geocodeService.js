@@ -1,5 +1,8 @@
+import api from "@/api/axios";
+
 /**
- * Geocoding service with rate limiting, caching, and Groq fallback
+ * Geocoding service with rate limiting and caching.
+ * Server handles provider fallback, including Groq address correction.
  */
 
 // Cache configuration
@@ -9,12 +12,8 @@ const geocodeRequestQueue = [];
 
 // Geocoding state
 let isGeocoding = false;
-let retryCount = 0;
 const MAX_RETRIES = 3;
 const RETRY_BACKOFF = [1000, 3000, 5000]; // Exponential backoff in ms
-
-// Get GROQ API key from environment
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
 const getCachedGeocode = (key) => {
   const cached = geocodeCache.get(key);
@@ -40,99 +39,14 @@ const getCacheKey = (address, city, state) => {
 };
 
 /**
- * Fallback geocoding using Groq API
- */
-const geocodeWithGroq = async (address, city, state) => {
-  if (!GROQ_API_KEY) {
-    console.warn('GROQ_API_KEY not configured, cannot use fallback');
-    throw new Error('Geocoding service temporarily unavailable');
-  }
-
-  try {
-    const fullAddress = `${address}, ${city}, ${state}, India`;
-    
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'mixtral-8x7b-32768',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a geocoding assistant. Extract latitude and longitude for the given address. Return only valid JSON with latitude and longitude as numbers. Example: {"latitude": 25.4358, "longitude": 81.8463}'
-          },
-          {
-            role: 'user',
-            content: `Find coordinates for: ${fullAddress}`
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 100,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Groq API error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0]?.message?.content || '';
-    
-    // Extract JSON from response
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Invalid Groq response format');
-    }
-
-    const result = JSON.parse(jsonMatch[0]);
-    
-    if (!Number.isFinite(result.latitude) || !Number.isFinite(result.longitude)) {
-      throw new Error('Invalid coordinates from Groq');
-    }
-
-    return {
-      latitude: Number(result.latitude),
-      longitude: Number(result.longitude),
-    };
-  } catch (err) {
-    console.error('Groq fallback geocoding failed:', err);
-    throw new Error('Could not find coordinates. Please verify the address and try again.');
-  }
-};
-
-/**
- * Primary geocoding API call with retry logic
+ * Geocoding API call with retry logic for rate limits
  */
 const geocodePrimary = async (address, city, state, attempt = 0) => {
   try {
-    const response = await fetch(
-      `https://rovauto.onrender.com/api/v1/locations/geocode?address=${encodeURIComponent(address)}&city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}`
-    );
-
-    // Handle rate limiting (429)
-    if (response.status === 429) {
-      if (attempt < MAX_RETRIES - 1) {
-        const waitTime = RETRY_BACKOFF[attempt];
-        console.warn(`Rate limited. Retrying after ${waitTime}ms...`);
-        await new Promise(r => setTimeout(r, waitTime));
-        return geocodePrimary(address, city, state, attempt + 1);
-      }
-      
-      // All retries exhausted, fallback to Groq
-      console.warn('Primary geocoding rate limited after retries, using Groq fallback');
-      return geocodeWithGroq(address, city, state);
-    }
-
-    if (!response.ok) {
-      // For other errors, also try Groq fallback
-      console.warn(`Primary geocoding failed with status ${response.status}, trying Groq`);
-      return geocodeWithGroq(address, city, state);
-    }
-
-    const geocodeResult = await response.json();
+    const response = await api.get("/locations/geocode", {
+      params: { address, city, state },
+    });
+    const geocodeResult = response.data?.data ?? response.data;
     const result = {
       latitude: Number(geocodeResult.data?.latitude || geocodeResult.latitude),
       longitude: Number(geocodeResult.data?.longitude || geocodeResult.longitude),
@@ -144,9 +58,19 @@ const geocodePrimary = async (address, city, state, attempt = 0) => {
 
     return result;
   } catch (err) {
-    console.error('Primary geocoding error:', err);
-    // Try Groq fallback for any error
-    return geocodeWithGroq(address, city, state);
+    if (err.response?.status === 429 && attempt < MAX_RETRIES - 1) {
+      const waitTime = RETRY_BACKOFF[attempt];
+      console.warn(`Rate limited. Retrying after ${waitTime}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+      return geocodePrimary(address, city, state, attempt + 1);
+    }
+
+    console.error("Geocoding API error:", err);
+    throw new Error(
+      err.response?.data?.message ||
+        err.message ||
+        "Could not find coordinates. Please verify the address and try again."
+    );
   }
 };
 
@@ -184,7 +108,6 @@ const processGeocodeQueue = async () => {
     reject(err);
   } finally {
     isGeocoding = false;
-    retryCount = 0;
     // Process next in queue after 1 second (respect rate limit)
     setTimeout(processGeocodeQueue, 1000);
   }
