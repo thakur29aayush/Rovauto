@@ -191,20 +191,55 @@ export default function Profile() {
         source = "MANUAL";
       }
 
+      if (!hasUsableIndiaCoordinates({ latitude, longitude })) {
+        throw new Error("Could not find valid Indian coordinates for this address.");
+      }
+
+      await api.post("/locations", {
+        latitude,
+        longitude,
+        address: fullAddress,
+        source,
+        isDefault: true,
+      });
+
+      const nextLocation = {
+        ...locationDraft,
+        fullAddress,
+        latitude,
+        longitude,
+        source,
+      };
+
+      setLocation(nextLocation);
       setForm((prev) => ({
         ...prev,
         address: fullAddress,
         location: { latitude, longitude, source },
       }));
+
+      clearProfileCache?.();
+      clearDashboardCache?.();
+
+      const refreshedProfile = await fetchProfile?.({ force: true });
+      if (refreshedProfile) {
+        fillForm(refreshedProfile);
+      }
+
       addRecentActivity({
         type: "LOCATION",
         title: source === "GPS" ? "Updated location from GPS" : "Updated location manually",
         detail: `${locationDraft.city}${locationDraft.area ? `, ${locationDraft.area}` : ""}`,
         path: "/dashboard/profile",
       });
+      setSuccess("Location updated successfully");
       setLocationOpen(false);
     } catch (err) {
-      setLocationError(err.message || "Could not determine coordinates for this address.");
+      setLocationError(
+        err.response?.data?.message ||
+          err.message ||
+          "Could not determine coordinates for this address."
+      );
     } finally {
       setLocationSaving(false);
     }
@@ -217,22 +252,6 @@ export default function Profile() {
       setSaving(true);
       setError("");
       setSuccess("");
-
-      const latitude = Number(form.location?.latitude);
-      const longitude = Number(form.location?.longitude);
-      if (form.address) {
-        if (!hasUsableIndiaCoordinates({ latitude, longitude })) {
-          throw new Error("Please save a valid Indian location before updating the profile address.");
-        }
-
-        await api.post("/locations", {
-          latitude,
-          longitude,
-          address: form.address,
-          source: form.location?.source || "MANUAL",
-          isDefault: true,
-        });
-      }
 
       await api.patch("/customer/profile", {
         name: form.name,
