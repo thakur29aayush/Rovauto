@@ -5,6 +5,7 @@ import { FiArrowRight, FiMapPin, FiNavigation, FiArrowLeft } from "react-icons/f
 import Logo from "@/components/common/Logo";
 import { garageApi } from "@/api/garage";
 import { reverseGeocodeCoordinates } from "@/utils/address";
+import CitySelect from "@/components/common/CitySelect";
 
 export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
   const [loading, setLoading] = useState(false);
@@ -145,13 +146,11 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">City</label>
-                <input
-                  type="text"
+                <CitySelect
                   value={data.city}
-                  onChange={(e) => updateAddressField("city", e.target.value)}
-                  placeholder="Delhi"
-                  className="w-full px-4 py-3 rounded-xl border border-line focus:border-ink focus:outline-none transition-colors"
+                  onChange={(city) => updateAddressField("city", city)}
                   required
+                  className="w-full px-4 py-3 rounded-xl border border-line focus:border-ink focus:outline-none transition-colors"
                 />
               </div>
               <div>

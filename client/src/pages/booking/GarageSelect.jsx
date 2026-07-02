@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { GARAGES } from "@/data/garages";
 import { FiStar, FiMapPin, FiArrowRight, FiCheckCircle, FiZap } from "react-icons/fi";
 import { useApp } from "@/hooks/useApp";
+import CitySelect from "@/components/common/CitySelect";
 
 export default function GarageSelect() {
   const { location, setLocation } = useApp();
@@ -17,7 +18,7 @@ export default function GarageSelect() {
 
       <div className="mt-8 card-soft p-5 grid sm:grid-cols-4 gap-3">
         <input value={location.area} onChange={(e) => setLocation({ ...location, area: e.target.value })} placeholder="Area" className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none" />
-        <input value={location.city} onChange={(e) => setLocation({ ...location, city: e.target.value })} placeholder="City" className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none" />
+        <CitySelect value={location.city} onChange={(city) => setLocation({ ...location, city })} placeholder="City" className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none" />
         <input value={location.pincode} onChange={(e) => setLocation({ ...location, pincode: e.target.value })} placeholder="Pincode" className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none" />
         <button className="btn-dark"><FiMapPin /> Current Location</button>
       </div>

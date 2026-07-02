@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { adminApi } from "@/api/admin";
+import CitySelect from "@/components/common/CitySelect";
 import { FiEdit3, FiRefreshCw, FiTrash2 } from "react-icons/fi";
 
 const fuelTypes = ["", "PETROL", "DIESEL", "ELECTRIC", "HYBRID", "CNG", "OTHER"];
@@ -156,10 +157,10 @@ export default function Revenue() {
         onSubmit={submit}
         className="card-soft grid w-full max-w-full gap-3 p-4 sm:p-5 md:grid-cols-2 xl:grid-cols-4"
       >
-        <input
+        <CitySelect
           required
           value={form.city}
-          onChange={(e) => setForm({ ...form, city: e.target.value })}
+          onChange={(city) => setForm({ ...form, city })}
           placeholder="City"
           className="min-w-0 rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
         />
@@ -243,10 +244,11 @@ export default function Revenue() {
       </form>
 
       <div className="flex w-full max-w-full flex-col gap-2 sm:flex-row">
-        <input
+        <CitySelect
           value={filterCity}
-          onChange={(e) => setFilterCity(e.target.value)}
+          onChange={setFilterCity}
           placeholder="Filter by city"
+          includeInactive
           className="min-w-0 flex-1 rounded-xl border border-line px-4 py-2 outline-none focus:border-ink"
         />
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
 import api from "@/api/axios";
+import CitySelect from "@/components/common/CitySelect";
 import { isPaymentAuthError, payForBooking } from "@/utils/bookingPayment";
 import {
   buildFullAddress,
@@ -235,11 +236,10 @@ export default function Checkout() {
 
                 <label className="grid gap-1.5 text-sm">
                   <span className="font-semibold">City</span>
-                  <input
+                  <CitySelect
                     required
-                    name="city"
                     value={addressForm.city}
-                    onChange={handleAddressChange}
+                    onChange={(city) => setAddressForm((prev) => ({ ...prev, city }))}
                     placeholder="City"
                     className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
                   />

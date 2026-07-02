@@ -5,6 +5,7 @@ import api from "@/api/axios";
 import { buildFullAddress, getDefaultUserLocation, parseAddressParts, reverseGeocodeCoordinates } from "@/utils/address";
 import { queueGeocodeRequest, clearGeocodeCache } from "@/utils/geocodeService";
 import { FiCheckCircle, FiMapPin } from "react-icons/fi";
+import CitySelect from "@/components/common/CitySelect";
 
 export default function AddressForm() {
   const nav = useNavigate();
@@ -246,12 +247,13 @@ export default function AddressForm() {
 
             <label className="grid gap-1.5 text-sm">
               <span className="font-semibold">City</span>
-              <input
-                required
-                name="city"
+              <CitySelect
                 value={form.city}
-                onChange={change}
-                placeholder="City"
+                onChange={(city) => {
+                  setForm((prev) => ({ ...prev, city, latitude: null, longitude: null }));
+                  setManualLocationEdited(true);
+                }}
+                required
                 className="rounded-xl border border-line px-4 py-3 outline-none focus:border-ink"
               />
             </label>

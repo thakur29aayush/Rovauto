@@ -302,6 +302,19 @@ model CityServicePriceRange {
   @@index([isActive])
 }
 
+model City {
+  id             String   @id @default(uuid())
+  name           String
+  normalizedName String   @unique
+  state          String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([name])
+}
+
 model Booking {
   id                    String                   @id @default(uuid())
   userId                String

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { adminApi } from "@/api/admin";
-import { FiRefreshCw } from "react-icons/fi";
+import { cityApi } from "@/api/cities";
+import CitySelect from "@/components/common/CitySelect";
+import { FiPlus, FiRefreshCw } from "react-icons/fi";
 
 const getCity = (customer) => {
   const address =
@@ -16,9 +18,13 @@ const getCity = (customer) => {
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [cityForm, setCityForm] = useState({ name: "", state: "" });
   const [filters, setFilters] = useState({ search: "", city: "" });
   const [loading, setLoading] = useState(false);
+  const [citySaving, setCitySaving] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -40,7 +46,44 @@ export default function Customers() {
 
   useEffect(() => {
     load();
+    loadCities();
   }, []);
+
+  const loadCities = async () => {
+    try {
+      setCities(await cityApi.getAdminCities({ includeInactive: true }));
+    } catch {
+      setCities([]);
+    }
+  };
+
+  const addCity = async (event) => {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+    setCitySaving(true);
+    try {
+      await cityApi.createCity(cityForm);
+      setCityForm({ name: "", state: "" });
+      setSuccess("City added.");
+      await loadCities();
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to add city");
+    } finally {
+      setCitySaving(false);
+    }
+  };
+
+  const toggleCity = async (city) => {
+    setError("");
+    setSuccess("");
+    try {
+      await cityApi.updateCity(city.id, { isActive: !city.isActive });
+      await loadCities();
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to update city");
+    }
+  };
 
   return (
     <div className="w-full max-w-full overflow-x-hidden space-y-5">
@@ -57,6 +100,51 @@ export default function Customers() {
         </div>
       )}
 
+      {success && (
+        <div className="rounded-xl bg-green-50 p-4 text-sm text-green-700">
+          {success}
+        </div>
+      )}
+
+      <div className="card-soft grid gap-4 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)]">
+        <div>
+          <h3 className="font-bold">Cities</h3>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {cities.length ? cities.map((city) => (
+              <button
+                key={city.id}
+                type="button"
+                onClick={() => toggleCity(city)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${city.isActive ? "bg-brand-soft text-ink" : "bg-bg-soft text-muted"}`}
+              >
+                {city.name}{city.state ? `, ${city.state}` : ""}{city.isActive ? "" : " (Inactive)"}
+              </button>
+            )) : (
+              <span className="text-sm text-muted">No cities added yet.</span>
+            )}
+          </div>
+        </div>
+
+        <form onSubmit={addCity} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:grid-cols-1">
+          <input
+            required
+            value={cityForm.name}
+            onChange={(e) => setCityForm({ ...cityForm, name: e.target.value })}
+            placeholder="City name"
+            className="min-w-0 rounded-xl border border-line px-4 py-2 outline-none focus:border-ink"
+          />
+          <input
+            value={cityForm.state}
+            onChange={(e) => setCityForm({ ...cityForm, state: e.target.value })}
+            placeholder="State optional"
+            className="min-w-0 rounded-xl border border-line px-4 py-2 outline-none focus:border-ink"
+          />
+          <button disabled={citySaving} className="btn-primary justify-center !py-2">
+            <FiPlus /> {citySaving ? "Adding..." : "Add"}
+          </button>
+        </form>
+      </div>
+
       <div className="flex w-full max-w-full flex-col gap-2 sm:flex-row">
         <input
           value={filters.search}
@@ -67,10 +155,11 @@ export default function Customers() {
           className="min-w-0 flex-1 rounded-xl border border-line px-4 py-2 outline-none focus:border-ink"
         />
 
-        <input
+        <CitySelect
           value={filters.city}
-          onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+          onChange={(city) => setFilters({ ...filters, city })}
           placeholder="City"
+          includeInactive
           className="min-w-0 rounded-xl border border-line px-4 py-2 outline-none focus:border-ink sm:w-48"
         />
 
