@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { FiArrowRight, FiMapPin, FiNavigation, FiArrowLeft } from "react-icons/fi";
 import Logo from "@/components/common/Logo";
 import { garageApi } from "@/api/garage";
+import { reverseGeocodeCoordinates } from "@/utils/address";
 
 export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
   const [loading, setLoading] = useState(false);
@@ -18,6 +19,7 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
       ...data,
       [field]: value,
       location: { lat: null, lng: null },
+      locationSource: "MANUAL",
     });
     setLocationError("");
   };
@@ -30,7 +32,7 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
     try {
       let nextData = data;
 
-      if (!hasCoordinates(data.location)) {
+      if (data.locationSource !== "GPS" || !hasCoordinates(data.location)) {
         const result = await garageApi.geocodeApplicationLocation({
           address: data.address,
           city: data.city,
@@ -47,6 +49,7 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
             lat: result.latitude,
             lng: result.longitude,
           },
+          locationSource: "MANUAL",
         };
         onChange(nextData);
       }
@@ -73,14 +76,34 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
 
     setLocationLoading(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        onChange({
-          ...data,
-          location: {
-            lat: Number(position.coords.latitude.toFixed(6)),
-            lng: Number(position.coords.longitude.toFixed(6)),
-          },
-        });
+      async (position) => {
+        const latitude = Number(position.coords.latitude.toFixed(6));
+        const longitude = Number(position.coords.longitude.toFixed(6));
+
+        try {
+          const parsed = await reverseGeocodeCoordinates({ latitude, longitude });
+          onChange({
+            ...data,
+            address: parsed.address || data.address,
+            area: parsed.area || data.area,
+            city: parsed.city || data.city,
+            location: {
+              lat: latitude,
+              lng: longitude,
+            },
+            locationSource: "GPS",
+          });
+        } catch {
+          onChange({
+            ...data,
+            location: {
+              lat: latitude,
+              lng: longitude,
+            },
+            locationSource: "GPS",
+          });
+          setLocationError("Location detected, but address details could not be filled. Please complete the address boxes.");
+        }
         setLocationLoading(false);
       },
       (error) => {
@@ -126,7 +149,7 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
                   type="text"
                   value={data.city}
                   onChange={(e) => updateAddressField("city", e.target.value)}
-                  placeholder="Kathmandu"
+                  placeholder="Delhi"
                   className="w-full px-4 py-3 rounded-xl border border-line focus:border-ink focus:outline-none transition-colors"
                   required
                 />
@@ -137,7 +160,7 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
                   type="text"
                   value={data.area}
                   onChange={(e) => updateAddressField("area", e.target.value)}
-                  placeholder="Baneshwor"
+                  placeholder="Karol Bagh"
                   className="w-full px-4 py-3 rounded-xl border border-line focus:border-ink focus:outline-none transition-colors"
                   required
                 />

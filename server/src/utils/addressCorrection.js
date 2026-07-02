@@ -1,9 +1,21 @@
 const Groq = require("groq-sdk");
 const ApiError = require("./apiError");
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+let groq = null;
+
+const getGroqClient = () => {
+  if (!process.env.GROQ_API_KEY) {
+    throw new ApiError(500, "Groq API not configured");
+  }
+
+  if (!groq) {
+    groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    });
+  }
+
+  return groq;
+};
 
 /**
  * Uses Groq AI to correct/normalize an address
@@ -15,7 +27,7 @@ const correctAddress = async (address, city, state) => {
   }
 
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await getGroqClient().chat.completions.create({
       model: process.env.GROQ_MODEL || "llama-3.1-8b-instant",
       max_tokens: 150,
       temperature: 0.1,

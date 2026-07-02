@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
 import api from "@/api/axios";
-import { buildFullAddress, getDefaultUserLocation, parseAddressParts } from "@/utils/address";
+import { buildFullAddress, getDefaultUserLocation, parseAddressParts, reverseGeocodeCoordinates } from "@/utils/address";
 import { queueGeocodeRequest, clearGeocodeCache } from "@/utils/geocodeService";
 import { FiCheckCircle, FiMapPin } from "react-icons/fi";
 
@@ -60,33 +60,23 @@ export default function AddressForm() {
 
   const detectLocation = async () => {
     try {
+      setError("");
       const { latitude, longitude } = await getCurrentCoordinates();
-      setManualLocationEdited(false);
-
       try {
-        const url = new URL("https://nominatim.openstreetmap.org/reverse");
-        url.searchParams.set("format", "jsonv2");
-        url.searchParams.set("lat", String(latitude));
-        url.searchParams.set("lon", String(longitude));
-
-        const response = await fetch(url.toString(), {
-          headers: { Accept: "application/json" },
+        const parsed = await reverseGeocodeCoordinates({ latitude, longitude });
+        setForm({
+          address: parsed.address,
+          area: parsed.area,
+          city: parsed.city,
+          pincode: parsed.pincode,
+          latitude,
+          longitude,
         });
-        if (response.ok) {
-          const data = await response.json();
-          const fullAddress = data.display_name || "";
-          const parsed = parseAddressParts(fullAddress);
-          setForm({
-            address: parsed.address || fullAddress,
-            area: parsed.area,
-            city: parsed.city,
-            pincode: parsed.pincode,
-            latitude,
-            longitude,
-          });
-        }
+        setManualLocationEdited(false);
       } catch {
         setForm((prev) => ({ ...prev, latitude, longitude }));
+        setManualLocationEdited(false);
+        setError("Location detected, but address details could not be filled. Please complete the boxes.");
       }
     } catch (err) {
       setError("Could not detect location. Please enter manually.");
@@ -101,7 +91,7 @@ export default function AddressForm() {
       const geocodeResult = await queueGeocodeRequest(
         form.address,
         form.city,
-        form.area
+        [form.area, form.pincode].filter(Boolean).join(", ")
       );
       
       return {

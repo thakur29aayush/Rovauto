@@ -40,19 +40,8 @@ const submitApplication = async (payload, files = []) => {
   let latitude = payload.latitude === undefined ? null : Number(payload.latitude);
   let longitude = payload.longitude === undefined ? null : Number(payload.longitude);
 
-  const existingOpenApplication = await prisma.garageApplication.findFirst({
-    where: {
-      OR: [{ email }, { phone }],
-      status: { in: ["PENDING", "CHANGES_REQUESTED"] },
-    },
-  });
-
-  if (existingOpenApplication) {
-    throw new ApiError(409, "A garage application is already pending or awaiting changes for this email/phone");
-  }
-
-  if (!files.length) {
-    throw new ApiError(400, "Upload at least one garage photo");
+  if (files.length < 10) {
+    throw new ApiError(400, "Upload at least 10 garage photos");
   }
 
   if (files.length > 15) {
