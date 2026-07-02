@@ -22,13 +22,20 @@ export default function DashboardLayout({ items, title }) {
     to === "/dashboard/customer" ||
     to === "/garage" ||
     to === "/admin";
+
   const isGaragePortal = pathname.startsWith("/garage");
   const isAdminPortal = pathname.startsWith("/admin");
+
   const account = isGaragePortal ? garage : user;
+
   const accountName = isGaragePortal
     ? account?.ownerName || account?.owner?.name || account?.name
     : account?.name;
-  const accountRole = isGaragePortal ? "GARAGE_OWNER" : account?.role || "CUSTOMER";
+
+  const accountRole = isGaragePortal
+    ? "GARAGE_OWNER"
+    : account?.role || "CUSTOMER";
+
   const handleLogout = async () => {
     if (isGaragePortal) {
       await logoutGarage();
@@ -41,7 +48,16 @@ export default function DashboardLayout({ items, title }) {
   };
 
   return (
-    <div className="flex min-h-screen bg-bg-soft">
+    <div className="flex min-h-screen overflow-x-hidden bg-bg-soft">
+      {open && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-30 bg-black/30 lg:hidden"
+        />
+      )}
+
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex h-screen w-72 shrink-0 flex-col border-r border-line bg-white transition-transform lg:sticky lg:top-0 lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
@@ -59,7 +75,7 @@ export default function DashboardLayout({ items, title }) {
           </button>
         </div>
 
-        <nav className="grid flex-1 gap-1 overflow-y-auto p-3">
+        <nav className="grid flex-1 content-start gap-1 overflow-y-auto p-3">
           {items.map((item) => {
             const Icon = item.icon;
 
@@ -70,7 +86,7 @@ export default function DashboardLayout({ items, title }) {
                 end={isDashboardLink(item.to)}
                 className={({ isActive }) =>
                   [
-                    "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition",
+                    "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold transition",
                     isActive
                       ? "bg-ink !text-white"
                       : "!text-ink/70 hover:bg-bg-soft hover:!text-ink",
@@ -94,9 +110,7 @@ export default function DashboardLayout({ items, title }) {
               <div className="truncate text-sm font-semibold">
                 {accountName || "Guest"}
               </div>
-              <div className="truncate text-xs text-muted">
-                {accountRole}
-              </div>
+              <div className="truncate text-xs text-muted">{accountRole}</div>
             </div>
           </div>
 
@@ -114,16 +128,16 @@ export default function DashboardLayout({ items, title }) {
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-30 border-b border-line bg-white/85 backdrop-blur">
           <div className="flex h-16 items-center justify-between px-5 lg:px-10">
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
                 onClick={() => setOpen(true)}
-                className="grid h-10 w-10 place-items-center rounded-full border border-line lg:hidden"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line lg:hidden"
               >
                 <FiMenu />
               </button>
 
-              <h1 className="text-lg font-semibold">{title}</h1>
+              <h1 className="truncate text-lg font-semibold">{title}</h1>
             </div>
           </div>
         </header>
@@ -132,7 +146,7 @@ export default function DashboardLayout({ items, title }) {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="p-5 lg:p-10"
+          className="min-w-0 p-4 sm:p-5 lg:p-10"
         >
           <Outlet />
         </motion.main>
