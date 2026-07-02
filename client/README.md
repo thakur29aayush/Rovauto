@@ -9,6 +9,7 @@ React + Vite frontend for the Rovauto customer, garage owner, admin, and SOS exp
 - Customer onboarding: compulsory location first, then compulsory vehicle selection.
 - Customer booking: service selection, garage selection, checkout, Cashfree payment, tracking.
 - Customer portal: dashboard, quick actions, recent activity, vehicles, bookings, service history, payments, notifications, profile.
+- Floating Rovauto Assistant chatbot connected to backend RAG, Groq, and user-specific chat history.
 - Profile location editor: opens a location card, supports manual geocoding and current-location update.
 - Garage owner portal: login, OTP login, onboarding/application, dashboard, services, bookings, wallet, profile, settings, magic links.
 - Admin portal: dashboard, customers, garages, garage applications, bookings, price ranges, notifications, managed cities.
@@ -79,6 +80,25 @@ src/
 |-- store/        # Redux store and customer slice
 |-- utils/        # Auth, payment, address, geocode, cities, activity helpers
 ```
+
+## Rovauto Assistant
+
+The floating chatbot lives in:
+
+```text
+src/components/ChatbotPopup.jsx
+src/components/FAB.jsx
+```
+
+Behavior:
+
+- Loads the logged-in customer's previous chatbot messages on open.
+- Sends new questions to `POST /api/v1/chatbot/ask`.
+- Shows the assistant reply from backend RAG/Groq.
+- Lets the user clear their own chatbot history through `DELETE /api/v1/chatbot/history`.
+- Does not store another user's messages in local UI state; server history is scoped by the logged-in token.
+
+The frontend keeps only the visible widget state. Durable memory lives in backend database tables.
 
 ## State Management
 
@@ -191,6 +211,9 @@ POST /api/v1/bookings/checkout
 POST /api/v1/payments/verify
 POST /api/v1/bookings/:id/accept-delivery
 GET  /api/v1/bookings/service-history
+GET  /api/v1/chatbot/history
+POST /api/v1/chatbot/ask
+DELETE /api/v1/chatbot/history
 ```
 
 Garage:

@@ -10,6 +10,7 @@ Express + Prisma backend for the Rovauto India vehicle service platform.
 - Signup, OTP verification, login, Google auth, logout, forgot/reset password.
 - Auth responses return a safe user bundle with `customerProfile`, `vehicles`, and `locations`.
 - Customer profile, vehicles, locations, bookings, payments, wallet, notifications, dashboard, reviews, complaints, contact, SOS.
+- Customer RAG chatbot with Markdown knowledge, Groq generation, local fallback, and user-specific conversation memory.
 - Admin-managed cities for availability control and city dropdowns.
 - Admin city/service/vehicle/fuel price ranges.
 - Manual geocoding for India with Nominatim first and Groq correction/coordinate fallback.
@@ -38,6 +39,7 @@ src/
 |-- controllers/
 |-- customer/
 |   |-- controllers/
+|   |-- knowledge/
 |   |-- routes/
 |   |-- services/
 |   |-- validations/
@@ -116,6 +118,9 @@ NOMINATIM_TIMEOUT_MS=3000
 GROQ_API_KEY=""
 GROQ_MODEL="llama-3.1-8b-instant"
 GROQ_TIMEOUT_MS=12000
+CHATBOT_GROQ_MODEL="llama-3.1-8b-instant"
+CHATBOT_GROQ_TIMEOUT_MS=12000
+CHATBOT_RATE_LIMIT_PER_MINUTE=20
 
 GARAGE_BROADCAST_RADIUS_KM=15
 GARAGE_SEARCH_TIMEOUT_SECONDS=120
@@ -212,6 +217,7 @@ Mounted under `/api/v1`:
 /reviews
 /complaints
 /dashboard
+/chatbot
 /wallet
 /garage/wallet
 /garage/wallet-legacy
@@ -289,6 +295,52 @@ PATCH  /api/v1/locations/:id/default
 ```
 
 Creating a default location syncs the customer profile address internally.
+
+## AI Chatbot and Memory
+
+The customer chatbot is mounted at:
+
+```text
+GET    /api/v1/chatbot/history
+POST   /api/v1/chatbot/ask
+DELETE /api/v1/chatbot/history
+```
+
+It uses local Markdown knowledge files as the retrieval source:
+
+```text
+src/customer/knowledge/booking-flow.md
+src/customer/knowledge/customer-account.md
+src/customer/knowledge/services-and-support.md
+```
+
+Flow:
+
+```text
+customer question
+ -> load recent user-specific chat memory
+ -> retrieve relevant Markdown sections
+ -> add safe minimal customer context
+ -> ask Groq
+ -> store user and assistant messages
+ -> fall back to local RAG answer if Groq is unavailable
+```
+
+Conversation memory is stored in the same PostgreSQL database:
+
+```text
+chatbot_conversations
+chatbot_messages
+```
+
+Privacy behavior:
+
+- Every history read/write is scoped by `req.user.id`.
+- Deleting a user cascades their chatbot conversations and messages.
+- Exact customer name, saved address, booking code, and raw coordinates are not sent to Groq.
+- The model receives only minimal state such as whether a location exists, default vehicle summary, active booking count, and latest booking status.
+
+For now a separate Neon database is not required. Keep chatbot memory in the main DB unless future compliance, retention, or analytics requirements demand physical isolation.
 
 ## Garage Application and Activation
 

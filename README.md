@@ -113,6 +113,7 @@ Codebase/
 |   |   |-- config/
 |   |   |-- controllers/
 |   |   |-- customer/
+|   |   |   |-- knowledge/
 |   |   |-- garage/
 |   |   |-- middlewares/
 |   |   |-- routes/
@@ -179,6 +180,10 @@ GEOCODER_COUNTRYCODES="in"
 NOMINATIM_USER_AGENT="Rovauto/1.0 (your-email@example.com)"
 NOMINATIM_TIMEOUT_MS=3000
 GROQ_API_KEY=""
+GROQ_MODEL="llama-3.1-8b-instant"
+CHATBOT_GROQ_MODEL="llama-3.1-8b-instant"
+CHATBOT_GROQ_TIMEOUT_MS=12000
+CHATBOT_RATE_LIMIT_PER_MINUTE=20
 ```
 
 Run Prisma:
@@ -296,6 +301,7 @@ Mounted under `/api/v1`:
 - `/reviews`
 - `/complaints`
 - `/dashboard`
+- `/chatbot`
 - `/wallet`
 - `/garage/wallet`
 - `/garage/wallet-legacy`
@@ -328,6 +334,43 @@ User enters address, area, city, pincode
 ```
 
 The app should not call geocoding again for an unchanged saved location. Coordinates are stored in the database and reused.
+
+## AI Chatbot
+
+Rovauto has a customer-side RAG chatbot connected to the floating chat UI.
+
+```text
+Markdown knowledge files
+ -> lightweight section retrieval
+ -> safe customer account context
+ -> Groq answer generation
+ -> local RAG fallback if Groq is unavailable
+```
+
+Knowledge files live in:
+
+```text
+server/src/customer/knowledge/
+```
+
+The chatbot can answer customer-side questions about booking, vehicles, location, city availability, payments, SOS, complaints, reviews, profile settings, tracking, and service history. It is intentionally scoped away from random general-purpose chat and should not invent policies, prices, garage availability, refunds, or emergency dispatch.
+
+Chat memory is stored in the main PostgreSQL database, not a separate Neon database:
+
+```text
+chatbot_conversations
+chatbot_messages
+```
+
+Messages are always scoped by the logged-in `userId`, so one customer cannot read another customer's chat. The backend trims sensitive account context before sending prompts to Groq; exact saved addresses, customer names, and booking codes are not included in the model context.
+
+Chatbot endpoints:
+
+```text
+GET    /api/v1/chatbot/history
+POST   /api/v1/chatbot/ask
+DELETE /api/v1/chatbot/history
+```
 
 ## Booking Lifecycle
 
@@ -397,6 +440,7 @@ docker compose logs -f frontend
 
 - Use Google Maps API for production geocoding when funding/paid tier is available.
 - Set strict daily/monthly quotas on Google Maps, SMS, Groq, and Cloudinary.
+- Store chatbot conversations in the main database unless strict isolation or analytics scale later requires a separate database.
 - Keep all secrets in hosting environment variables.
 - Use separate development, staging, and production databases.
 - Run `npm run prisma:deploy` during production releases.
