@@ -59,69 +59,75 @@ export default function DashboardLayout({ items, title }) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex h-screen w-72 shrink-0 flex-col border-r border-line bg-white transition-transform lg:sticky lg:top-0 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex h-[100dvh] w-72 shrink-0 flex-col border-r border-line bg-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-line p-5">
-          <Logo />
+        <div className="shrink-0 border-b border-line p-5">
+          <div className="flex items-center justify-between">
+            <Logo />
 
-          <button
-            type="button"
-            className="grid h-9 w-9 place-items-center rounded-full border border-line lg:hidden"
-            onClick={() => setOpen(false)}
-          >
-            <FiX />
-          </button>
+            <button
+              type="button"
+              className="grid h-9 w-9 place-items-center rounded-full border border-line lg:hidden"
+              onClick={() => setOpen(false)}
+            >
+              <FiX />
+            </button>
+          </div>
         </div>
 
-        <nav className="grid flex-1 content-start gap-1 overflow-y-auto p-3">
-          {items.map((item) => {
-            const Icon = item.icon;
+        <div className="flex min-h-0 flex-1 flex-col">
+          <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
+            <div className="grid content-start gap-1">
+              {items.map((item) => {
+                const Icon = item.icon;
 
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={isDashboardLink(item.to)}
-                className={({ isActive }) =>
-                  [
-                    "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold transition",
-                    isActive
-                      ? "bg-ink !text-white"
-                      : "!text-ink/70 hover:bg-bg-soft hover:!text-ink",
-                  ].join(" ")
-                }
-              >
-                <Icon className="shrink-0 text-base" />
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
-
-        <div className="border-t border-line p-3">
-          <div className="flex items-center gap-3 px-2 py-2">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-brand font-bold text-ink">
-              {accountName?.[0] || "R"}
-            </span>
-
-            <div className="min-w-0">
-              <div className="truncate text-sm font-semibold">
-                {accountName || "Guest"}
-              </div>
-              <div className="truncate text-xs text-muted">{accountRole}</div>
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={isDashboardLink(item.to)}
+                    className={({ isActive }) =>
+                      [
+                        "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold transition",
+                        isActive
+                          ? "bg-ink !text-white"
+                          : "!text-ink/70 hover:bg-bg-soft hover:!text-ink",
+                      ].join(" ")
+                    }
+                  >
+                    <Icon className="shrink-0 text-base" />
+                    <span className="truncate">{item.label}</span>
+                  </NavLink>
+                );
+              })}
             </div>
-          </div>
+          </nav>
 
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-line px-4 py-2 text-sm transition hover:border-ink"
-          >
-            <FiLogOut />
-            Logout
-          </button>
+          <div className="shrink-0 border-t border-line bg-white p-3">
+            <div className="flex items-center gap-3 px-2 py-2">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand font-bold text-ink">
+                {accountName?.[0] || "R"}
+              </span>
+
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold">
+                  {accountName || "Guest"}
+                </div>
+                <div className="truncate text-xs text-muted">{accountRole}</div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-line px-4 py-2 text-sm transition hover:border-ink"
+            >
+              <FiLogOut />
+              Logout
+            </button>
+          </div>
         </div>
       </aside>
 
