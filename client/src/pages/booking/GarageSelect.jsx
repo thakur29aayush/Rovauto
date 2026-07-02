@@ -4,11 +4,21 @@ import { GARAGES } from "@/data/garages";
 import { FiStar, FiMapPin, FiArrowRight, FiCheckCircle, FiZap } from "react-icons/fi";
 import { useApp } from "@/hooks/useApp";
 import CitySelect from "@/components/common/CitySelect";
+import { isCityAvailable, UNAVAILABLE_CITY_MESSAGE } from "@/utils/cityAvailability";
 
 export default function GarageSelect() {
   const { location, setLocation } = useApp();
   const [picked, setPicked] = useState("auto");
+  const [error, setError] = useState("");
   const nav = useNavigate();
+
+  const proceed = async () => {
+    if (!(await isCityAvailable(location.city))) {
+      setError(UNAVAILABLE_CITY_MESSAGE);
+      return;
+    }
+    nav("/checkout");
+  };
 
   return (
     <div className="container-x py-12 max-w-5xl">
@@ -22,6 +32,7 @@ export default function GarageSelect() {
         <input value={location.pincode} onChange={(e) => setLocation({ ...location, pincode: e.target.value })} placeholder="Pincode" className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none" />
         <button className="btn-dark"><FiMapPin /> Current Location</button>
       </div>
+      {error && <div className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <button onClick={() => setPicked("auto")} className={`mt-6 w-full text-left rounded-3xl p-6 transition border-2 ${picked === "auto" ? "border-ink bg-ink text-white" : "border-line bg-white"}`}>
         <div className="flex items-center gap-4">
@@ -54,7 +65,7 @@ export default function GarageSelect() {
         ))}
       </div>
 
-      <button onClick={() => nav("/checkout")} className="btn-primary mt-8 w-full sm:w-auto">Proceed to Checkout <FiArrowRight /></button>
+      <button onClick={proceed} className="btn-primary mt-8 w-full sm:w-auto">Proceed to Checkout <FiArrowRight /></button>
     </div>
   );
 }

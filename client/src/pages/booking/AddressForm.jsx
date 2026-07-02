@@ -6,6 +6,7 @@ import { buildFullAddress, getDefaultUserLocation, parseAddressParts, reverseGeo
 import { queueGeocodeRequest, clearGeocodeCache } from "@/utils/geocodeService";
 import { FiCheckCircle, FiMapPin } from "react-icons/fi";
 import CitySelect from "@/components/common/CitySelect";
+import { isCityAvailable, UNAVAILABLE_CITY_MESSAGE } from "@/utils/cityAvailability";
 
 export default function AddressForm() {
   const nav = useNavigate();
@@ -65,6 +66,11 @@ export default function AddressForm() {
       const { latitude, longitude } = await getCurrentCoordinates();
       try {
         const parsed = await reverseGeocodeCoordinates({ latitude, longitude });
+        if (!(await isCityAvailable(parsed.city))) {
+          setError(UNAVAILABLE_CITY_MESSAGE);
+          setManualLocationEdited(false);
+          return;
+        }
         setForm({
           address: parsed.address,
           area: parsed.area,
@@ -86,6 +92,12 @@ export default function AddressForm() {
 
   const geocodeManualAddress = async () => {
     try {
+      if (!(await isCityAvailable(form.city))) {
+        setError(UNAVAILABLE_CITY_MESSAGE);
+        setLoading(false);
+        return;
+      }
+
       const fullAddress = buildFullAddress(form);
       
       // Use queued request with rate limiting and fallback

@@ -12,6 +12,7 @@ import {
   parseAddressParts,
 } from "@/utils/address";
 import { formatServicePriceRange, getServiceMinPrice, getServiceMaxPrice } from "@/utils/priceRange";
+import { isCityAvailable, UNAVAILABLE_CITY_MESSAGE } from "@/utils/cityAvailability";
 import { FiCheckCircle, FiLock, FiTrash2, FiTruck, FiEdit } from "react-icons/fi";
 
 const DEFAULT_LOCATION = {
@@ -92,6 +93,11 @@ export default function Checkout() {
   };
 
   const saveAddress = async () => {
+    if (!(await isCityAvailable(addressForm.city))) {
+      setError(UNAVAILABLE_CITY_MESSAGE);
+      return;
+    }
+
     const fullAddress = buildFullAddress(addressForm);
     const defaultUserLocation = getDefaultUserLocation(user);
     const nextLocation = getLocationStateFromAddress(fullAddress, {

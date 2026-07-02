@@ -6,6 +6,7 @@ import Logo from "@/components/common/Logo";
 import { garageApi } from "@/api/garage";
 import { reverseGeocodeCoordinates } from "@/utils/address";
 import CitySelect from "@/components/common/CitySelect";
+import { isCityAvailable, UNAVAILABLE_CITY_MESSAGE } from "@/utils/cityAvailability";
 
 export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
   const [loading, setLoading] = useState(false);
@@ -31,6 +32,11 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
     setLocationError("");
 
     try {
+      if (!(await isCityAvailable(data.city))) {
+        setLocationError(UNAVAILABLE_CITY_MESSAGE);
+        return;
+      }
+
       let nextData = data;
 
       if (data.locationSource !== "GPS" || !hasCoordinates(data.location)) {
@@ -83,6 +89,11 @@ export default function OnboardingStep2({ data, onChange, onNext, onBack }) {
 
         try {
           const parsed = await reverseGeocodeCoordinates({ latitude, longitude });
+          if (!(await isCityAvailable(parsed.city))) {
+            setLocationError(UNAVAILABLE_CITY_MESSAGE);
+            setLocationLoading(false);
+            return;
+          }
           onChange({
             ...data,
             address: parsed.address || data.address,

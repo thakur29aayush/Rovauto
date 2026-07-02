@@ -4,6 +4,7 @@ import api from "@/api/axios";
 import CitySelect from "@/components/common/CitySelect";
 import { buildFullAddress, getLocationStateFromUser, parseAddressParts, reverseGeocodeCoordinates } from "@/utils/address";
 import { queueGeocodeRequest } from "@/utils/geocodeService";
+import { isCityAvailable, UNAVAILABLE_CITY_MESSAGE } from "@/utils/cityAvailability";
 import { FiMapPin, FiNavigation, FiX } from "react-icons/fi";
 
 export default function Profile() {
@@ -143,6 +144,10 @@ export default function Profile() {
     try {
       const { latitude, longitude } = await getCurrentCoordinates();
       const parsed = await reverseGeocodeCoordinates({ latitude, longitude });
+      if (!(await isCityAvailable(parsed.city))) {
+        setLocationError(UNAVAILABLE_CITY_MESSAGE);
+        return;
+      }
       setLocationDraft({
         address: parsed.address || "",
         area: parsed.area || "",
@@ -163,6 +168,11 @@ export default function Profile() {
     setLocationSaving(true);
     setLocationError("");
     try {
+      if (!(await isCityAvailable(locationDraft.city))) {
+        setLocationError(UNAVAILABLE_CITY_MESSAGE);
+        return;
+      }
+
       const fullAddress = buildFullAddress(locationDraft);
       let latitude = Number(locationDraft.latitude);
       let longitude = Number(locationDraft.longitude);

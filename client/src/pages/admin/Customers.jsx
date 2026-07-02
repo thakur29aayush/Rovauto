@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { adminApi } from "@/api/admin";
 import { cityApi } from "@/api/cities";
 import CitySelect from "@/components/common/CitySelect";
+import { resetCityAvailabilityCache } from "@/utils/cityAvailability";
 import { FiPlus, FiRefreshCw } from "react-icons/fi";
 
 const getCity = (customer) => {
@@ -64,6 +65,7 @@ export default function Customers() {
     setCitySaving(true);
     try {
       await cityApi.createCity(cityForm);
+      resetCityAvailabilityCache();
       setCityForm({ name: "", state: "" });
       setSuccess("City added.");
       await loadCities();
@@ -79,6 +81,7 @@ export default function Customers() {
     setSuccess("");
     try {
       await cityApi.updateCity(city.id, { isActive: !city.isActive });
+      resetCityAvailabilityCache();
       await loadCities();
     } catch (err) {
       setError(err.response?.data?.message || "Unable to update city");
