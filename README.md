@@ -1,4 +1,4 @@
-# Rovauto
+### Rovauto
 
 ![Frontend](https://img.shields.io/badge/Frontend-React-blue)
 ![State](https://img.shields.io/badge/State-Redux%20Toolkit-764ABC)
@@ -364,8 +364,7 @@ GET /api/v1/bookings/service-history
 ```
 
 WhatsApp provider envs can stay empty during testing. When empty, the backend logs the outgoing WhatsApp-style message and accept link instead of calling a real provider.
----
-
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ### Booking Inspection Images
 
@@ -377,7 +376,7 @@ DELIVERY: before garage marks the vehicle delivered
 ```
 
 Both sets are uploaded to Cloudinary and stored in PostgreSQL/Neon through `BookingInspectionImage` with `bookingId`, `garageId`, `phase`, `imageUrl`, `publicId`, and `order`. Booking responses include `inspectionImages` ordered by phase and photo order.
----
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## Auth And State Notes
 
