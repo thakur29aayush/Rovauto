@@ -5,6 +5,7 @@ import CitySelect from "@/components/common/CitySelect";
 import { buildFullAddress, getLocationStateFromUser, parseAddressParts, reverseGeocodeCoordinates } from "@/utils/address";
 import { queueGeocodeRequest } from "@/utils/geocodeService";
 import { isCityAvailable, UNAVAILABLE_CITY_MESSAGE } from "@/utils/cityAvailability";
+import { addRecentActivity } from "@/utils/activityLog";
 import { FiMapPin, FiNavigation, FiX } from "react-icons/fi";
 
 export default function Profile() {
@@ -194,6 +195,12 @@ export default function Profile() {
         address: fullAddress,
         location: { latitude, longitude, source },
       }));
+      addRecentActivity({
+        type: "LOCATION",
+        title: source === "GPS" ? "Updated location from GPS" : "Updated location manually",
+        detail: `${locationDraft.city}${locationDraft.area ? `, ${locationDraft.area}` : ""}`,
+        path: "/dashboard/profile",
+      });
       setLocationOpen(false);
     } catch (err) {
       setLocationError(err.message || "Could not determine coordinates for this address.");
@@ -232,6 +239,19 @@ export default function Profile() {
       clearDashboardCache?.();
 
       await loadProfile({ force: true });
+
+      const changed = [];
+      if ((user?.name || "") !== form.name) changed.push("name");
+      if ((user?.phone || "") !== form.phone) changed.push("phone");
+      if ((user?.customerProfile?.address || user?.address || "") !== form.address) changed.push("address");
+      if (changed.length) {
+        addRecentActivity({
+          type: "PROFILE",
+          title: "Updated profile",
+          detail: `Changed ${changed.join(", ")}`,
+          path: "/dashboard/profile",
+        });
+      }
 
       setSuccess("Profile updated successfully");
     } catch (err) {

@@ -5,19 +5,94 @@ import { FiStar, FiMapPin, FiArrowRight, FiCheckCircle, FiZap } from "react-icon
 import { useApp } from "@/hooks/useApp";
 import CitySelect from "@/components/common/CitySelect";
 import { isCityAvailable, UNAVAILABLE_CITY_MESSAGE } from "@/utils/cityAvailability";
+import { buildFullAddress, reverseGeocodeCoordinates } from "@/utils/address";
+import { queueGeocodeRequest } from "@/utils/geocodeService";
+import { addRecentActivity } from "@/utils/activityLog";
 
 export default function GarageSelect() {
   const { location, setLocation } = useApp();
   const [picked, setPicked] = useState("auto");
   const [error, setError] = useState("");
+  const [locationLoading, setLocationLoading] = useState(false);
   const nav = useNavigate();
 
   const proceed = async () => {
+    setError("");
     if (!(await isCityAvailable(location.city))) {
       setError(UNAVAILABLE_CITY_MESSAGE);
       return;
     }
+
+    if (!Number.isFinite(Number(location.latitude)) || !Number.isFinite(Number(location.longitude))) {
+      try {
+        const geocode = await queueGeocodeRequest(
+          location.address || location.area,
+          location.city,
+          [location.area, location.pincode].filter(Boolean).join(", ")
+        );
+        setLocation({
+          ...location,
+          latitude: geocode.latitude,
+          longitude: geocode.longitude,
+          fullAddress: buildFullAddress(location),
+        });
+      } catch (err) {
+        setError(err.message || "Could not find coordinates for this location.");
+        return;
+      }
+    }
+
     nav("/checkout");
+  };
+
+  const useCurrentLocation = () => {
+    setError("");
+    if (!navigator.geolocation) {
+      setError("Current location is not supported by this browser.");
+      return;
+    }
+
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const latitude = Number(position.coords.latitude.toFixed(6));
+        const longitude = Number(position.coords.longitude.toFixed(6));
+
+        try {
+          const parsed = await reverseGeocodeCoordinates({ latitude, longitude });
+          if (!(await isCityAvailable(parsed.city))) {
+            setError(UNAVAILABLE_CITY_MESSAGE);
+            return;
+          }
+
+          const nextLocation = {
+            address: parsed.address,
+            area: parsed.area,
+            city: parsed.city,
+            pincode: parsed.pincode,
+            fullAddress: buildFullAddress(parsed),
+            latitude,
+            longitude,
+          };
+          setLocation(nextLocation);
+          addRecentActivity({
+            type: "LOCATION",
+            title: "Used current location",
+            detail: `${parsed.city}${parsed.area ? `, ${parsed.area}` : ""}`,
+            path: "/booking/garage",
+          });
+        } catch (err) {
+          setError(err.message || "Could not resolve current location.");
+        } finally {
+          setLocationLoading(false);
+        }
+      },
+      (err) => {
+        setError(err.message || "Unable to fetch current location.");
+        setLocationLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
   };
 
   return (
@@ -27,10 +102,10 @@ export default function GarageSelect() {
       <p className="text-muted mt-2">Enter your location and pick a garage — or let us auto-assign the best one.</p>
 
       <div className="mt-8 card-soft p-5 grid sm:grid-cols-4 gap-3">
-        <input value={location.area} onChange={(e) => setLocation({ ...location, area: e.target.value })} placeholder="Area" className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none" />
-        <CitySelect value={location.city} onChange={(city) => setLocation({ ...location, city })} placeholder="City" className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none" />
-        <input value={location.pincode} onChange={(e) => setLocation({ ...location, pincode: e.target.value })} placeholder="Pincode" className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none" />
-        <button className="btn-dark"><FiMapPin /> Current Location</button>
+        <input value={location.area || ""} onChange={(e) => setLocation({ ...location, area: e.target.value, latitude: null, longitude: null })} placeholder="Area" className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none" />
+        <CitySelect value={location.city || ""} onChange={(city) => setLocation({ ...location, city, latitude: null, longitude: null })} placeholder="City" className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none" />
+        <input value={location.pincode || ""} onChange={(e) => setLocation({ ...location, pincode: e.target.value, latitude: null, longitude: null })} placeholder="Pincode" className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none" />
+        <button type="button" onClick={useCurrentLocation} disabled={locationLoading} className="btn-dark"><FiMapPin /> {locationLoading ? "Fetching..." : "Current Location"}</button>
       </div>
       {error && <div className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 

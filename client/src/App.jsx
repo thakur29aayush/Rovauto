@@ -180,13 +180,13 @@ function AppRoutes() {
         </Route>
 
         <Route element={<DashboardLayout items={customerItems} title="Customer Portal" />}>
-          <Route path="/dashboard" element={<ProtectedRoute><VehicleCheck><CustomerDashboard /></VehicleCheck></ProtectedRoute>} />
-          <Route path="/dashboard/vehicles" element={<ProtectedRoute><MyVehicles /></ProtectedRoute>} />
-          <Route path="/dashboard/bookings" element={<ProtectedRoute><VehicleCheck><ActiveBookings /></VehicleCheck></ProtectedRoute>} />
-          <Route path="/dashboard/history" element={<ProtectedRoute><VehicleCheck><ServiceHistory /></VehicleCheck></ProtectedRoute>} />
-          <Route path="/dashboard/payments" element={<ProtectedRoute><VehicleCheck><Payments /></VehicleCheck></ProtectedRoute>} />
-          <Route path="/dashboard/notifications" element={<ProtectedRoute><VehicleCheck><Notifications /></VehicleCheck></ProtectedRoute>} />
-          <Route path="/dashboard/profile" element={<ProtectedRoute><VehicleCheck><Profile /></VehicleCheck></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><AddressCheck><VehicleCheck><CustomerDashboard /></VehicleCheck></AddressCheck></ProtectedRoute>} />
+          <Route path="/dashboard/vehicles" element={<ProtectedRoute><AddressCheck><MyVehicles /></AddressCheck></ProtectedRoute>} />
+          <Route path="/dashboard/bookings" element={<ProtectedRoute><AddressCheck><VehicleCheck><ActiveBookings /></VehicleCheck></AddressCheck></ProtectedRoute>} />
+          <Route path="/dashboard/history" element={<ProtectedRoute><AddressCheck><VehicleCheck><ServiceHistory /></VehicleCheck></AddressCheck></ProtectedRoute>} />
+          <Route path="/dashboard/payments" element={<ProtectedRoute><AddressCheck><VehicleCheck><Payments /></VehicleCheck></AddressCheck></ProtectedRoute>} />
+          <Route path="/dashboard/notifications" element={<ProtectedRoute><AddressCheck><VehicleCheck><Notifications /></VehicleCheck></AddressCheck></ProtectedRoute>} />
+          <Route path="/dashboard/profile" element={<ProtectedRoute><AddressCheck><VehicleCheck><Profile /></VehicleCheck></AddressCheck></ProtectedRoute>} />
         </Route>
 
         <Route element={<DashboardLayout items={garageItems} title="Garage Portal" />}>

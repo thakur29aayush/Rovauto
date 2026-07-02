@@ -64,9 +64,12 @@ export const requestSignupLocation = async () => {
 
 export const hasSavedUserLocation = (user) => {
   const locations = Array.isArray(user?.locations) ? user.locations : [];
-  const profileAddress = user?.customerProfile?.address || user?.address;
-
-  return locations.length > 0 || Boolean(profileAddress);
+  return locations.some(
+    (location) =>
+      Number.isFinite(Number(location.latitude)) &&
+      Number.isFinite(Number(location.longitude)) &&
+      Boolean(location.address)
+  );
 };
 
 export const saveSignupLocationToProfile = async (signupLocation) => {

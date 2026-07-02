@@ -7,6 +7,7 @@ import { queueGeocodeRequest, clearGeocodeCache } from "@/utils/geocodeService";
 import { FiCheckCircle, FiMapPin } from "react-icons/fi";
 import CitySelect from "@/components/common/CitySelect";
 import { isCityAvailable, UNAVAILABLE_CITY_MESSAGE } from "@/utils/cityAvailability";
+import { addRecentActivity } from "@/utils/activityLog";
 
 export default function AddressForm() {
   const nav = useNavigate();
@@ -184,6 +185,12 @@ export default function AddressForm() {
         fullAddress,
         latitude,
         longitude,
+      });
+      addRecentActivity({
+        type: "LOCATION",
+        title: manualLocationEdited ? "Saved manual location" : "Saved current location",
+        detail: `${form.city}${form.area ? `, ${form.area}` : ""}`,
+        path: "/dashboard/profile",
       });
 
       clearProfileCache();
