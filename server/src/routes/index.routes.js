@@ -23,6 +23,7 @@ const serviceMediaRoutes = require("../customer/routes/serviceMedia.routes");
 const sosRoutes = require("../customer/routes/sos.routes");
 const contactRoutes = require("../customer/routes/contact.routes");
 const dashboardRoutes = require("../customer/routes/dashboard.routes");
+const publicRoutes = require("./public.routes");
 const adminGarageApplicationRoutes = require("../admin/routes/garageApplication.routes");
 const cityServicePriceRangeRoutes = require("../admin/routes/cityServicePriceRange.routes");
 const adminGarageRoutes = require("../admin/routes/garageAdmin.routes");
@@ -43,6 +44,7 @@ const publicOtpRateLimit = rateLimit({
 });
 
 router.use("/auth", authRoutes);
+router.use("/public", publicRoutes);
 router.post("/send-otp", sendPhoneOtpValidation, validate, otpSendRateLimits, publicOtpRateLimit, authController.sendPhoneOtp);
 router.post("/verify-otp", publicOtpRateLimit, verifyPhoneOtpValidation, validate, authController.verifyPhoneOtp);
 router.use("/customer", customerRoutes);

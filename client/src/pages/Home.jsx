@@ -82,6 +82,13 @@ const getServiceImage = (categoryName) => {
   return CATEGORY_UI[categoryName]?.image || null;
 };
 
+const formatCount = (value, fallback) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  if (number >= 1000) return `${Math.floor(number / 1000)}K+`;
+  return String(number);
+};
+
 export default function Home() {
   // Use hardcoded categories from CATEGORY_UI
   const categories = Object.keys(CATEGORY_UI).map((name, index) => ({
@@ -90,6 +97,30 @@ export default function Home() {
   }));
   const [popularServices] = useState(HARDCODED_POPULAR_SERVICES);
   const [loading] = useState(false);
+  const [partnerStats, setPartnerStats] = useState({
+    garages: "8K+",
+    customers: "50K+",
+  });
+
+  useEffect(() => {
+    let mounted = true;
+
+    api
+      .get("/public/stats")
+      .then((response) => {
+        if (!mounted) return;
+        const stats = response.data?.data || response.data || {};
+        setPartnerStats({
+          garages: formatCount(stats.garages, "8K+"),
+          customers: formatCount(stats.customers, "50K+"),
+        });
+      })
+      .catch(() => null);
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div>
@@ -396,8 +427,8 @@ export default function Home() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
               {[
-                ["8K+", "Garages"],
-                ["50K+", "Customers"],
+                [partnerStats.garages, "Garages"],
+                [partnerStats.customers, "Customers"],
                 ["4.8★", "Avg rating"],
               ].map(([number, label]) => (
                 <div
