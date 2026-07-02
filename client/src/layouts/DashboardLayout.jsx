@@ -5,7 +5,7 @@ import Logo from "@/components/common/Logo";
 import { useApp } from "@/hooks/useApp";
 import { FiMenu, FiX, FiLogOut } from "react-icons/fi";
 
-export default function DashboardLayout({ items, title }) {
+export default function DashboardLayout({ items = [], title = "Dashboard" }) {
   const { pathname } = useLocation();
   const { user, garage, logout, logoutGarage } = useApp();
   const navigate = useNavigate();
@@ -13,15 +13,8 @@ export default function DashboardLayout({ items, title }) {
 
   useEffect(() => {
     setOpen(false);
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [pathname]);
-
-  const isDashboardLink = (to) =>
-    to === "/dashboard" ||
-    to === "/customer/dashboard" ||
-    to === "/dashboard/customer" ||
-    to === "/garage" ||
-    to === "/admin";
 
   const isGaragePortal = pathname.startsWith("/garage");
   const isAdminPortal = pathname.startsWith("/admin");
@@ -33,126 +26,129 @@ export default function DashboardLayout({ items, title }) {
     : account?.name;
 
   const accountRole = isGaragePortal
-    ? "GARAGE_OWNER"
+    ? "GARAGE OWNER"
     : account?.role || "CUSTOMER";
+
+  const isDashboardLink = (to) =>
+    ["/dashboard", "/customer/dashboard", "/dashboard/customer", "/garage", "/admin"].includes(to);
 
   const handleLogout = async () => {
     if (isGaragePortal) {
       await logoutGarage();
-      navigate("/garage/login");
+      navigate("/garage/login", { replace: true });
       return;
     }
 
     await logout();
-    navigate(isAdminPortal ? "/admin/login" : "/");
+    navigate(isAdminPortal ? "/admin/login" : "/", { replace: true });
   };
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden bg-bg-soft">
+    <div className="min-h-screen bg-bg-soft lg:flex">
       {open && (
         <button
           type="button"
-          aria-label="Close sidebar"
+          aria-label="Close sidebar overlay"
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-30 bg-black/30 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex h-[100dvh] w-72 shrink-0 flex-col border-r border-line bg-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={[
+          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-line bg-white transition-transform duration-300",
+          "lg:sticky lg:top-0 lg:z-30 lg:h-screen lg:translate-x-0",
+          open ? "translate-x-0" : "-translate-x-full",
+        ].join(" ")}
       >
-        <div className="shrink-0 border-b border-line p-5">
-          <div className="flex items-center justify-between">
-            <Logo />
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-line px-5">
+          <Logo />
 
-            <button
-              type="button"
-              className="grid h-9 w-9 place-items-center rounded-full border border-line lg:hidden"
-              onClick={() => setOpen(false)}
-            >
-              <FiX />
-            </button>
-          </div>
+          <button
+            type="button"
+            aria-label="Close sidebar"
+            onClick={() => setOpen(false)}
+            className="grid h-9 w-9 place-items-center rounded-full border border-line lg:hidden"
+          >
+            <FiX />
+          </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col">
-          <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
-            <div className="grid content-start gap-1">
-              {items.map((item) => {
-                const Icon = item.icon;
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          <div className="grid gap-1">
+            {items.map((item) => {
+              const Icon = item.icon;
 
-                return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={isDashboardLink(item.to)}
-                    className={({ isActive }) =>
-                      [
-                        "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold transition",
-                        isActive
-                          ? "bg-ink !text-white"
-                          : "!text-ink/70 hover:bg-bg-soft hover:!text-ink",
-                      ].join(" ")
-                    }
-                  >
-                    <Icon className="shrink-0 text-base" />
-                    <span className="truncate">{item.label}</span>
-                  </NavLink>
-                );
-              })}
-            </div>
-          </nav>
-
-          <div className="shrink-0 border-t border-line bg-white p-3">
-            <div className="flex items-center gap-3 px-2 py-2">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand font-bold text-ink">
-                {accountName?.[0] || "R"}
-              </span>
-
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold">
-                  {accountName || "Guest"}
-                </div>
-                <div className="truncate text-xs text-muted">{accountRole}</div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-line px-4 py-2 text-sm transition hover:border-ink"
-            >
-              <FiLogOut />
-              Logout
-            </button>
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={isDashboardLink(item.to)}
+                  className={({ isActive }) =>
+                    [
+                      "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition",
+                      isActive
+                        ? "bg-ink !text-white"
+                        : "!text-ink/70 hover:bg-bg-soft hover:!text-ink",
+                    ].join(" ")
+                  }
+                >
+                  <Icon className="shrink-0 text-lg" />
+                  <span className="truncate">{item.label}</span>
+                </NavLink>
+              );
+            })}
           </div>
+        </nav>
+
+        <div className="shrink-0 border-t border-line bg-white p-4">
+          <div className="flex items-center gap-3 rounded-xl px-2 py-2">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand text-base font-bold text-ink">
+              {accountName?.charAt(0)?.toUpperCase() || "R"}
+            </span>
+
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold text-ink">
+                {accountName || "Guest"}
+              </p>
+              <p className="truncate text-xs font-medium uppercase text-muted">
+                {accountRole}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:border-ink hover:bg-bg-soft"
+          >
+            <FiLogOut />
+            Logout
+          </button>
         </div>
       </aside>
 
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-30 border-b border-line bg-white/85 backdrop-blur">
-          <div className="flex h-16 items-center justify-between px-5 lg:px-10">
-            <div className="flex min-w-0 items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setOpen(true)}
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line lg:hidden"
-              >
-                <FiMenu />
-              </button>
+        <header className="sticky top-0 z-20 border-b border-line bg-white/85 backdrop-blur">
+          <div className="flex h-16 items-center px-4 sm:px-6 lg:px-10">
+            <button
+              type="button"
+              aria-label="Open sidebar"
+              onClick={() => setOpen(true)}
+              className="mr-3 grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line lg:hidden"
+            >
+              <FiMenu />
+            </button>
 
-              <h1 className="truncate text-lg font-semibold">{title}</h1>
-            </div>
+            <h1 className="truncate text-lg font-bold text-ink">{title}</h1>
           </div>
         </header>
 
         <motion.main
-          initial={{ opacity: 0, y: 6 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="min-w-0 p-4 sm:p-5 lg:p-10"
+          transition={{ duration: 0.25 }}
+          className="min-w-0 p-4 sm:p-6 lg:p-10"
         >
           <Outlet />
         </motion.main>
