@@ -121,8 +121,8 @@ export default function Register() {
   };
 
   return (
-    <div className="container-x grid min-h-[80vh] items-start gap-12 pt-32 pb-10 lg:grid-cols-2 mt-0">
-      <div className="hidden lg:block pt-44">
+    <div className="container-x grid min-h-[80vh] items-center gap-12 py-10 sm:py-16 lg:grid-cols-2 mt-0">
+      <div className="hidden lg:block">
         <h1 className="text-5xl font-bold leading-tight">
           Create your <span className="text-brand-dark">Rovauto</span>
           <br />
