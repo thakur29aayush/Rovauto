@@ -41,6 +41,10 @@ export const adminApi = {
     return unwrap(await api.get(`/admin/garages/${garageId}`));
   },
 
+  async deleteGarages(garageIds = []) {
+    return unwrap(await api.delete("/admin/garages", { data: { garageIds } }));
+  },
+
   async getAssignableServices(params = {}) {
     return unwrap(await api.get("/admin/garages/services", { params }));
   },
