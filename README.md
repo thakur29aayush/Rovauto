@@ -249,6 +249,204 @@ http://localhost:8080
 
 ---
 
+# Docker Setup
+
+Rovauto can be run locally using Docker and Docker Compose without installing Node.js dependencies manually.
+
+## Prerequisites
+
+- Docker Desktop (Windows/macOS) or Docker Engine (Linux)
+- Docker Compose
+
+Verify installation:
+
+```bash
+docker --version
+docker compose version
+```
+
+---
+
+## Project Structure
+
+```text
+Codebase/
+├── client/
+│   ├── Dockerfile
+│   └── .dockerignore
+│
+├── server/
+│   ├── Dockerfile
+│   └── .dockerignore
+│
+└── docker-compose.yml
+```
+
+---
+
+## Environment Variables
+
+Create the required environment files before building.
+
+### Backend
+
+Create:
+
+```text
+server/.env
+```
+
+Configure all required variables such as:
+
+```env
+DATABASE_URL=
+JWT_SECRET=
+GROQ_API_KEY=
+RESEND_API_KEY=
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+...
+```
+
+### Frontend
+
+Create:
+
+```text
+client/.env
+```
+
+Example:
+
+```env
+VITE_API_URL=http://localhost:5000/api/v1
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_APP_ID=
+```
+
+---
+
+## Build Containers
+
+From the project root:
+
+```bash
+docker compose up --build
+```
+
+---
+
+## Run In Background
+
+```bash
+docker compose up -d
+```
+
+---
+
+## Stop Containers
+
+```bash
+docker compose down
+```
+
+---
+
+## Rebuild Images
+
+Whenever dependencies or Dockerfiles change:
+
+```bash
+docker compose up --build
+```
+
+or
+
+```bash
+docker compose up -d --build
+```
+
+---
+
+## View Running Containers
+
+```bash
+docker ps
+```
+
+---
+
+## View Logs
+
+All containers:
+
+```bash
+docker compose logs -f
+```
+
+Backend only:
+
+```bash
+docker compose logs -f backend
+```
+
+Frontend only:
+
+```bash
+docker compose logs -f frontend
+```
+
+---
+
+## Access Application
+
+Frontend:
+
+```text
+http://localhost:8080
+```
+
+Backend:
+
+```text
+http://localhost:5000/api/v1
+```
+
+---
+
+## Docker Images
+
+The setup creates two images:
+
+- `codebase-frontend`
+- `codebase-backend`
+
+Running containers:
+
+- `rovauto-frontend`
+- `rovauto-backend`
+
+---
+
+## Production
+
+The same Dockerfiles can be used for production deployment on:
+
+- Render
+- Railway
+- DigitalOcean
+- AWS EC2
+- Azure VM
+- Google Cloud VM
+- Any VPS supporting Docker
+
+For Vercel deployments, continue deploying the frontend as a Static Site while deploying the backend separately.
+
+---
+
 ## Scripts
 
 ### Backend
