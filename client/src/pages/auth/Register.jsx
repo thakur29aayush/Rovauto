@@ -1,6 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
@@ -88,7 +87,7 @@ export default function Register() {
         },
       });
     } catch (err) {
-      setError(err.response?.data?.message || "Signup failed");
+      setError(err.response?.data?.message || err.message || "Signup failed");
     } finally {
       setLoading(false);
     }
@@ -100,7 +99,7 @@ export default function Register() {
 
     try {
       const data = await completeGoogleAuth("CUSTOMER");
-      let freshUser = data.user;
+      const freshUser = data.user;
 
       const redirectPath = hasSavedUserLocation(freshUser)
         ? "/dashboard"
@@ -121,9 +120,8 @@ export default function Register() {
 
   return (
     <div className="container-x grid min-h-[80vh] items-center gap-12 py-10 sm:py-16 lg:grid-cols-2">
-      <div className="hidden lg:block">
-
-        <h1 className="mt-8 text-5xl font-bold leading-tight">
+      <div className="hidden lg:block self-center">
+        <h1 className="text-5xl font-bold leading-tight">
           Create your <span className="text-brand-dark">Rovauto</span> account.
         </h1>
 
