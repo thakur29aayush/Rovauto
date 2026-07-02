@@ -127,14 +127,10 @@ export default function Register() {
     <div className="container-x grid min-h-[80vh] items-center gap-12 py-10 sm:py-16 lg:grid-cols-2 mt-0">
       <div className="hidden lg:block">
         <h1 className="text-5xl font-bold leading-tight">
-          Create your <span className="text-brand-dark">Rovauto</span>
+          Create account.
           <br />
-          account.
+          <span className="text-muted">Book trusted vehicle care.</span>
         </h1>
-
-        <p className="mt-4 max-w-md text-muted">
-          Book trusted services and manage your vehicle care.
-        </p>
       </div>
 
       <div className="card-soft p-7 max-w-md w-full mx-auto">
@@ -142,7 +138,7 @@ export default function Register() {
 
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
-        <form onSubmit={submit} className="mt-6 grid gap-3">
+        <form onSubmit={submit} className="mt-5 grid gap-2.5">
           <button
             type="button"
             onClick={handleGoogleAuth}
@@ -165,7 +161,7 @@ export default function Register() {
             value={form.name}
             onChange={change}
             placeholder="Full name"
-            className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
+            className="px-4 py-2.5 rounded-xl border border-line focus:border-ink outline-none"
           />
 
           <input
@@ -175,11 +171,11 @@ export default function Register() {
             onChange={change}
             type="email"
             placeholder="Email"
-            className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
+            className="px-4 py-2.5 rounded-xl border border-line focus:border-ink outline-none"
           />
 
           <div className="flex items-center overflow-hidden rounded-xl border border-line bg-white transition focus-within:border-ink">
-            <div className="grid h-full w-16 shrink-0 place-items-center border-r border-line bg-bg-soft px-3 py-3 font-semibold text-ink">
+            <div className="grid h-full w-16 shrink-0 place-items-center border-r border-line bg-bg-soft px-3 py-2.5 font-semibold text-ink">
               {COUNTRY_CODE}
             </div>
 
@@ -191,12 +187,11 @@ export default function Register() {
               maxLength={15}
               inputMode="tel"
               placeholder="Mobile number"
-              className="min-w-0 flex-1 border-0 px-4 py-3 outline-none"
+              className="min-w-0 flex-1 border-0 px-4 py-2.5 outline-none"
             />
           </div>
 
-          <label className="grid gap-1.5 text-sm">
-            <span className="font-medium">Password</span>
+          <label className="grid gap-1 text-sm">
             <input
               required
               name="password"
@@ -207,12 +202,11 @@ export default function Register() {
               minLength={8}
               pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
               title={PASSWORD_MESSAGE}
-              className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
+              className="px-4 py-2.5 rounded-xl border border-line focus:border-ink outline-none"
             />
           </label>
 
-          <label className="grid gap-1.5 text-sm">
-            <span className="font-medium">Confirm Password</span>
+          <label className="grid gap-1 text-sm">
             <input
               required
               name="confirmPassword"
@@ -221,7 +215,7 @@ export default function Register() {
               type="password"
               placeholder="Re-enter password"
               minLength={8}
-              className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
+              className="px-4 py-2.5 rounded-xl border border-line focus:border-ink outline-none"
             />
           </label>
 
@@ -229,7 +223,7 @@ export default function Register() {
             <p className="text-xs text-red-600">Passwords do not match.</p>
           )}
 
-          <p className="text-xs leading-relaxed text-muted">
+          <p className="text-[11px] leading-snug text-muted">
             {PASSWORD_MESSAGE}
           </p>
 
