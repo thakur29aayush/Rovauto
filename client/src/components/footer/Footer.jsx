@@ -12,8 +12,13 @@ export default function Footer() {
           <div className="bg-white rounded-2xl p-3 inline-block"><Logo /></div>
           <p className="mt-5 text-white/70 max-w-sm">India's trusted vehicle service platform. Verified garages, transparent pricing, live tracking & warranty.</p>
           <div className="flex gap-2 mt-5">
-            {[FiInstagram, FiTwitter, FiYoutube, FiFacebook].map((Ic, i) => (
-              <a key={i} className="grid place-items-center h-10 w-10 rounded-full bg-white/10 hover:bg-brand hover:text-ink transition" href="#"><Ic /></a>
+            {[
+              { Icon: FiInstagram, href: "https://instagram.com/rovauto.official" },
+              { Icon: FiTwitter, href: "https://twitter.com/rovauto" },
+              { Icon: FiYoutube, href: "https://youtube.com/@rovauto" },
+              { Icon: FiFacebook, href: "https://facebook.com/rovauto" }
+            ].map(({ Icon, href }, i) => (
+              <a key={i} target="_blank" rel="noopener noreferrer" className="grid place-items-center h-10 w-10 rounded-full bg-white/10 hover:bg-brand hover:text-ink transition" href={href}><Icon /></a>
             ))}
           </div>
         </div>

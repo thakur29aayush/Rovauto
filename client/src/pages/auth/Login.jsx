@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Logo from "@/components/common/Logo";
 import api from "@/api/axios";
-import { FiArrowRight, FiUser, FiTool } from "react-icons/fi";
+import { FiArrowRight } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
 import { hasSavedUserLocation } from "@/utils/signupLocation";
@@ -19,7 +19,6 @@ export default function Login() {
     password: "",
   });
 
-  const [role, setRole] = useState("CUSTOMER"); // Default to CUSTOMER
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -53,14 +52,10 @@ export default function Login() {
       localStorage.setItem("user", JSON.stringify(freshUser));
 
       let redirectPath;
-      if (freshUser.role === "GARAGE_OWNER") {
-        redirectPath = "/garage";
+      if (!hasSavedUserLocation(freshUser)) {
+        redirectPath = "/booking/address";
       } else {
-        if (!hasSavedUserLocation(freshUser)) {
-          redirectPath = "/booking/address";
-        } else {
-          redirectPath = from || "/dashboard";
-        }
+        redirectPath = from || "/dashboard";
       }
 
       window.location.href = redirectPath;
@@ -81,19 +76,14 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const data = await completeGoogleAuth(role);
+      const data = await completeGoogleAuth("CUSTOMER");
       let freshUser = data.user;
 
-
       let redirectPath;
-      if (freshUser.role === "GARAGE_OWNER") {
-        redirectPath = "/garage";
+      if (!hasSavedUserLocation(freshUser)) {
+        redirectPath = "/booking/address";
       } else {
-        if (!hasSavedUserLocation(freshUser)) {
-          redirectPath = "/booking/address";
-        } else {
-          redirectPath = from || "/dashboard";
-        }
+        redirectPath = from || "/dashboard";
       }
 
       window.location.href = redirectPath;
@@ -110,11 +100,9 @@ export default function Login() {
   };
 
   return (
-    <div className="container-x grid min-h-[80vh] items-center gap-12 py-10 sm:py-16 lg:grid-cols-2">
+    <div className="container-x grid min-h-[80vh] items-center gap-12 py-10 sm:py-16 lg:grid-cols-2 mt-0">
       <div className="hidden lg:block">
-        <Logo />
-
-        <h1 className="text-5xl font-bold mt-8 leading-tight">
+        <h1 className="text-5xl font-bold leading-tight">
           Welcome back.
           <br />
           <span className="text-muted">Your garage on demand.</span>
@@ -122,36 +110,7 @@ export default function Login() {
       </div>
 
       <div className="card-soft p-7 max-w-md w-full mx-auto">
-        <div className="flex bg-bg-soft rounded-full p-1 mb-6">
-          <button
-            type="button"
-            onClick={() => setRole("CUSTOMER")}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full font-medium transition ${
-              role === "CUSTOMER"
-                ? "bg-ink text-white"
-                : "text-muted hover:text-ink"
-            }`}
-          >
-            <FiUser />
-            Customer
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole("GARAGE_OWNER")}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full font-medium transition ${
-              role === "GARAGE_OWNER"
-                ? "bg-ink text-white"
-                : "text-muted hover:text-ink"
-            }`}
-          >
-            <FiTool />
-            Garage Partner
-          </button>
-        </div>
-
-        <h2 className="text-2xl font-bold">
-          Login to Rovauto {role === "GARAGE_OWNER" ? " (Garage)" : ""}
-        </h2>
+        <h2 className="text-2xl font-bold">Login to Rovauto</h2>
 
         <p className="text-sm text-muted mt-1">
           Use email/phone and password
