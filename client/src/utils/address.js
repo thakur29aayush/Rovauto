@@ -17,6 +17,28 @@ const uniqueParts = (parts = []) => {
   });
 };
 
+export const INDIA_COORDINATE_BOUNDS = {
+  minLatitude: 6,
+  maxLatitude: 38,
+  minLongitude: 68,
+  maxLongitude: 98,
+};
+
+export const hasUsableIndiaCoordinates = (location = {}) => {
+  const latitude = Number(location.latitude);
+  const longitude = Number(location.longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
+  if (latitude === 0 && longitude === 0) return false;
+
+  return (
+    latitude >= INDIA_COORDINATE_BOUNDS.minLatitude &&
+    latitude <= INDIA_COORDINATE_BOUNDS.maxLatitude &&
+    longitude >= INDIA_COORDINATE_BOUNDS.minLongitude &&
+    longitude <= INDIA_COORDINATE_BOUNDS.maxLongitude
+  );
+};
+
 const withoutLocationParts = (parts = [], locationParts = []) => {
   const blocked = new Set(locationParts.map(normalizeKey).filter(Boolean));
   return uniqueParts(parts).filter((part) => !blocked.has(normalizeKey(part)));
@@ -137,7 +159,10 @@ export const reverseGeocodeCoordinates = async ({ latitude, longitude }) => {
 
 export const getDefaultUserLocation = (user) => {
   const locations = Array.isArray(user?.locations) ? user.locations : [];
-  return locations.find((item) => item.isDefault) || locations[0] || null;
+  const validLocations = locations.filter(
+    (item) => hasUsableIndiaCoordinates(item) && Boolean(item.address)
+  );
+  return validLocations.find((item) => item.isDefault) || validLocations[0] || null;
 };
 
 export const getProfileAddress = (user) =>
