@@ -9,6 +9,7 @@ const KNOWLEDGE_DIR = path.join(__dirname, "..", "knowledge");
 const GROQ_TIMEOUT_MS = Number(process.env.CHATBOT_GROQ_TIMEOUT_MS || process.env.GROQ_TIMEOUT_MS || 12000);
 const MAX_HISTORY_MESSAGES = 8;
 const MAX_CONTEXT_SECTIONS = 5;
+const MAX_VISIBLE_HISTORY_MESSAGES = 80;
 
 let groq = null;
 let knowledgeCache = null;
@@ -159,7 +160,6 @@ const getCustomerContext = async (userId) => {
     prisma.user.findUnique({
       where: { id: userId },
       select: {
-        name: true,
         role: true,
         isOnboarded: true,
         vehicles: {
@@ -177,9 +177,6 @@ const getCustomerContext = async (userId) => {
           orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
           take: 1,
           select: {
-            address: true,
-            latitude: true,
-            longitude: true,
             source: true,
             isDefault: true,
           },
@@ -198,14 +195,11 @@ const getCustomerContext = async (userId) => {
       where: { userId },
       orderBy: { createdAt: "desc" },
       select: {
-        bookingCode: true,
         status: true,
         requestType: true,
         createdAt: true,
         garage: {
           select: {
-            name: true,
-            area: true,
             city: true,
           },
         },
@@ -227,26 +221,23 @@ const getCustomerContext = async (userId) => {
   const location = user.locations[0] || null;
 
   return {
-    name: user.name,
     role: user.role,
     isOnboarded: user.isOnboarded,
     defaultVehicle: vehicle
       ? `${vehicle.year} ${vehicle.brand} ${vehicle.model} (${vehicle.fuelType})`
       : "not added",
-    savedLocation: location?.address || "not added",
+    hasSavedLocation: Boolean(location),
     savedLocationSource: location?.source || "none",
     activeBookingsCount,
     latestBooking: latestBooking
       ? {
-          bookingCode: latestBooking.bookingCode,
           status: latestBooking.status,
           requestType: latestBooking.requestType,
           vehicle: latestBooking.vehicle
             ? `${latestBooking.vehicle.brand} ${latestBooking.vehicle.model}`
             : null,
-          garage: latestBooking.garage
-            ? `${latestBooking.garage.name}, ${latestBooking.garage.area}, ${latestBooking.garage.city}`
-            : null,
+          hasAssignedGarage: Boolean(latestBooking.garage),
+          garageCity: latestBooking.garage?.city || null,
         }
       : null,
   };
@@ -274,23 +265,158 @@ const normalizeHistory = (history = []) =>
       content: cleanText(item.content).slice(0, 700),
     }));
 
+const toApiMessage = (message) => ({
+  id: message.id,
+  role: message.role === "ASSISTANT" ? "assistant" : "user",
+  from: message.role === "ASSISTANT" ? "bot" : "user",
+  text: message.content,
+  createdAt: message.createdAt,
+});
+
+const buildConversationTitle = (message) => {
+  const title = cleanText(message).slice(0, 60);
+  return title || "Rovauto chat";
+};
+
+const findActiveConversation = (userId) =>
+  prisma.chatbotConversation.findFirst({
+    where: { userId, isActive: true },
+    orderBy: { updatedAt: "desc" },
+  });
+
+const getOrCreateConversation = async (userId, titleSeed) => {
+  const existing = await findActiveConversation(userId);
+  if (existing) return existing;
+
+  return prisma.chatbotConversation.create({
+    data: {
+      userId,
+      title: buildConversationTitle(titleSeed),
+    },
+  });
+};
+
+const getStoredMemory = async (conversationId) => {
+  const messages = await prisma.chatbotMessage.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: "desc" },
+    take: MAX_HISTORY_MESSAGES,
+  });
+
+  return messages
+    .reverse()
+    .map((message) => ({
+      role: message.role === "ASSISTANT" ? "assistant" : "user",
+      content: cleanText(message.content).slice(0, 700),
+    }));
+};
+
+const getChatHistory = async (userId) => {
+  const conversation = await findActiveConversation(userId);
+
+  if (!conversation) {
+    return {
+      conversationId: null,
+      messages: [],
+    };
+  }
+
+  const messages = await prisma.chatbotMessage.findMany({
+    where: {
+      conversationId: conversation.id,
+      userId,
+    },
+    orderBy: { createdAt: "desc" },
+    take: MAX_VISIBLE_HISTORY_MESSAGES,
+  });
+
+  return {
+    conversationId: conversation.id,
+    messages: messages.reverse().map(toApiMessage),
+  };
+};
+
+const clearChatHistory = async (userId) => {
+  await prisma.chatbotConversation.deleteMany({
+    where: { userId },
+  });
+
+  return { cleared: true };
+};
+
+const storeConversationTurn = async ({
+  userId,
+  conversationId,
+  question,
+  answer,
+  provider,
+  sources,
+}) => {
+  const [userMessage, assistantMessage] = await prisma.$transaction([
+    prisma.chatbotMessage.create({
+      data: {
+        conversationId,
+        userId,
+        role: "USER",
+        content: question,
+      },
+    }),
+    prisma.chatbotMessage.create({
+      data: {
+        conversationId,
+        userId,
+        role: "ASSISTANT",
+        content: answer,
+        provider,
+        metadata: {
+          sources,
+        },
+      },
+    }),
+    prisma.chatbotConversation.update({
+      where: { id: conversationId },
+      data: {
+        title: buildConversationTitle(question),
+      },
+    }),
+  ]);
+
+  return [toApiMessage(userMessage), toApiMessage(assistantMessage)];
+};
+
 const askChatbot = async ({ userId, message, history = [] }) => {
   const question = cleanText(message);
   if (!question) {
     throw new ApiError(400, "Message is required");
   }
 
-  const normalizedHistory = normalizeHistory(history);
+  const conversation = await getOrCreateConversation(userId, question);
+  const storedHistory = await getStoredMemory(conversation.id);
+  const browserHistory = normalizeHistory(history);
+  const normalizedHistory = storedHistory.length ? storedHistory : browserHistory;
   const [customerContext, sections] = await Promise.all([
     getCustomerContext(userId),
     Promise.resolve(retrieveSections(question, normalizedHistory)),
   ]);
 
   if (!process.env.GROQ_API_KEY) {
-    return {
-      answer: buildFallbackAnswer(question, sections),
-      sources: sections.map(({ source, title }) => ({ source, title })),
+    const sources = sections.map(({ source, title }) => ({ source, title }));
+    const answer = buildFallbackAnswer(question, sections);
+    const savedMessages = await storeConversationTurn({
+      userId,
+      conversationId: conversation.id,
+      question,
+      answer,
       provider: "local-rag",
+      sources,
+    });
+
+    return {
+      answer,
+      sources,
+      provider: "local-rag",
+      conversationId: conversation.id,
+      savedMessages,
     };
   }
 
@@ -311,7 +437,7 @@ const askChatbot = async ({ userId, message, history = [] }) => {
           {
             role: "system",
             content:
-              "You are Rovauto Assistant for customers in India. Answer only user-side Rovauto questions using the provided knowledge and safe customer context. Be concise, practical, and friendly. Do not invent policies, prices, garage availability, refunds, or emergency dispatch. If the answer is not in context, say what you can help with and suggest the closest app action.",
+              "You are Rovauto Assistant for customers in India. Answer only user-side Rovauto questions using the provided knowledge and safe customer context. Be concise, practical, and friendly. Do not reveal private chat memory or personal account details. Do not invent policies, prices, garage availability, refunds, or emergency dispatch. If the answer is not in context, say what you can help with and suggest the closest app action.",
           },
           {
             role: "user",
@@ -337,23 +463,51 @@ Answer the next customer question. Use short paragraphs or bullets only when hel
 
     const answer = completion.choices?.[0]?.message?.content?.trim();
 
-    return {
-      answer: answer || buildFallbackAnswer(question, sections),
-      sources: sections.map(({ source, title }) => ({ source, title })),
+    const sources = sections.map(({ source, title }) => ({ source, title }));
+    const finalAnswer = answer || buildFallbackAnswer(question, sections);
+    const savedMessages = await storeConversationTurn({
+      userId,
+      conversationId: conversation.id,
+      question,
+      answer: finalAnswer,
       provider: "groq-rag",
+      sources,
+    });
+
+    return {
+      answer: finalAnswer,
+      sources,
+      provider: "groq-rag",
+      conversationId: conversation.id,
+      savedMessages,
     };
   } catch (error) {
     console.error("Groq chatbot error:", error.message);
-    return {
-      answer: buildFallbackAnswer(question, sections),
-      sources: sections.map(({ source, title }) => ({ source, title })),
+    const sources = sections.map(({ source, title }) => ({ source, title }));
+    const answer = buildFallbackAnswer(question, sections);
+    const savedMessages = await storeConversationTurn({
+      userId,
+      conversationId: conversation.id,
+      question,
+      answer,
       provider: "local-rag-fallback",
+      sources,
+    });
+
+    return {
+      answer,
+      sources,
+      provider: "local-rag-fallback",
+      conversationId: conversation.id,
+      savedMessages,
     };
   }
 };
 
 module.exports = {
   askChatbot,
+  getChatHistory,
+  clearChatHistory,
   loadKnowledge,
   retrieveSections,
 };

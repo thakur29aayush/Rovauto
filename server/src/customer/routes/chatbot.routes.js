@@ -38,6 +38,8 @@ const askChatbotValidation = [
 
 router.use(protect);
 
+router.get("/history", chatbotController.getChatHistory);
 router.post("/ask", chatbotRateLimit, askChatbotValidation, validate, chatbotController.askChatbot);
+router.delete("/history", chatbotController.clearChatHistory);
 
 module.exports = router;
