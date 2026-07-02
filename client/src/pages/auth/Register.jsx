@@ -119,10 +119,12 @@ export default function Register() {
   };
 
   return (
-    <div className="container-x grid min-h-[80vh] items-center gap-12 py-2 sm:py-16 lg:grid-cols-2">
-      <div className="hidden lg:block self-center">
+    <div className="container-x grid min-h-[80vh] items-center gap-12 py-10 sm:py-16 lg:grid-cols-2 mt-0">
+      <div className="hidden lg:block">
         <h1 className="text-5xl font-bold leading-tight">
-          Create your <span className="text-brand-dark">Rovauto</span> account.
+          Create your <span className="text-brand-dark">Rovauto</span>
+          <br />
+          account.
         </h1>
 
         <p className="mt-4 max-w-md text-muted">
@@ -130,7 +132,7 @@ export default function Register() {
         </p>
       </div>
 
-      <div className="card-soft mx-auto w-full max-w-md p-7">
+      <div className="card-soft p-7 max-w-md w-full mx-auto">
         <h2 className="text-2xl font-bold">Create account</h2>
 
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
@@ -158,7 +160,7 @@ export default function Register() {
             value={form.name}
             onChange={change}
             placeholder="Full name"
-            className="rounded-xl border border-ink px-4 py-3 outline-none focus:border-ink"
+            className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
           />
 
           <input
@@ -168,11 +170,11 @@ export default function Register() {
             onChange={change}
             type="email"
             placeholder="Email"
-            className="rounded-xl border border-ink px-4 py-3 outline-none focus:border-ink"
+            className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
           />
 
-          <div className="flex items-center overflow-hidden rounded-xl border border-ink bg-white transition focus-within:border-ink">
-            <div className="grid h-full w-16 shrink-0 place-items-center border-r border-ink bg-bg-soft px-3 py-3 font-semibold text-ink">
+          <div className="flex items-center overflow-hidden rounded-xl border border-line bg-white transition focus-within:border-ink">
+            <div className="grid h-full w-16 shrink-0 place-items-center border-r border-line bg-bg-soft px-3 py-3 font-semibold text-ink">
               {COUNTRY_CODE}
             </div>
 
@@ -200,7 +202,7 @@ export default function Register() {
               minLength={8}
               pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
               title={PASSWORD_MESSAGE}
-              className="rounded-xl border border-ink px-4 py-3 outline-none focus:border-ink"
+              className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
             />
           </label>
 
@@ -214,7 +216,7 @@ export default function Register() {
               type="password"
               placeholder="Re-enter password"
               minLength={8}
-              className="rounded-xl border border-ink px-4 py-3 outline-none focus:border-ink"
+              className="px-4 py-3 rounded-xl border border-line focus:border-ink outline-none"
             />
           </label>
 
@@ -232,7 +234,7 @@ export default function Register() {
 
           <div className="text-center text-sm text-muted">
             Already a member?{" "}
-            <Link to="/login" className="font-medium text-ink">
+            <Link to="/login" className="text-ink font-medium">
               Login
             </Link>
           </div>
