@@ -6,10 +6,14 @@ import MainLayout from "@/layouts/MainLayout";
 import DashboardLayout from "@/layouts/DashboardLayout";
 
 function ProtectedRoute({ children }) {
-  const { user, garage } = useApp();
+  const { user, garage, authLoading } = useApp();
   const location = useLocation();
   const isGarageRoute = location.pathname.startsWith("/garage");
   const isAdminRoute = location.pathname.startsWith("/admin");
+
+  if (authLoading) {
+    return <RouteFallback />;
+  }
 
   if (isAdminRoute) {
     if (user?.role !== "ADMIN") {
