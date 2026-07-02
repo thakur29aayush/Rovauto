@@ -12,19 +12,25 @@ const reloadOnStaleChunk = (error) => {
     return;
   }
 
-  if (sessionStorage.getItem("rov_chunk_reload_attempted") === "1") {
+  const reloadKey = `rov_chunk_reload_attempted:${window.location.pathname}`;
+  if (sessionStorage.getItem(reloadKey) === "1") {
     return;
   }
 
-  sessionStorage.setItem("rov_chunk_reload_attempted", "1");
-  window.location.reload();
+  sessionStorage.setItem(reloadKey, "1");
+
+  const url = new URL(window.location.href);
+  url.searchParams.set("rov_reload", String(Date.now()));
+  window.location.replace(url.toString());
 };
 
 window.addEventListener("error", (event) => reloadOnStaleChunk(event.error || event.message));
 window.addEventListener("unhandledrejection", (event) => reloadOnStaleChunk(event.reason));
 
 window.setTimeout(() => {
-  sessionStorage.removeItem("rov_chunk_reload_attempted");
+  Object.keys(sessionStorage)
+    .filter((key) => key.startsWith("rov_chunk_reload_attempted:"))
+    .forEach((key) => sessionStorage.removeItem(key));
 }, 5000);
 
 ReactDOM.createRoot(document.getElementById("root")).render(

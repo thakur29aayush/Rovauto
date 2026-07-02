@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { Component, lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AppProvider, useApp } from "@/hooks/useApp";
 import { hasSavedUserLocation } from "@/utils/signupLocation";
@@ -115,6 +115,102 @@ const AdminNotifications = lazy(() => import("@/pages/admin/Notifications"));
 import { FiGrid, FiTruck, FiPlusCircle, FiCalendar, FiClock, FiShield, FiCreditCard, FiBell, FiUser,
   FiInbox, FiBriefcase, FiTrendingUp, FiStar, FiUsers, FiSettings, FiDollarSign, FiHome } from "react-icons/fi";
 
+const isChunkLoadError = (error) => {
+  const message = String(error?.message || error || "");
+  return /Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk|ChunkLoadError/i.test(message);
+};
+
+class AppErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      error: null,
+      isRecovering: false,
+    };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error) {
+    if (!isChunkLoadError(error)) return;
+
+    const reloadKey = `rov_route_reload_attempted:${window.location.pathname}`;
+    if (sessionStorage.getItem(reloadKey) === "1") {
+      return;
+    }
+
+    sessionStorage.setItem(reloadKey, "1");
+    this.setState({ isRecovering: true });
+
+    window.setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("rov_reload", String(Date.now()));
+      window.location.replace(url.toString());
+    }, 250);
+  }
+
+  clearAndReload = () => {
+    Object.keys(sessionStorage)
+      .filter((key) => key.startsWith("rov_route_reload_attempted:") || key.startsWith("rov_chunk_reload_attempted:"))
+      .forEach((key) => sessionStorage.removeItem(key));
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("rov_reload", String(Date.now()));
+    window.location.replace(url.toString());
+  };
+
+  goHome = () => {
+    window.location.assign("/");
+  };
+
+  render() {
+    const { error, isRecovering } = this.state;
+
+    if (!error) {
+      return this.props.children;
+    }
+
+    const staleChunk = isChunkLoadError(error);
+
+    return (
+      <div className="min-h-screen bg-bg-soft px-4 py-10">
+        <div className="mx-auto max-w-lg rounded-2xl border border-line bg-white p-6 shadow-soft">
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted">
+            {staleChunk ? "Updating Rovauto" : "Page could not load"}
+          </p>
+          <h1 className="mt-2 text-2xl font-bold text-ink">
+            {staleChunk ? "Refreshing the latest version" : "Something stopped this page from loading"}
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-muted">
+            {staleChunk
+              ? "A newer version of this page is available. The app is reloading it now."
+              : "You can reload the page or go back to the home page."}
+          </p>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={this.clearAndReload}
+              className="rounded-full bg-brand px-5 py-3 text-sm font-bold text-ink"
+            >
+              {isRecovering ? "Reloading..." : "Reload page"}
+            </button>
+            <button
+              type="button"
+              onClick={this.goHome}
+              className="rounded-full border border-line px-5 py-3 text-sm font-bold text-ink"
+            >
+              Go home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
 const customerItems = [
   { to: "/dashboard", label: "Dashboard", icon: FiGrid },
   { to: "/dashboard/vehicles", label: "My Vehicles", icon: FiTruck },
@@ -230,7 +326,9 @@ function RouteFallback() {
 export default function App() {
   return (
     <AppProvider>
-      <AppRoutes />
+      <AppErrorBoundary>
+        <AppRoutes />
+      </AppErrorBoundary>
     </AppProvider>
   );
 }
