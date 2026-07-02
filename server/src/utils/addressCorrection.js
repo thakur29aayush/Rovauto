@@ -2,6 +2,7 @@ const Groq = require("groq-sdk");
 const ApiError = require("./apiError");
 
 let groq = null;
+const GROQ_TIMEOUT_MS = Number(process.env.GROQ_TIMEOUT_MS || 12000);
 
 const getGroqClient = () => {
   if (!process.env.GROQ_API_KEY) {
@@ -27,18 +28,19 @@ const correctAddress = async (address, city, state) => {
   }
 
   try {
-    const completion = await getGroqClient().chat.completions.create({
-      model: process.env.GROQ_MODEL || "llama-3.1-8b-instant",
-      max_tokens: 150,
-      temperature: 0.1,
-      messages: [
-        {
-          role: "system",
-          content: "Return only a corrected Indian address or UNABLE_TO_CORRECT.",
-        },
-        {
-          role: "user",
-          content: `You are an address correction assistant. Given an incomplete, misspelled, or informal address, provide the corrected full address in India.
+    const completion = await Promise.race([
+      getGroqClient().chat.completions.create({
+        model: process.env.GROQ_MODEL || "llama-3.1-8b-instant",
+        max_tokens: 150,
+        temperature: 0.1,
+        messages: [
+          {
+            role: "system",
+            content: "Return only a corrected Indian address or UNABLE_TO_CORRECT.",
+          },
+          {
+            role: "user",
+            content: `You are an address correction assistant. Given an incomplete, misspelled, or informal address, provide the corrected full address in India.
 
 Input address: ${address}
 City: ${city}
@@ -52,9 +54,13 @@ Rules:
 5. If you cannot determine a valid location, respond with "UNABLE_TO_CORRECT"
 
 Corrected address:`,
-        },
-      ],
-    });
+          },
+        ],
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Groq address correction timed out")), GROQ_TIMEOUT_MS)
+      ),
+    ]);
 
     const correctedAddress = completion.choices?.[0]?.message?.content?.trim() || "";
 

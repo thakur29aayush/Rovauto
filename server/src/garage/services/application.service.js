@@ -174,7 +174,12 @@ const approveApplication = async (applicationId, adminNote) => {
 
   // perform owner creation/update, garage creation and update application in a transaction
   const result = await prisma.$transaction(async (tx) => {
-    const existingOwner = await tx.user.findUnique({ where: { email: application.email } });
+    const existingOwner = await tx.user.findFirst({
+      where: {
+        role: "GARAGE_OWNER",
+        OR: [{ email: application.email }, { phone: application.phone }],
+      },
+    });
     const owner = existingOwner
       ? await tx.user.update({
           where: { id: existingOwner.id },

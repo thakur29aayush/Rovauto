@@ -9,8 +9,8 @@ datasource db {
 model User {
   id                 String              @id @default(uuid())
   name               String
-  email              String              @unique
-  phone              String?             @unique
+  email              String
+  phone              String?
   password           String
   role               Role                @default(CUSTOMER)
   isEmailVerified    Boolean             @default(false)
@@ -30,6 +30,11 @@ model User {
   vehicles           Vehicle[]
   wallet             Wallet?
   walletTransactions WalletTransaction[]
+
+  @@unique([email, role])
+  @@unique([phone, role])
+  @@index([email])
+  @@index([phone])
 }
 
 model Otp {
@@ -48,8 +53,8 @@ model Otp {
 model PendingSignup {
   id              String   @id @default(uuid())
   name            String
-  email           String   @unique
-  phone           String   @unique
+  email           String
+  phone           String
   passwordHash    String
   role            Role     @default(CUSTOMER)
   isEmailVerified Boolean  @default(false)
@@ -58,6 +63,8 @@ model PendingSignup {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  @@unique([email, role])
+  @@unique([phone, role])
   @@index([email])
   @@index([phone])
   @@index([expiresAt])

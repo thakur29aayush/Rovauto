@@ -20,7 +20,7 @@ export default function GarageForgotPassword() {
     setError("");
 
     try {
-      const res = await api.post("/auth/forgot-password", { email });
+      const res = await api.post("/auth/forgot-password", { email, role: "GARAGE_OWNER" });
       const data = res.data.data || {};
 
       if (data.otp) {
@@ -63,6 +63,7 @@ export default function GarageForgotPassword() {
         email,
         otp,
         newPassword,
+        role: "GARAGE_OWNER",
       });
 
       setStep("success");

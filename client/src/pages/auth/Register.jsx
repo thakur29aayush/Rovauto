@@ -73,6 +73,7 @@ export default function Register() {
         JSON.stringify({
           email: payload.email,
           phone: fullPhone,
+          role: payload.role,
           signupLocation,
           createdAt: Date.now(),
         })
@@ -82,6 +83,7 @@ export default function Register() {
         state: {
           email: payload.email,
           phone: fullPhone,
+          role: payload.role,
           signupLocation,
           fromSignup: true,
         },

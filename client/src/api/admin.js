@@ -4,7 +4,7 @@ const unwrap = (response) => response.data?.data ?? response.data;
 
 export const adminApi = {
   async login(identifier, password) {
-    const result = unwrap(await api.post("/auth/login", { identifier, password }));
+    const result = unwrap(await api.post("/auth/login", { identifier, password, role: "ADMIN" }));
     if (result.user?.role !== "ADMIN") {
       throw new Error("This account is not an admin account");
     }

@@ -39,6 +39,7 @@ export default function Login() {
       const res = await api.post("/auth/login", {
         identifier: form.identifier.trim(),
         password: form.password,
+        role: "CUSTOMER",
       });
 
       const data = res.data?.data;
