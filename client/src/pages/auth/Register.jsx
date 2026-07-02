@@ -122,7 +122,6 @@ export default function Register() {
   return (
     <div className="container-x grid min-h-[80vh] items-center gap-12 py-10 sm:py-16 lg:grid-cols-2">
       <div className="hidden lg:block">
-        <Logo />
 
         <h1 className="mt-8 text-5xl font-bold leading-tight">
           Create your <span className="text-brand-dark">Rovauto</span> account.
