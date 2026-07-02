@@ -4,6 +4,7 @@ import api from "@/api/axios";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
 import { hasSavedUserLocation } from "@/utils/signupLocation";
+import { useApp } from "@/hooks/useApp";
 
 const COUNTRY_CODE = "+91";
 const PASSWORD_MESSAGE =
@@ -13,6 +14,7 @@ const PASSWORD_REGEX =
 
 export default function Register() {
   const nav = useNavigate();
+  const { login } = useApp();
 
   const [form, setForm] = useState({
     name: "",
@@ -102,12 +104,13 @@ export default function Register() {
     try {
       const data = await completeGoogleAuth("CUSTOMER");
       const freshUser = data.user;
+      login(freshUser, data.token);
 
       const redirectPath = hasSavedUserLocation(freshUser)
         ? "/dashboard"
         : "/booking/address";
 
-      window.location.href = redirectPath;
+      nav(redirectPath, { replace: true });
     } catch (err) {
       setError(
         err.response?.data?.message ||

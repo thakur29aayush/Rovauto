@@ -28,7 +28,8 @@ export default function GarageSelect() {
         const geocode = await queueGeocodeRequest(
           location.address || location.area,
           location.city,
-          [location.area, location.pincode].filter(Boolean).join(", ")
+          location.area,
+          location.pincode
         );
         setLocation({
           ...location,

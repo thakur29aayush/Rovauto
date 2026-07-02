@@ -107,7 +107,8 @@ export default function Checkout() {
       const geocode = await queueGeocodeRequest(
         addressForm.address,
         addressForm.city,
-        [addressForm.area, addressForm.pincode].filter(Boolean).join(", ")
+        addressForm.area,
+        addressForm.pincode
       );
       latitude = geocode.latitude;
       longitude = geocode.longitude;
@@ -126,9 +127,6 @@ export default function Checkout() {
     setLocation(nextLocation);
 
     try {
-      await api.patch("/customer/profile", {
-        address: fullAddress,
-      });
       await api.post("/locations", {
         latitude,
         longitude,

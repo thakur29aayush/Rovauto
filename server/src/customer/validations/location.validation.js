@@ -16,6 +16,7 @@ const rejectZeroCoordinates = (_, { req }) => {
 
 const geocodeLocationValidation = [
   query("address").optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 300 }),
+  query("area").optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 120 }),
   query("city").optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 120 }),
   query("state").optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 120 }),
   query("pincode").optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 20 }),

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useApp } from "@/hooks/useApp";
 import api from "@/api/axios";
 import CitySelect from "@/components/common/CitySelect";
-import { buildFullAddress, getLocationStateFromUser, parseAddressParts, reverseGeocodeCoordinates } from "@/utils/address";
+import { buildFullAddress, getLocationStateFromUser, hasUsableIndiaCoordinates, parseAddressParts, reverseGeocodeCoordinates } from "@/utils/address";
 import { queueGeocodeRequest } from "@/utils/geocodeService";
 import { isCityAvailable, UNAVAILABLE_CITY_MESSAGE } from "@/utils/cityAvailability";
 import { addRecentActivity } from "@/utils/activityLog";
@@ -183,7 +183,8 @@ export default function Profile() {
         const result = await queueGeocodeRequest(
           locationDraft.address,
           locationDraft.city,
-          [locationDraft.area, locationDraft.pincode].filter(Boolean).join(", ")
+          locationDraft.area,
+          locationDraft.pincode
         );
         latitude = result.latitude;
         longitude = result.longitude;
@@ -217,15 +218,13 @@ export default function Profile() {
       setError("");
       setSuccess("");
 
-      await api.patch("/customer/profile", {
-        name: form.name,
-        phone: form.phone,
-        address: form.address,
-      });
-
       const latitude = Number(form.location?.latitude);
       const longitude = Number(form.location?.longitude);
-      if (form.address && Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      if (form.address) {
+        if (!hasUsableIndiaCoordinates({ latitude, longitude })) {
+          throw new Error("Please save a valid Indian location before updating the profile address.");
+        }
+
         await api.post("/locations", {
           latitude,
           longitude,
@@ -234,6 +233,12 @@ export default function Profile() {
           isDefault: true,
         });
       }
+
+      await api.patch("/customer/profile", {
+        name: form.name,
+        phone: form.phone,
+        address: form.address,
+      });
 
       clearProfileCache?.();
       clearDashboardCache?.();

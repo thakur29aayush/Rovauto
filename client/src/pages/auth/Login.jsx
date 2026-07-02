@@ -6,6 +6,7 @@ import { FiArrowRight } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import completeGoogleAuth from "@/utils/googleAuth";
 import { hasSavedUserLocation } from "@/utils/signupLocation";
+import { useApp } from "@/hooks/useApp";
 
 export default function Login() {
   const { state } = useLocation();
@@ -13,6 +14,7 @@ export default function Login() {
   const notice = state?.message || "";
 
   const nav = useNavigate();
+  const { login } = useApp();
 
   const [form, setForm] = useState({
     identifier: "",
@@ -50,7 +52,7 @@ export default function Login() {
 
       localStorage.setItem("token", data.token);
       const freshUser = data.user;
-      localStorage.setItem("user", JSON.stringify(freshUser));
+      login(freshUser, data.token);
 
       let redirectPath;
       if (!hasSavedUserLocation(freshUser)) {
@@ -59,7 +61,7 @@ export default function Login() {
         redirectPath = from || "/dashboard";
       }
 
-      window.location.href = redirectPath;
+      nav(redirectPath, { replace: true });
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -79,6 +81,7 @@ export default function Login() {
     try {
       const data = await completeGoogleAuth("CUSTOMER");
       let freshUser = data.user;
+      login(freshUser, data.token);
 
       let redirectPath;
       if (!hasSavedUserLocation(freshUser)) {
@@ -87,7 +90,7 @@ export default function Login() {
         redirectPath = from || "/dashboard";
       }
 
-      window.location.href = redirectPath;
+      nav(redirectPath, { replace: true });
     } catch (err) {
       setError(
         err.response?.data?.message ||

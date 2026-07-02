@@ -105,7 +105,8 @@ export default function AddressForm() {
       const geocodeResult = await queueGeocodeRequest(
         form.address,
         form.city,
-        [form.area, form.pincode].filter(Boolean).join(", ")
+        form.area,
+        form.pincode
       );
       
       return {
@@ -161,21 +162,13 @@ export default function AddressForm() {
         throw new Error("Could not determine coordinates. Please verify address.");
       }
 
-      // Save profile address
-      await api.patch("/customer/profile", {
+      await api.post("/locations", {
+        latitude,
+        longitude,
         address: fullAddress,
+        source: manualLocationEdited ? "MANUAL" : "GPS",
+        isDefault: true,
       });
-
-      // Save location with coordinates
-      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-        await api.post("/locations", {
-          latitude,
-          longitude,
-          address: fullAddress,
-          source: manualLocationEdited ? "MANUAL" : "GPS",
-          isDefault: true,
-        });
-      }
 
       setLocation({
         address: form.address,

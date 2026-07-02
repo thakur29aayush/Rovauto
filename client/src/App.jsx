@@ -34,12 +34,13 @@ function ProtectedRoute({ children }) {
 
 function AddressCheck({ children }) {
   const { user, location } = useApp();
+  const routeLocation = useLocation();
   const hasLiveLocation =
     Boolean(location?.address || location?.fullAddress) &&
     hasUsableIndiaCoordinates(location);
 
   if (user?.role === "CUSTOMER" && !hasSavedUserLocation(user) && !hasLiveLocation) {
-    return <Navigate to="/booking/address" replace />;
+    return <Navigate to="/booking/address" state={{ from: routeLocation }} replace />;
   }
 
   return children;
